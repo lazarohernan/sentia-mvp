@@ -1,0 +1,55 @@
+<svg width="1440" height="1800" viewBox="0 0 1440 1800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="1800" fill="#022c22"/>
+  <rect width="1440" height="1800" fill="url(#baseGlow)"/>
+  <path d="M1048 -80C1118 162 1094 344 976 466C840 606 816 804 924 970C1046 1158 1008 1406 798 1600" stroke="url(#waveA)" stroke-width="2" opacity=".34"/>
+  <path d="M1200 -40C1292 204 1248 410 1068 578C902 732 910 932 1090 1088C1288 1260 1284 1508 1082 1740" stroke="url(#waveB)" stroke-width="1.5" opacity=".28"/>
+  <path d="M820 1560C948 1398 1086 1298 1234 1260C1348 1230 1420 1144 1464 1002" stroke="#34d399" stroke-width="1" opacity=".18"/>
+  <path d="M820 1560L1010 1428L1234 1260L1352 1110L1464 1002" stroke="#6ee7b7" stroke-width="1.2" opacity=".34"/>
+  <path d="M1010 1428L1168 1516L1376 1404M1234 1260L1428 1328M1352 1110L1202 1012L1464 1002" stroke="#6ee7b7" stroke-width=".9" opacity=".24"/>
+  <path d="M944 170L1118 262L1330 196L1462 356M1118 262L1256 430L1462 356M1256 430L1070 532L944 170" stroke="#6ee7b7" stroke-width="1" opacity=".32"/>
+  <path d="M1160 690L1328 772L1428 650M1160 690L1050 830L1242 930L1328 772M1242 930L1440 880" stroke="#34d399" stroke-width=".9" opacity=".22"/>
+  <g opacity=".75">
+    <circle cx="944" cy="170" r="4" fill="#d1fae5"/>
+    <circle cx="1118" cy="262" r="5" fill="#a7f3d0"/>
+    <circle cx="1330" cy="196" r="3" fill="#6ee7b7"/>
+    <circle cx="1256" cy="430" r="5" fill="#d1fae5"/>
+    <circle cx="1070" cy="532" r="3" fill="#6ee7b7"/>
+    <circle cx="1160" cy="690" r="4" fill="#a7f3d0"/>
+    <circle cx="1328" cy="772" r="3" fill="#6ee7b7"/>
+    <circle cx="1242" cy="930" r="4" fill="#d1fae5"/>
+    <circle cx="820" cy="1560" r="3" fill="#a7f3d0"/>
+    <circle cx="1010" cy="1428" r="5" fill="#6ee7b7"/>
+    <circle cx="1234" cy="1260" r="4" fill="#d1fae5"/>
+    <circle cx="1352" cy="1110" r="3" fill="#a7f3d0"/>
+  </g>
+  <g opacity=".16">
+    <circle cx="956" cy="1380" r="1.8" fill="#6ee7b7"/>
+    <circle cx="986" cy="1340" r="1.5" fill="#6ee7b7"/>
+    <circle cx="1038" cy="1308" r="1.8" fill="#6ee7b7"/>
+    <circle cx="1090" cy="1270" r="1.4" fill="#6ee7b7"/>
+    <circle cx="1172" cy="1218" r="1.7" fill="#6ee7b7"/>
+    <circle cx="1288" cy="1188" r="1.2" fill="#6ee7b7"/>
+    <circle cx="1364" cy="1160" r="1.5" fill="#6ee7b7"/>
+    <circle cx="1210" cy="338" r="1.4" fill="#6ee7b7"/>
+    <circle cx="1296" cy="300" r="1.8" fill="#6ee7b7"/>
+    <circle cx="1378" cy="386" r="1.4" fill="#6ee7b7"/>
+    <circle cx="1168" cy="492" r="1.5" fill="#6ee7b7"/>
+  </g>
+  <defs>
+    <radialGradient id="baseGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1170 356) rotate(111) scale(820 640)">
+      <stop stop-color="#065f46"/>
+      <stop offset=".42" stop-color="#064e3b" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#022c22" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="waveA" x1="1110" y1="-80" x2="790" y2="1600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a7f3d0" stop-opacity=".1"/>
+      <stop offset=".45" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#6ee7b7" stop-opacity=".12"/>
+    </linearGradient>
+    <linearGradient id="waveB" x1="1280" y1="-40" x2="1040" y2="1740" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6ee7b7" stop-opacity=".08"/>
+      <stop offset=".5" stop-color="#10b981"/>
+      <stop offset="1" stop-color="#d1fae5" stop-opacity=".12"/>
+    </linearGradient>
+  </defs>
+</svg>
