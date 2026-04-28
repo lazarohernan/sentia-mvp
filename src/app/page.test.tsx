@@ -10,13 +10,20 @@ describe("Home", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: /escucha mvp/i,
+        name: /plataforma en construcción/i,
       }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: /ver dashboard/i })[0])
-      .toHaveAttribute("href", "/dashboard");
+    expect(screen.getByRole("link", { name: /^login$/i })).toHaveAttribute(
+      "href",
+      "/login",
+    );
     expect(
-      screen.getByRole("link", { name: /probar formulario qr/i }),
+      screen.getByRole("link", { name: /acceder/i }),
+    ).toHaveAttribute("href", "/login");
+    expect(
+      screen.getByRole("link", { name: /probar qr/i }),
     ).toHaveAttribute("href", "/feedback/demo-cafe");
+    expect(screen.queryByRole("link", { name: /^dashboard$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Módulos principales")).not.toBeInTheDocument();
   });
 });
