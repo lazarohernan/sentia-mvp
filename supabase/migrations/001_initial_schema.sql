@@ -18,6 +18,10 @@ create policy "profiles: own row update"
   on public.profiles for update
   using (id = auth.uid());
 
+create policy "profiles: own row insert"
+  on public.profiles for insert
+  with check (id = auth.uid());
+
 -- ============================================================
 -- 2. ORGANIZATIONS
 -- ============================================================
@@ -43,9 +47,9 @@ create table public.organization_members (
 
 alter table public.organization_members enable row level security;
 
-create policy "org_members: own rows select"
+create policy "org_members: same org select"
   on public.organization_members for select
-  using (user_id = auth.uid());
+  using (organization_id in (select public.user_organization_ids()));
 
 -- ============================================================
 -- 4. HELPER FUNCTION (used by RLS policies)
@@ -97,6 +101,13 @@ create policy "branches: owner/manager insert"
 create policy "branches: owner/manager update"
   on public.branches for update
   using (
+    organization_id in (
+      select organization_id from public.organization_members
+      where user_id = auth.uid()
+      and role in ('owner', 'manager')
+    )
+  )
+  with check (
     organization_id in (
       select organization_id from public.organization_members
       where user_id = auth.uid()
@@ -214,7 +225,6 @@ create policy "listening_events: member insert"
 -- Runs as SECURITY DEFINER to bypass RLS during onboarding.
 -- ============================================================
 create or replace function public.create_user_organization(
-  p_user_id     uuid,
   p_full_name   text,
   p_org_name    text,
   p_org_slug    text
@@ -224,14 +234,14 @@ declare
   v_org_id uuid;
 begin
   insert into public.profiles (id, full_name)
-  values (p_user_id, p_full_name);
+  values (auth.uid(), p_full_name);
 
   insert into public.organizations (name, slug)
   values (p_org_name, p_org_slug)
   returning id into v_org_id;
 
   insert into public.organization_members (user_id, organization_id, role)
-  values (p_user_id, v_org_id, 'owner');
+  values (auth.uid(), v_org_id, 'owner');
 
   return v_org_id;
 end;
