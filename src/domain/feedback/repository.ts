@@ -1,0 +1,51 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import type { Database } from "@/lib/supabase/database.types";
+import type { AiAnalysis } from "./schemas";
+
+type Client = SupabaseClient<Database>;
+
+type FeedbackInsert = Database["public"]["Tables"]["feedback_submissions"]["Insert"];
+
+export async function insertFeedbackSubmission(
+  client: Client,
+  payload: Omit<FeedbackInsert, "id" | "created_at">,
+): Promise<string> {
+  const { data, error } = await client
+    .from("feedback_submissions")
+    .insert(payload)
+    .select("id")
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? "Failed to insert feedback");
+  return data.id;
+}
+
+export async function insertAiAnalysis(
+  client: Client,
+  submissionId: string,
+  result: {
+    status: "completed" | "disabled" | "unavailable";
+    model: string;
+    analysis?: AiAnalysis;
+    confidence?: number;
+  },
+): Promise<void> {
+  const row = {
+    submission_id: submissionId,
+    status: result.status,
+    model_used: result.model,
+    sentiment: result.analysis?.sentiment ?? null,
+    polarity: result.analysis?.polarity ?? null,
+    urgency: result.analysis?.urgency ?? null,
+    category: result.analysis?.category ?? null,
+    summary: result.analysis?.summary ?? null,
+    recommended_action: result.analysis?.recommendedAction ?? null,
+    keywords: result.analysis?.keywords ?? [],
+    entities: result.analysis?.entities ?? [],
+    confidence: result.confidence ?? null,
+  };
+
+  const { error } = await client.from("ai_analyses").insert(row);
+  if (error) throw new Error(`Failed to insert AI analysis: ${error.message}`);
+}
