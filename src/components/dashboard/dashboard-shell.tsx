@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import type { Branch } from "@/domain/branches/schemas";
 import {
   dashboardMockAlerts,
   dashboardMockBranches,
@@ -43,7 +44,15 @@ function getDashboardViewFromHash(): DashboardNavView {
   return "resumen";
 }
 
-export function DashboardShell() {
+type DashboardShellProps = {
+  organizationName?: string;
+  branches?: Branch[];
+};
+
+export function DashboardShell({
+  organizationName,
+  branches = [],
+}: DashboardShellProps) {
   const [showDemoData, setShowDemoData] = useState(false);
   const [activeView, setActiveView] = useState<DashboardNavView>("resumen");
 

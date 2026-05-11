@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import { getBranchesByOrganization } from "@/domain/branches/repository";
+import { getOrganizationByUser } from "@/domain/organizations/repository";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,5 +22,15 @@ export default async function DashboardPage() {
     redirect("/login?redirectTo=/dashboard");
   }
 
-  return <DashboardShell />;
+  const organization = await getOrganizationByUser(supabase, user.id);
+  const branches = organization
+    ? await getBranchesByOrganization(supabase, organization.id)
+    : [];
+
+  return (
+    <DashboardShell
+      organizationName={organization?.name}
+      branches={branches}
+    />
+  );
 }
