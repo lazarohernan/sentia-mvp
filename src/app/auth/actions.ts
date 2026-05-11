@@ -7,6 +7,7 @@ import {
   signInSchema,
   signUpSchema,
 } from "@/domain/auth/schemas";
+import { createUserOrganization } from "@/domain/organizations/repository";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -56,7 +57,7 @@ export async function signUpAction(formData: FormData): Promise<void> {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data: authData, error: authError } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
@@ -67,8 +68,25 @@ export async function signUpAction(formData: FormData): Promise<void> {
     },
   });
 
-  if (error) {
+  if (authError || !authData.user) {
     redirect("/login?error=signup_failed");
+  }
+
+  const orgSlug = parsed.data.companyName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  try {
+    await createUserOrganization(supabase, {
+      fullName: parsed.data.fullName,
+      orgName: parsed.data.companyName,
+      orgSlug,
+    });
+  } catch {
+    redirect("/login?error=org_creation_failed");
   }
 
   redirect("/dashboard");
