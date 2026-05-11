@@ -1,0 +1,65 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import type { Database } from "@/lib/supabase/database.types";
+import type { Branch, CreateBranchInput } from "./schemas";
+
+type Client = SupabaseClient<Database>;
+
+function toSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export async function getBranchesByOrganization(
+  client: Client,
+  organizationId: string,
+): Promise<Branch[]> {
+  const { data, error } = await client
+    .from("branches")
+    .select("*")
+    .eq("organization_id", organizationId);
+
+  if (error || !data) return [];
+  return data as Branch[];
+}
+
+export async function getBranchBySlug(
+  client: Client,
+  organizationId: string,
+  slug: string,
+): Promise<Branch | null> {
+  const { data, error } = await client
+    .from("branches")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as Branch;
+}
+
+export async function createBranch(
+  client: Client,
+  organizationId: string,
+  input: CreateBranchInput,
+): Promise<Branch> {
+  const slug = toSlug(input.name);
+  const { data, error } = await client
+    .from("branches")
+    .insert({
+      organization_id: organizationId,
+      name: input.name,
+      slug,
+      address: input.address ?? null,
+    })
+    .select()
+    .single();
+
+  if (error || !data) throw new Error(`Failed to create branch: ${error?.message}`);
+  return data as Branch;
+}
