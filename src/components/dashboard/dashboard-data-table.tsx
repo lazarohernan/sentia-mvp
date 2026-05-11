@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
+import { Dropdown } from "@/components/ui/dropdown";
+
 export type DashboardDataTableColumn<Row> = {
   key: string;
   header: string;
@@ -109,22 +111,16 @@ export function DashboardDataTable<Row>({
 
         <div className="flex flex-wrap gap-2">
           {filters.map((filter) => (
-            <label key={filter.key} className="flex items-center gap-2">
-              <span className="sr-only">{filter.label}</span>
-              <select
-                value={selectedFilters[filter.key] ?? allOption}
-                onChange={(event) => updateFilter(filter.key, event.target.value)}
-                aria-label={filter.label}
-                className="h-10 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
-              >
-                <option value={allOption}>{allOption}</option>
-                {filter.options.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Dropdown
+              key={filter.key}
+              label={filter.label}
+              value={selectedFilters[filter.key] ?? allOption}
+              onChange={(value) => updateFilter(filter.key, value)}
+              options={[
+                { value: allOption, label: allOption },
+                ...filter.options.map((option) => ({ value: option, label: option })),
+              ]}
+            />
           ))}
         </div>
       </div>

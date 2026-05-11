@@ -52,10 +52,10 @@ describe("DashboardCommentsTable", () => {
   it("filters comments by business", () => {
     render(<DashboardCommentsTable comments={dashboardMockComments} />);
 
-    fireEvent.change(
+    fireEvent.click(
       screen.getByRole("combobox", { name: "Filtrar por negocio" }),
-      { target: { value: "Restaurante" } },
     );
+    fireEvent.click(screen.getByRole("option", { name: "Restaurante" }));
 
     expect(screen.getByText("1-2 de 2")).toBeInTheDocument();
     expect(screen.getByText("Visita familiar")).toBeInTheDocument();
