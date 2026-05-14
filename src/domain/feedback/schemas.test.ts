@@ -9,14 +9,14 @@ import {
 describe("feedbackSubmissionSchema", () => {
   it("accepts a simple public QR feedback submission", () => {
     const result = feedbackSubmissionSchema.parse({
-      branchSlug: "cafe-centro",
+      branchSlug: "  cafe-centro ",
       type: "complaint",
       npsScore: 4,
       csatScore: 2,
       emotionScore: 2,
-      freeText: "La comida llego fria y nadie resolvio el problema.",
+      freeText: "  La comida   llego fria y nadie resolvio el problema.  ",
       contact: {
-        name: "Ana Lopez",
+        name: " Ana   Lopez ",
         phone: "+50499999999",
       },
       consentAccepted: true,
@@ -24,7 +24,8 @@ describe("feedbackSubmissionSchema", () => {
 
     expect(result.branchSlug).toBe("cafe-centro");
     expect(result.type).toBe("complaint");
-    expect(result.freeText).toContain("comida");
+    expect(result.freeText).toBe("La comida llego fria y nadie resolvio el problema.");
+    expect(result.contact?.name).toBe("Ana Lopez");
   });
 
   it("rejects empty comments and missing consent", () => {

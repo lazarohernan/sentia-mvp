@@ -17,7 +17,7 @@ export function DashboardSection({
 }: DashboardSectionProps) {
   return (
     <section id={id} className="scroll-mt-28">
-      <div className="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div className="mb-3 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <h2 className="text-2xl font-semibold tracking-normal text-slate-950">
             {title}

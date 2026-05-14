@@ -70,7 +70,7 @@ export default async function FeedbackPage({ params }: FeedbackPageProps) {
           </p>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-950 text-white">
               <MessageSquareText size={20} aria-hidden="true" />

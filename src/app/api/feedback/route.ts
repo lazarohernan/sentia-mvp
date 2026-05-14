@@ -1,9 +1,28 @@
 import { insertAiAnalysis, insertFeedbackSubmission } from "@/domain/feedback/repository";
 import { analyzeFeedbackSentiment } from "@/domain/feedback/sentiment-analysis";
 import { feedbackSubmissionSchema } from "@/domain/feedback/schemas";
+import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export async function POST(request: Request) {
+  const clientIp = getClientIpFromHeaders(request.headers);
+  const rateLimit = consumeRateLimit({
+    namespace: "api:feedback:create",
+    key: clientIp,
+    limit: 25,
+    windowMs: 15 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return Response.json(
+      {
+        status: "error",
+        message: "Too many requests. Please try again later.",
+      },
+      { status: 429 },
+    );
+  }
+
   let payload: unknown;
 
   try {
@@ -35,12 +54,13 @@ export async function POST(request: Request) {
     try {
       const db = createServiceClient();
 
-      const { data: branch } = await db
+      const { data: branchData } = await db
         .from("branches")
         .select("id")
         .eq("slug", parsed.data.branchSlug)
         .eq("is_active", true)
         .maybeSingle();
+      const branch = branchData as { id: string } | null;
 
       if (branch) {
         const submissionId = await insertFeedbackSubmission(db, {

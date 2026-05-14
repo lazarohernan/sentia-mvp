@@ -13,12 +13,12 @@ export async function insertFeedbackSubmission(
 ): Promise<string> {
   const { data, error } = await client
     .from("feedback_submissions")
-    .insert(payload)
+    .insert(payload as never)
     .select("id")
     .single();
 
   if (error || !data) throw new Error(error?.message ?? "Failed to insert feedback");
-  return data.id;
+  return (data as { id: string }).id;
 }
 
 export async function insertAiAnalysis(
@@ -46,6 +46,6 @@ export async function insertAiAnalysis(
     confidence: result.confidence ?? null,
   };
 
-  const { error } = await client.from("ai_analyses").insert(row);
+  const { error } = await client.from("ai_analyses").insert(row as never);
   if (error) throw new Error(`Failed to insert AI analysis: ${error.message}`);
 }

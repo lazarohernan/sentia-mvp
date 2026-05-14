@@ -1,34 +1,44 @@
 import {
   Building2,
-  CalendarDays,
   Download,
   Filter,
   Plus,
   Store,
 } from "lucide-react";
 
+import type { DashboardDateRange } from "@/domain/dashboard/date-range";
+import type { DashboardSummaryData } from "@/domain/dashboard/schemas";
+import { DashboardDateFilter } from "./dashboard-date-filter";
 import { dashboardMockContext } from "./dashboard.mock-data";
 import { DashboardDemoDataToggle } from "./dashboard-demo-data-toggle";
 
 type DashboardExecutiveHeaderProps = {
   showDemoData: boolean;
   onToggleDemoData: () => void;
+  organizationName?: string;
+  branchCount?: number;
+  dashboardData?: DashboardSummaryData;
+  dateRange: DashboardDateRange;
 };
 
 export function DashboardExecutiveHeader({
   showDemoData,
   onToggleDemoData,
+  organizationName,
+  branchCount = 0,
+  dashboardData,
+  dateRange,
 }: DashboardExecutiveHeaderProps) {
   const context = showDemoData
     ? dashboardMockContext
     : {
-        company: "Configuracion pendiente",
-        scope: "Sin alcance",
-        period: "Sin periodo",
+        company: organizationName ?? "Configuracion pendiente",
+        scope: dashboardData?.scope ?? `${branchCount} sucursales`,
+        period: dashboardData?.period ?? "Últimos 7 días",
       };
 
   return (
-    <header className="mb-8">
+    <header className="mb-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-normal text-slate-950">
@@ -47,14 +57,13 @@ export function DashboardExecutiveHeader({
               <Store size={15} aria-hidden="true" />
               {context.scope}
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5">
-              <CalendarDays size={15} aria-hidden="true" />
-              {context.period}
-            </span>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <DashboardDateFilter
+            dateRange={dashboardData?.dateRange ?? dateRange}
+          />
           <DashboardDemoDataToggle
             pressed={showDemoData}
             onPressedChange={onToggleDemoData}

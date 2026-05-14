@@ -1,153 +1,207 @@
 import {
-  ArrowRight,
+  Building2,
   KeyRound,
   Mail,
-  MessageSquareText,
-  ShieldCheck,
+  UserRound,
 } from "lucide-react";
 import Link from "next/link";
 
-import { signInAction } from "@/app/auth/actions";
+import { signInAction, signUpAction } from "@/app/auth/actions";
+import { REGISTRATION_ENABLED } from "@/domain/auth/config";
 
 type LoginViewProps = {
+  mode?: "login" | "registro";
   redirectTo?: string;
 };
 
-export function LoginView({ redirectTo }: LoginViewProps) {
+export function LoginView({ mode = "login", redirectTo }: LoginViewProps) {
+  const isRegisterMode = REGISTRATION_ENABLED && mode === "registro";
+
   return (
-    <main className="min-h-screen bg-[#f5f6f1] px-5 py-6 text-slate-950 sm:px-8">
-      <section className="mx-auto grid min-h-[calc(100vh-3rem)] w-full max-w-6xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm lg:grid-cols-2">
-        <aside className="relative flex min-h-[560px] overflow-hidden bg-emerald-950 bg-[url('/images/auth-network-bg.svg')] bg-cover bg-center p-6 text-white sm:p-8 lg:min-h-0">
-          <div className="absolute inset-0 bg-emerald-950/35" />
-
-          <div className="relative z-10 flex w-full flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="flex size-11 items-center justify-center rounded-lg bg-white/10">
-                  <MessageSquareText size={23} aria-hidden="true" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-100">
-                    Escucha
-                  </p>
-                  <p className="text-sm text-emerald-100/80">Panel de acceso</p>
-                </div>
-              </div>
-
-              <h1 className="mt-12 max-w-xl text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
-                Escucha mejor. Actua a tiempo.
-              </h1>
-              <p className="mt-5 max-w-md text-lg leading-8 text-emerald-50/85">
-                Gestiona comentarios, alertas y oportunidades de mejora desde un
-                solo lugar.
-              </p>
-            </div>
-
-            <div className="mt-10 grid gap-3">
-              {[
-                ["Comentarios claros", "La voz del cliente ordenada."],
-                ["Alertas oportunas", "Lo urgente llega rapido."],
-              ].map(([title, copy]) => (
-                <div
-                  key={title}
-                  className="rounded-md border border-white/10 bg-white/[0.06] p-4"
-                >
-                  <p className="text-sm font-semibold text-white">{title}</p>
-                  <p className="mt-1 text-sm leading-6 text-emerald-50/75">
-                    {copy}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
-
+    <main className="min-h-screen bg-[linear-gradient(180deg,#06100d_0%,#091612_100%)] p-2 text-white sm:p-3">
+      <section className="grid min-h-[calc(100vh-1rem)] overflow-hidden rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,17,14,0.96)_0%,rgba(8,19,16,0.94)_100%)] shadow-[0_24px_90px_rgba(0,0,0,0.45)] lg:grid-cols-[1fr_1.02fr]">
         <form
-          action={signInAction}
-          className="flex min-h-[560px] flex-col justify-center bg-white p-6 sm:p-10 lg:min-h-0"
+          action={isRegisterMode ? signUpAction : signInAction}
+          className="flex min-h-[660px] flex-col bg-[radial-gradient(circle_at_top_left,rgba(86,178,152,0.08),transparent_28%),linear-gradient(180deg,#07120e_0%,#081410_100%)] px-6 py-7 sm:px-10 lg:min-h-0 lg:px-16"
         >
-          <div className="mx-auto w-full max-w-md">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-3xl font-semibold">Bienvenido</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Ingresa para continuar.
+          <div className="mx-auto flex h-full w-full max-w-xl flex-col">
+            <h1 className="sr-only">Escucha mejor. Actua a tiempo.</h1>
+
+            <div className="my-auto py-10">
+              <div className="text-center">
+                <h2 className="text-3xl font-semibold tracking-normal text-white sm:text-4xl">
+                  {isRegisterMode ? "Crea tu cuenta" : "Bienvenido de nuevo"}
+                </h2>
+                <p className="mx-auto mt-4 max-w-sm text-base leading-7 text-white/55">
+                  {isRegisterMode
+                    ? "Configura tu empresa y empieza a organizar la experiencia de tus clientes."
+                    : "Ingresa para revisar comentarios, alertas y oportunidades de mejora."}
                 </p>
               </div>
-              <div className="hidden size-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700 sm:flex">
-                <ShieldCheck size={20} aria-hidden="true" />
+
+              {REGISTRATION_ENABLED ? (
+                <div className="mt-7 grid h-12 grid-cols-2 rounded-lg border border-white/10 bg-white/15 p-1">
+                  <Link
+                    href="/login"
+                    className={`inline-flex items-center justify-center rounded-md text-sm font-semibold transition ${
+                      isRegisterMode
+                        ? "text-white/55 hover:text-white"
+                        : "bg-[#07100d] text-white shadow-sm"
+                    }`}
+                  >
+                    Iniciar sesion
+                  </Link>
+                  <Link
+                    href="/login?mode=registro"
+                    className={`inline-flex items-center justify-center rounded-md text-sm font-semibold transition ${
+                      isRegisterMode
+                        ? "bg-[#07100d] text-white shadow-sm"
+                        : "text-white/55 hover:text-white"
+                    }`}
+                  >
+                    Registrarse
+                  </Link>
+                </div>
+              ) : null}
+
+              {!isRegisterMode ? (
+                <input type="hidden" name="redirectTo" value={redirectTo} />
+              ) : null}
+
+              <div className="mt-8 space-y-5">
+                {isRegisterMode ? (
+                  <>
+                    <label className="block">
+                      <span className="text-sm font-semibold text-white/75">
+                        Nombre completo
+                      </span>
+                      <div className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-white/8 bg-[#34413b] px-4 text-white transition focus-within:border-emerald-300/70 focus-within:ring-2 focus-within:ring-emerald-300/20">
+                        <UserRound
+                          size={21}
+                          className="shrink-0 text-white/55"
+                          aria-hidden="true"
+                        />
+                        <input
+                          className="h-full w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
+                          name="fullName"
+                          type="text"
+                          autoComplete="name"
+                          placeholder="Tu nombre"
+                          required
+                        />
+                      </div>
+                    </label>
+
+                    <label className="block">
+                      <span className="text-sm font-semibold text-white/75">
+                        Empresa
+                      </span>
+                      <div className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-white/8 bg-[#34413b] px-4 text-white transition focus-within:border-emerald-300/70 focus-within:ring-2 focus-within:ring-emerald-300/20">
+                        <Building2
+                          size={21}
+                          className="shrink-0 text-white/55"
+                          aria-hidden="true"
+                        />
+                        <input
+                          className="h-full w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
+                          name="companyName"
+                          type="text"
+                          placeholder="Nombre de empresa"
+                          required
+                        />
+                      </div>
+                    </label>
+                  </>
+                ) : null}
+
+                <label className="block">
+                  <span className="text-sm font-semibold text-white/75">
+                    Correo electronico
+                  </span>
+                  <div className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-white/8 bg-[#34413b] px-4 text-white transition focus-within:border-emerald-300/70 focus-within:ring-2 focus-within:ring-emerald-300/20">
+                    <Mail
+                      size={21}
+                      className="shrink-0 text-white/55"
+                      aria-hidden="true"
+                    />
+                    <input
+                      className="h-full w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="tu@empresa.com"
+                      required
+                    />
+                  </div>
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-semibold text-white/75">
+                    Contrasena
+                  </span>
+                  <div className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-white/8 bg-[#34413b] px-4 text-white transition focus-within:border-emerald-300/70 focus-within:ring-2 focus-within:ring-emerald-300/20">
+                    <KeyRound
+                      size={21}
+                      className="shrink-0 text-white/55"
+                      aria-hidden="true"
+                    />
+                    <input
+                      className="h-full w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
+                      name="password"
+                      type="password"
+                      autoComplete={
+                        isRegisterMode ? "new-password" : "current-password"
+                      }
+                      placeholder={
+                        isRegisterMode
+                          ? "Minimo 8 caracteres"
+                          : "Tu contrasena"
+                      }
+                      minLength={8}
+                      required
+                    />
+                  </div>
+                </label>
               </div>
-            </div>
 
-            <input type="hidden" name="redirectTo" value={redirectTo} />
-
-            <div className="mt-6 space-y-4">
-              <label className="block">
-                <span className="text-sm font-medium text-slate-700">
-                  Correo
-                </span>
-                <div className="mt-1 flex h-11 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 transition focus-within:border-emerald-700 focus-within:ring-2 focus-within:ring-emerald-700/15">
-                  <Mail size={16} className="text-slate-400" aria-hidden="true" />
-                  <input
-                    className="h-full w-full bg-transparent text-sm outline-none"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="tu@empresa.com"
-                    required
-                  />
+              {!isRegisterMode ? (
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                  <label className="inline-flex items-center gap-3 text-sm font-semibold text-white/85">
+                    <input
+                      type="checkbox"
+                      name="remember"
+                      className="size-5 rounded border-white/10 bg-[#2b3732] accent-emerald-400"
+                    />
+                    Recordarme
+                  </label>
+                  {REGISTRATION_ENABLED ? (
+                    <Link
+                      href="/login?mode=registro"
+                      className="text-sm font-semibold text-emerald-300 underline-offset-4 transition hover:text-emerald-200 hover:underline"
+                    >
+                      Crear cuenta
+                    </Link>
+                  ) : null}
                 </div>
-              </label>
+              ) : null}
 
-              <label className="block">
-                <span className="text-sm font-medium text-slate-700">
-                  Contrasena
-                </span>
-                <div className="mt-1 flex h-11 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 transition focus-within:border-emerald-700 focus-within:ring-2 focus-within:ring-emerald-700/15">
-                  <KeyRound
-                    size={16}
-                    className="text-slate-400"
-                    aria-hidden="true"
-                  />
-                  <input
-                    className="h-full w-full bg-transparent text-sm outline-none"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="Tu contrasena"
-                    minLength={8}
-                    required
-                  />
-                </div>
-              </label>
-            </div>
-
-            <button
-              className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
-              type="submit"
-            >
-              Iniciar sesion
-            </button>
-
-            <Link
-              href="/dashboard"
-              className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
-            >
-              Continuar al dashboard
-            </Link>
-
-            <div className="mt-5 flex items-center justify-between gap-4 border-t border-slate-100 pt-5">
-              <p className="text-sm text-slate-600">Aun no tienes cuenta?</p>
-              <Link
-                href="/registro"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-800 transition hover:text-emerald-700"
+              <button
+                className="mt-7 inline-flex h-14 w-full items-center justify-center rounded-lg bg-[#56b298] px-4 text-base font-bold text-white transition hover:bg-[#62c2a7] focus:outline-none focus:ring-2 focus:ring-emerald-200/50"
+                type="submit"
               >
-                Crear cuenta
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
+                {isRegisterMode ? "Crear cuenta" : "Iniciar sesion"}
+              </button>
+
             </div>
           </div>
         </form>
+
+        <aside className="hidden min-h-[660px] bg-[#07100d] p-[32px_32px_32px_0] text-white lg:block">
+          <div className="relative h-full overflow-hidden rounded-[1.7rem] bg-[#0a1b16]">
+            <div className="absolute inset-0 bg-[url('/images/auth-tech-bg.png')] bg-cover bg-center" />
+            <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(3,14,11,0.88)_0%,rgba(6,22,18,0.34)_24%,rgba(8,28,23,0.18)_44%,rgba(10,38,34,0.36)_62%,rgba(12,53,52,0.88)_100%)]" />
+          </div>
+        </aside>
       </section>
     </main>
   );

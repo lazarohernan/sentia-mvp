@@ -91,7 +91,7 @@ export function DashboardDataTable<Row>({
   }
 
   return (
-    <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
       <div className="flex flex-col gap-3 border-b border-slate-100 p-4 lg:flex-row lg:items-center lg:justify-between">
         <label className="relative block w-full lg:max-w-sm">
           <span className="sr-only">{searchPlaceholder}</span>

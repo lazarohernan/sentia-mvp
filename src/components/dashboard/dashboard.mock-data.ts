@@ -1,3 +1,5 @@
+import type { DashboardNotification } from "@/domain/dashboard/schemas";
+
 export const dashboardMockContext = {
   company: "Operacion retail",
   scope: "24 sucursales",
@@ -147,6 +149,36 @@ export const dashboardMockAlerts = [
     branch: "Centro",
     priority: "Media",
     detail: "Un cliente solicito contacto por una incidencia abierta.",
+  },
+];
+
+export const dashboardMockNotifications: DashboardNotification[] = [
+  {
+    id: "notification-001",
+    title: "Mall Norte requiere atencion",
+    detail: "Subieron los comentarios por espera en la ultima hora.",
+    time: "Hace 8 min",
+    href: "/dashboard#alertas",
+    unread: true,
+    tone: "danger",
+  },
+  {
+    id: "notification-002",
+    title: "Nuevo comentario con riesgo",
+    detail: "Centro recibio una observacion con CSAT 2/5.",
+    time: "Hace 21 min",
+    href: "/dashboard#comentarios",
+    unread: true,
+    tone: "warning",
+  },
+  {
+    id: "notification-003",
+    title: "Boulevard estabilizo servicio",
+    detail: "La sucursal bajo volumen de incidencias este turno.",
+    time: "Hace 1 h",
+    href: "/dashboard#resumen",
+    unread: false,
+    tone: "success",
   },
 ];
 

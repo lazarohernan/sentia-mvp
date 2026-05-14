@@ -88,6 +88,62 @@ export interface Database {
           is_active?: boolean;
         };
       };
+      notifications: {
+        Row: {
+          id: string;
+          organization_id: string;
+          branch_id: string | null;
+          audience_type: "organization" | "role" | "user";
+          audience_role: "owner" | "manager" | "collaborator" | null;
+          recipient_user_id: string | null;
+          category: "summary" | "alert" | "digest" | "task";
+          tone: "success" | "warning" | "danger";
+          title: string;
+          detail: string;
+          href: string | null;
+          metadata: Json;
+          source_table: string | null;
+          source_id: string | null;
+          is_read: boolean;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          branch_id?: string | null;
+          audience_type: "organization" | "role" | "user";
+          audience_role?: "owner" | "manager" | "collaborator" | null;
+          recipient_user_id?: string | null;
+          category: "summary" | "alert" | "digest" | "task";
+          tone: "success" | "warning" | "danger";
+          title: string;
+          detail: string;
+          href?: string | null;
+          metadata?: Json;
+          source_table?: string | null;
+          source_id?: string | null;
+          is_read?: boolean;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          branch_id?: string | null;
+          audience_type?: "organization" | "role" | "user";
+          audience_role?: "owner" | "manager" | "collaborator" | null;
+          recipient_user_id?: string | null;
+          category?: "summary" | "alert" | "digest" | "task";
+          tone?: "success" | "warning" | "danger";
+          title?: string;
+          detail?: string;
+          href?: string | null;
+          metadata?: Json;
+          source_table?: string | null;
+          source_id?: string | null;
+          is_read?: boolean;
+          read_at?: string | null;
+        };
+      };
       feedback_submissions: {
         Row: {
           id: string;
@@ -190,5 +246,8 @@ export interface Database {
         Returns: string;
       };
     };
+    Views: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

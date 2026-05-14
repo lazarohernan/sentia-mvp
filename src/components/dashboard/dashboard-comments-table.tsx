@@ -181,7 +181,7 @@ function CsatBadge({ score }: { score: number }) {
             id={popoverId}
             role="dialog"
             aria-label={`Detalle CSAT ${score} de 5`}
-            className="fixed left-1/2 top-1/2 z-50 w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-[1.25rem] border border-slate-200 bg-white p-4 text-left shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+            className="fixed left-1/2 top-1/2 z-50 w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-[1.25rem] border border-slate-200 bg-white p-4 text-left"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
@@ -317,7 +317,7 @@ function CommentDetailView({
     currentStatus === "Nuevo" ? "En revisión" : currentStatus;
 
   return (
-    <article className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+    <article className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
       <div className="border-b border-slate-100 bg-[#f7f8f4] p-5">
         <button
           type="button"

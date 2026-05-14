@@ -3,15 +3,17 @@
 import {
   Copy,
   ExternalLink,
-  Plus,
   Printer,
   QrCode,
   Search,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 
+import type { Branch } from "@/domain/branches/schemas";
+import type { DashboardSummaryData } from "@/domain/dashboard/schemas";
 import { dashboardMockQrRecords } from "./dashboard.mock-data";
 import { DashboardDemoDataToggle } from "./dashboard-demo-data-toggle";
 import { DashboardEmptyState } from "./dashboard-empty-state";
@@ -21,6 +23,9 @@ import { DashboardSection } from "./dashboard-section";
 type DashboardQrViewProps = {
   showDemoData: boolean;
   onToggleDemoData: () => void;
+  organizationName?: string;
+  branches?: Branch[];
+  dashboardData?: DashboardSummaryData;
 };
 
 type QrRecord = (typeof dashboardMockQrRecords)[number];
@@ -50,9 +55,21 @@ function buildQrRecord(business: string, branch: string): QrRecord {
   };
 }
 
+function getBranchCommentCount(
+  branchName: string,
+  dashboardData?: DashboardSummaryData,
+) {
+  const health = dashboardData?.branchHealth.find((item) => item.branch === branchName);
+
+  return health?.comments ?? "Sin comentarios";
+}
+
 export function DashboardQrView({
   showDemoData,
   onToggleDemoData,
+  organizationName,
+  branches = [],
+  dashboardData,
 }: DashboardQrViewProps) {
   const [business, setBusiness] = useState("");
   const [branch, setBranch] = useState("");
@@ -60,12 +77,29 @@ export function DashboardQrView({
   const [createdRecords, setCreatedRecords] = useState<QrRecord[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const liveRecords = useMemo(
+    () =>
+      branches.map((item) => ({
+        id: item.id,
+        business: organizationName ?? "Negocio",
+        branch: item.name,
+        slug: item.slug,
+        status: item.is_active ? "Activo" : "Inactivo",
+        createdAt: item.created_at.slice(0, 10),
+        scans: 0,
+        comments: Number.parseInt(
+          getBranchCommentCount(item.name, dashboardData).replace(/\D+/g, ""),
+          10,
+        ) || 0,
+      })),
+    [branches, dashboardData, organizationName],
+  );
   const records = useMemo(
     () => [
-      ...(showDemoData ? dashboardMockQrRecords : []),
-      ...createdRecords,
+      ...(showDemoData ? dashboardMockQrRecords : liveRecords),
+      ...(showDemoData ? createdRecords : []),
     ],
-    [createdRecords, showDemoData],
+    [createdRecords, liveRecords, showDemoData],
   );
   const filteredRecords = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -114,20 +148,29 @@ export function DashboardQrView({
             pressed={showDemoData}
             onPressedChange={onToggleDemoData}
           />
-          <button
-            type="button"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900"
-          >
-            <Plus size={16} aria-hidden="true" />
-            Nuevo QR
-          </button>
+          {showDemoData ? (
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900"
+            >
+              <QrCode size={16} aria-hidden="true" />
+              Nuevo QR
+            </button>
+          ) : (
+            <Link
+              href="/dashboard#sucursales"
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900"
+            >
+              Gestionar sucursales
+            </Link>
+          )}
         </div>
       }
     >
       <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
         <div className="space-y-5">
-          <section className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white shadow-sm">
+          <section className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
             <div className="flex flex-col gap-3 border-b border-slate-100 p-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h3 className="text-base font-semibold text-slate-950">
@@ -202,7 +245,9 @@ export function DashboardQrView({
                             {record.createdAt}
                           </td>
                           <td className="px-5 py-4 text-sm text-slate-600">
-                            {record.scans} escaneos - {record.comments} comentarios
+                            {showDemoData
+                              ? `${record.scans} escaneos - ${record.comments} comentarios`
+                              : `${record.comments} comentarios`}
                           </td>
                         </tr>
                       );
@@ -222,7 +267,7 @@ export function DashboardQrView({
           </section>
         </div>
 
-        <aside className="rounded-[1.25rem] border border-slate-200 bg-[#eef3ec] p-5 shadow-sm">
+        <aside className="rounded-[1.25rem] border border-slate-200 bg-[#eef3ec] p-5">
           {selectedRecord ? (
             <div className="flex h-full flex-col">
               <div className="flex flex-1 flex-col items-center justify-center text-center">
@@ -233,6 +278,11 @@ export function DashboardQrView({
                 <p className="mt-1 text-sm font-medium text-slate-600">
                   {selectedRecord.branch}
                 </p>
+                {!showDemoData ? (
+                  <p className="mt-2 text-sm text-slate-500">
+                    {selectedRecord.comments} comentarios vinculados
+                  </p>
+                ) : null}
                 <div className="mt-4 flex w-full max-w-sm items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600">
                   <span className="min-w-0 flex-1 truncate">{feedbackUrl}</span>
                   <Copy size={16} aria-hidden="true" />
@@ -276,7 +326,7 @@ export function DashboardQrView({
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-qr-title"
-            className="w-full max-w-xl rounded-[1.5rem] border border-white/80 bg-white p-5 shadow-2xl shadow-slate-950/20"
+            className="w-full max-w-xl rounded-[1.5rem] border border-white/80 bg-white p-5"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">

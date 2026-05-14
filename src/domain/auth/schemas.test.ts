@@ -9,7 +9,7 @@ import {
 describe("signInSchema", () => {
   it("accepts email and password credentials", () => {
     const credentials = signInSchema.parse({
-      email: "gerente@empresa.com",
+      email: "  Gerente@Empresa.com  ",
       password: "super-secreto",
     });
 
@@ -29,13 +29,14 @@ describe("signInSchema", () => {
 describe("signUpSchema", () => {
   it("requires a person and company name for onboarding", () => {
     const account = signUpSchema.parse({
-      fullName: "Dennis Romero",
-      companyName: "Cafe Piloto",
+      fullName: "  Dennis   Romero ",
+      companyName: " Cafe   Piloto ",
       email: "dennis@empresa.com",
       password: "super-secreto",
     });
 
     expect(account.companyName).toBe("Cafe Piloto");
+    expect(account.fullName).toBe("Dennis Romero");
   });
 });
 

@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { clearRateLimitStore } from "@/lib/security/rate-limit";
 import { POST } from "./route";
 
 describe("POST /api/feedback", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
+    clearRateLimitStore();
   });
 
   it("rejects invalid feedback payloads", async () => {
@@ -89,5 +91,30 @@ describe("POST /api/feedback", () => {
         },
       },
     });
+  });
+
+  it("rate limits repeated feedback submissions from the same IP", async () => {
+    let lastResponse: Response | null = null;
+
+    for (let attempt = 0; attempt < 26; attempt += 1) {
+      lastResponse = await POST(
+        new Request("http://localhost/api/feedback", {
+          method: "POST",
+          headers: {
+            "x-forwarded-for": "203.0.113.10",
+          },
+          body: JSON.stringify({
+            branchSlug: "demo-cafe",
+            type: "suggestion",
+            csatScore: 4,
+            emotionScore: 4,
+            freeText: "Seria bueno tener una fila rapida para pedidos pequenos.",
+            consentAccepted: true,
+          }),
+        }),
+      );
+    }
+
+    expect(lastResponse?.status).toBe(429);
   });
 });

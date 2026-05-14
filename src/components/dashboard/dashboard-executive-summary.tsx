@@ -55,7 +55,7 @@ export function DashboardExecutiveSummary({
   return (
     <section
       aria-label="Insights IA"
-      className="overflow-hidden rounded-[1.5rem] border border-emerald-100 bg-white shadow-sm"
+      className="overflow-hidden rounded-[1.5rem] border border-emerald-100 bg-white"
     >
       <div className="grid gap-0 xl:grid-cols-[1.08fr_0.92fr]">
         <article className="border-b border-slate-100 p-5 xl:border-b-0 xl:border-r">

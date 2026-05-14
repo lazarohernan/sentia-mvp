@@ -28,11 +28,15 @@ export async function createUserOrganization(
     orgSlug: string;
   },
 ): Promise<string> {
-  const { data, error } = await client.rpc("create_user_organization", {
+  const rpcArgs: Database["public"]["Functions"]["create_user_organization"]["Args"] = {
     p_full_name: params.fullName,
     p_org_name: params.orgName,
     p_org_slug: params.orgSlug,
-  });
+  };
+  const { data, error } = await client.rpc(
+    "create_user_organization",
+    rpcArgs as never,
+  );
 
   if (error) throw new Error(`Failed to create organization: ${error.message}`);
 

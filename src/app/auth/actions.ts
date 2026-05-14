@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import {
@@ -7,6 +8,12 @@ import {
   signInSchema,
   signUpSchema,
 } from "@/domain/auth/schemas";
+import { REGISTRATION_ENABLED } from "@/domain/auth/config";
+import { sanitizeEmailInput } from "@/lib/security/input";
+import {
+  consumeRateLimit,
+  getClientIpFromHeaders,
+} from "@/lib/security/rate-limit";
 import { createUserOrganization } from "@/domain/organizations/repository";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -17,6 +24,22 @@ export type AuthActionState = {
 };
 
 export async function signInAction(formData: FormData): Promise<void> {
+  const headerStore = await headers();
+  const clientIp = getClientIpFromHeaders(headerStore);
+  const emailValue = formData.get("email");
+  const email =
+    typeof emailValue === "string" ? sanitizeEmailInput(emailValue) : "unknown";
+  const rateLimit = consumeRateLimit({
+    namespace: "auth:sign-in",
+    key: `${clientIp}:${email}`,
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    redirect("/login?error=rate_limited");
+  }
+
   const parsed = signInSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -41,6 +64,26 @@ export async function signInAction(formData: FormData): Promise<void> {
 }
 
 export async function signUpAction(formData: FormData): Promise<void> {
+  if (!REGISTRATION_ENABLED) {
+    redirect("/login?error=registration_disabled");
+  }
+
+  const headerStore = await headers();
+  const clientIp = getClientIpFromHeaders(headerStore);
+  const emailValue = formData.get("email");
+  const email =
+    typeof emailValue === "string" ? sanitizeEmailInput(emailValue) : "unknown";
+  const rateLimit = consumeRateLimit({
+    namespace: "auth:sign-up",
+    key: `${clientIp}:${email}`,
+    limit: 3,
+    windowMs: 30 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    redirect("/login?error=rate_limited");
+  }
+
   const parsed = signUpSchema.safeParse({
     fullName: formData.get("fullName"),
     companyName: formData.get("companyName"),
