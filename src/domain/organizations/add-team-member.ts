@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { buildAuthCallbackUrl, buildInviteCallbackUrl } from "@/domain/auth/redirects";
 import type { Database } from "@/lib/supabase/database.types";
 import type { CreateTeamMemberInput } from "./member-schemas";
+import { createInviteActivationLink } from "./invite-link";
 import type { MemberRole } from "./schemas";
 import { type TeamMember, roleLabels } from "./team";
 
@@ -56,33 +56,14 @@ async function resolveAuthUserId(
     return { userId: existingUserId, inviteLink: null };
   }
 
-  const { data, error } = await client.auth.admin.generateLink({
-    type: "invite",
+  const { userId, inviteLink } = await createInviteActivationLink(client, {
     email: params.email,
-    options: {
-      redirectTo: buildAuthCallbackUrl(params.siteUrl, "/auth/activar-cuenta"),
-      data: { full_name: params.fullName },
-    },
+    fullName: params.fullName,
+    siteUrl: params.siteUrl,
   });
 
-  if (error || !data.user) {
-    throw new Error(error?.message ?? "No se pudo generar la invitacion.");
-  }
-
-  const tokenHash = data.properties?.hashed_token;
-
-  if (!tokenHash) {
-    throw new Error("No se pudo generar el enlace de activacion.");
-  }
-
-  const inviteLink = buildInviteCallbackUrl(
-    params.siteUrl,
-    tokenHash,
-    "/auth/activar-cuenta",
-  );
-
   return {
-    userId: data.user.id,
+    userId,
     inviteLink,
   };
 }
@@ -199,9 +180,11 @@ export async function addTeamMember(
       branchId: row.branch_id,
       branchName: row.branches?.name ?? null,
       fullName: row.profiles?.full_name ?? params.input.fullName,
+      email: params.input.email,
       role: row.role,
       roleLabel: roleLabels[row.role],
       joinedAt: row.created_at,
+      accountStatus: inviteLink ? "pending_activation" : "active",
     },
     inviteLink,
   };

@@ -716,7 +716,17 @@ export function DashboardShell({
                   description="Personas que participan en atención y seguimiento."
                   action={teamAction}
                 >
-                  <DashboardTeamPanel teamMembers={teamMembers} />
+                  <DashboardTeamPanel
+                    teamMembers={teamMembers}
+                    canManageTeam={canManageTeam}
+                    onMemberUpdated={(member) => {
+                      setTeamMembers((current) =>
+                        current.map((item) =>
+                          item.userId === member.userId ? member : item,
+                        ),
+                      );
+                    }}
+                  />
                 </DashboardSection>
               ) : null}
             </section>

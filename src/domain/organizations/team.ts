@@ -1,18 +1,23 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
+import { getAccountStatusFromAuthUser } from "./resend-team-member-invite";
 import type { MemberRole } from "./schemas";
 
 type Client = SupabaseClient<Database>;
+
+export type TeamMemberAccountStatus = "active" | "pending_activation";
 
 export type TeamMember = {
   userId: string;
   branchId: string | null;
   branchName: string | null;
   fullName: string;
+  email: string | null;
   role: MemberRole;
   roleLabel: string;
   joinedAt: string;
+  accountStatus: TeamMemberAccountStatus;
 };
 
 const roleLabels: Record<MemberRole, string> = {
@@ -36,6 +41,20 @@ type TeamMemberRow = {
   } | null;
 };
 
+function mapTeamMemberRow(member: TeamMemberRow): TeamMember {
+  return {
+    userId: member.user_id,
+    branchId: member.branch_id,
+    branchName: member.branches?.name ?? null,
+    fullName: member.profiles?.full_name ?? "Usuario",
+    email: null,
+    role: member.role,
+    roleLabel: roleLabels[member.role],
+    joinedAt: member.created_at,
+    accountStatus: "active",
+  };
+}
+
 export async function getTeamMembersByOrganization(
   client: Client,
   organizationId: string,
@@ -49,13 +68,30 @@ export async function getTeamMembersByOrganization(
 
   if (error || !data) return [];
 
-  return (data as TeamMemberRow[]).map((member) => ({
-    userId: member.user_id,
-    branchId: member.branch_id,
-    branchName: member.branches?.name ?? null,
-    fullName: member.profiles?.full_name ?? "Usuario",
-    role: member.role,
-    roleLabel: roleLabels[member.role],
-    joinedAt: member.created_at,
-  }));
+  return (data as TeamMemberRow[]).map(mapTeamMemberRow);
+}
+
+export async function getTeamMembersWithAccountStatus(
+  client: Client,
+  organizationId: string,
+): Promise<TeamMember[]> {
+  const members = await getTeamMembersByOrganization(client, organizationId);
+
+  const enriched = await Promise.all(
+    members.map(async (member) => {
+      const { data, error } = await client.auth.admin.getUserById(member.userId);
+
+      if (error || !data.user) {
+        return member;
+      }
+
+      return {
+        ...member,
+        email: data.user.email ?? null,
+        accountStatus: getAccountStatusFromAuthUser(data.user),
+      };
+    }),
+  );
+
+  return enriched;
 }

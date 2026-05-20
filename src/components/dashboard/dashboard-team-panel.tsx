@@ -5,8 +5,20 @@ import { DashboardTeamTable } from "./dashboard-team-table";
 
 type DashboardTeamPanelProps = {
   teamMembers: TeamMember[];
+  canManageTeam?: boolean;
+  onMemberUpdated?: (member: TeamMember) => void;
 };
 
-export function DashboardTeamPanel({ teamMembers }: DashboardTeamPanelProps) {
-  return <DashboardTeamTable teamMembers={teamMembers} />;
+export function DashboardTeamPanel({
+  teamMembers,
+  canManageTeam = false,
+  onMemberUpdated,
+}: DashboardTeamPanelProps) {
+  return (
+    <DashboardTeamTable
+      teamMembers={teamMembers}
+      canManageTeam={canManageTeam}
+      onMemberUpdated={onMemberUpdated}
+    />
+  );
 }

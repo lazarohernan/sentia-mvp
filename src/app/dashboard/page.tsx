@@ -9,9 +9,13 @@ import {
   getOrganizationByUser,
   getOrganizationMembershipByUser,
 } from "@/domain/organizations/repository";
-import { getTeamMembersByOrganization } from "@/domain/organizations/team";
-import { hasSupabasePublicEnv } from "@/lib/supabase/config";
+import {
+  getTeamMembersByOrganization,
+  getTeamMembersWithAccountStatus,
+} from "@/domain/organizations/team";
+import { hasSupabasePublicEnv, hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +57,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ? branches.filter((branch) => branch.id === selectedBranchId)
     : branches;
   const teamMembers = organization
-    ? await getTeamMembersByOrganization(supabase, organization.id)
+    ? hasSupabaseServiceEnv()
+      ? await getTeamMembersWithAccountStatus(createServiceClient(), organization.id)
+      : await getTeamMembersByOrganization(supabase, organization.id)
     : [];
   const listeningEvents = organization
     ? await getListeningEventsByOrganization(supabase, organization.id)
