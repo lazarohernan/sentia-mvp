@@ -63,6 +63,7 @@ describe("DashboardShell", () => {
   it("opens the notifications panel with mocked items", () => {
     render(<DashboardShell />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Vista con datos" }));
     fireEvent.click(screen.getByRole("button", { name: "Notificaciones" }));
 
     expect(

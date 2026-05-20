@@ -43,6 +43,21 @@ export async function getBranchBySlug(
   return data as Branch;
 }
 
+export async function getActiveBranchBySlug(
+  client: Client,
+  slug: string,
+): Promise<Branch | null> {
+  const { data, error } = await client
+    .from("branches")
+    .select("*")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as Branch;
+}
+
 export async function createBranch(
   client: Client,
   organizationId: string,

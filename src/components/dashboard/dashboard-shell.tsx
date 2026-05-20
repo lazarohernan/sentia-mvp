@@ -18,9 +18,11 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import type { Branch } from "@/domain/branches/schemas";
+import { buildDashboardAlertItems } from "@/domain/dashboard/alerts";
 import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
 import type { DashboardSummaryData } from "@/domain/dashboard/schemas";
+import type { TeamMember } from "@/domain/organizations/team";
 import {
   dashboardMockAlerts,
   dashboardMockBranches,
@@ -60,6 +62,7 @@ function getDashboardViewFromHash(): DashboardNavView {
 type DashboardShellProps = {
   organizationName?: string;
   branches?: Branch[];
+  teamMembers?: TeamMember[];
   dashboardData?: DashboardSummaryData;
   dateRange?: DashboardDateRange;
 };
@@ -432,6 +435,7 @@ function CreateBranchDrawer({
 export function DashboardShell({
   organizationName,
   branches,
+  teamMembers = [],
   dashboardData,
   dateRange = getDashboardDateRange({}),
 }: DashboardShellProps) {
@@ -525,12 +529,21 @@ export function DashboardShell({
     </div>
   );
 
+  const liveAlerts =
+    dashboardData === undefined
+      ? []
+      : buildDashboardAlertItems({
+          notifications: dashboardData.notifications,
+          attentionItems: dashboardData.attentionItems,
+        });
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#f4f8f5_0%,#e9f0ed_100%)] text-slate-950">
       <DashboardFloatingNav
         activeView={activeView}
         onViewChange={setActiveView}
         notifications={showDemoData ? undefined : dashboardData?.notifications}
+        useMockNotifications={showDemoData}
       />
       <section className="mx-auto w-full max-w-[92rem] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div>
@@ -600,6 +613,41 @@ export function DashboardShell({
                           </p>
                         </div>
                         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+                          {alert.priority}
+                        </span>
+                      </div>
+                      <p className="mt-4 text-sm leading-6 text-slate-600">
+                        {alert.detail}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              ) : liveAlerts.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {liveAlerts.map((alert) => (
+                    <article
+                      key={alert.id}
+                      className="rounded-lg border border-slate-200 bg-white p-5"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-base font-semibold text-slate-950">
+                            {alert.title}
+                          </h3>
+                          <p className="mt-1 text-sm text-slate-500">
+                            {alert.subtitle}
+                          </p>
+                        </div>
+                        <span
+                          className={[
+                            "rounded-full px-3 py-1 text-xs font-semibold",
+                            alert.tone === "danger"
+                              ? "bg-red-50 text-red-700"
+                              : alert.tone === "warning"
+                                ? "bg-amber-50 text-amber-700"
+                                : "bg-emerald-50 text-emerald-800",
+                          ].join(" ")}
+                        >
                           {alert.priority}
                         </span>
                       </div>
@@ -686,6 +734,25 @@ export function DashboardShell({
                       </p>
                       <p className="mt-5 text-sm font-semibold text-emerald-800">
                         {member.status}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              ) : teamMembers.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                  {teamMembers.map((member) => (
+                    <article
+                      key={member.userId}
+                      className="rounded-lg border border-slate-200 bg-white p-5"
+                    >
+                      <h3 className="font-semibold text-slate-950">
+                        {member.fullName}
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        {member.roleLabel}
+                      </p>
+                      <p className="mt-5 text-sm font-semibold text-emerald-800">
+                        Activo
                       </p>
                     </article>
                   ))}

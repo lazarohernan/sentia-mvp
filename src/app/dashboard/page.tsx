@@ -5,6 +5,7 @@ import { getBranchesByOrganization } from "@/domain/branches/repository";
 import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import { getDashboardSummaryData } from "@/domain/dashboard/repository";
 import { getOrganizationByUser } from "@/domain/organizations/repository";
+import { getTeamMembersByOrganization } from "@/domain/organizations/team";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -39,7 +40,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const branches = organization
     ? await getBranchesByOrganization(supabase, organization.id)
     : [];
+  const teamMembers = organization
+    ? await getTeamMembersByOrganization(supabase, organization.id)
+    : [];
   const dashboardData = await getDashboardSummaryData(supabase, {
+    organizationId: organization?.id,
     organizationName: organization?.name,
     branches,
     dateRange,
@@ -49,6 +54,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     <DashboardShell
       organizationName={organization?.name}
       branches={branches}
+      teamMembers={teamMembers}
       dashboardData={dashboardData}
       dateRange={dateRange}
     />

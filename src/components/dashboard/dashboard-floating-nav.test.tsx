@@ -27,10 +27,9 @@ describe("DashboardFloatingNav", () => {
     expect(
       screen.getByRole("button", { name: /notificaciones/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /salir/i })).toHaveAttribute(
-      "href",
-      "/login",
-    );
+    expect(
+      screen.getByRole("button", { name: /salir/i }),
+    ).toHaveAttribute("type", "submit");
   });
 
   it("marks the controlled active item", () => {

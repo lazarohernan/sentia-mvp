@@ -1,0 +1,96 @@
+export type FeedbackRecord = {
+  id: string;
+  type: string;
+  emotion_score: number;
+  csat_score: number | null;
+  free_text: string;
+  contact_name: string | null;
+  created_at: string;
+  branch_id: string;
+  branches: {
+    id: string;
+    name: string;
+    slug: string;
+    organization_id: string;
+  } | null;
+  ai_analyses:
+    | Array<{
+        status: string;
+        sentiment: "positive" | "neutral" | "negative" | null;
+        urgency: "low" | "medium" | "high" | "critical" | null;
+        category: string | null;
+        summary: string | null;
+        recommended_action: string | null;
+        confidence: number | null;
+      }>
+    | null;
+};
+
+export function formatRelativeDate(value: string) {
+  const timestamp = new Date(value).getTime();
+  const diffMs = Date.now() - timestamp;
+  const minutes = Math.max(0, Math.floor(diffMs / 60_000));
+
+  if (minutes < 1) return "Ahora";
+  if (minutes < 60) return `Hace ${minutes} min`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Hace ${hours} h`;
+
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "Ayer";
+  return `Hace ${days} d`;
+}
+
+export function formatTableDate(value: string) {
+  return new Intl.DateTimeFormat("es-HN", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+export function getAnalysis(record: FeedbackRecord) {
+  return record.ai_analyses?.[0] ?? null;
+}
+
+export function getTone(record: FeedbackRecord): "success" | "warning" | "danger" {
+  const analysis = getAnalysis(record);
+
+  if (
+    analysis?.sentiment === "negative" ||
+    analysis?.urgency === "high" ||
+    analysis?.urgency === "critical" ||
+    (record.csat_score !== null && record.csat_score <= 2)
+  ) {
+    return "danger";
+  }
+
+  if (analysis?.sentiment === "positive" || (record.csat_score ?? 0) >= 4) {
+    return "success";
+  }
+
+  return "warning";
+}
+
+export function getSentiment(record: FeedbackRecord): "Positivo" | "Neutral" | "Riesgo" {
+  const tone = getTone(record);
+  if (tone === "danger") return "Riesgo";
+  if (tone === "success") return "Positivo";
+  return "Neutral";
+}
+
+export function getStatus(record: FeedbackRecord): "Nuevo" | "En revisión" | "Resuelto" | "Escalado" {
+  const analysis = getAnalysis(record);
+  if (analysis?.urgency === "critical") return "Escalado";
+  if (analysis?.urgency === "high" || getTone(record) === "danger") {
+    return "En revisión";
+  }
+  return "Nuevo";
+}
+
+export function truncate(text: string, length: number) {
+  if (text.length <= length) return text;
+  return `${text.slice(0, length - 3).trim()}...`;
+}

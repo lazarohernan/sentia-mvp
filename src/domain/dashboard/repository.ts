@@ -1,6 +1,21 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Branch } from "@/domain/branches/schemas";
+import {
+  formatRelativeDate,
+  formatTableDate,
+  getAnalysis,
+  getSentiment,
+  getStatus,
+  getTone,
+  truncate,
+  type FeedbackRecord,
+} from "@/domain/feedback/record-analysis";
+import { buildExecutiveNotificationDrafts } from "@/domain/notifications/executive-summaries";
+import {
+  getNotificationsForOrganization,
+  syncNotificationDrafts,
+} from "@/domain/notifications/repository";
 import type { Database } from "@/lib/supabase/database.types";
 import type { DashboardDateRange } from "./date-range";
 import type {
@@ -9,7 +24,6 @@ import type {
   DashboardCommentRow,
   DashboardInsight,
   DashboardMetric,
-  DashboardNotification,
   DashboardRecentComment,
   DashboardSummaryData,
 } from "./schemas";
@@ -42,103 +56,6 @@ type FeedbackQueryClient = {
     };
   };
 };
-
-type FeedbackRecord = {
-  id: string;
-  type: string;
-  emotion_score: number;
-  csat_score: number | null;
-  free_text: string;
-  contact_name: string | null;
-  created_at: string;
-  branch_id: string;
-  branches: {
-    id: string;
-    name: string;
-    slug: string;
-    organization_id: string;
-  } | null;
-  ai_analyses:
-    | Array<{
-        status: string;
-        sentiment: "positive" | "neutral" | "negative" | null;
-        urgency: "low" | "medium" | "high" | "critical" | null;
-        category: string | null;
-        summary: string | null;
-        recommended_action: string | null;
-        confidence: number | null;
-      }>
-    | null;
-};
-
-function formatRelativeDate(value: string) {
-  const timestamp = new Date(value).getTime();
-  const diffMs = Date.now() - timestamp;
-  const minutes = Math.max(0, Math.floor(diffMs / 60_000));
-
-  if (minutes < 1) return "Ahora";
-  if (minutes < 60) return `Hace ${minutes} min`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Hace ${hours} h`;
-
-  const days = Math.floor(hours / 24);
-  if (days === 1) return "Ayer";
-  return `Hace ${days} d`;
-}
-
-function formatTableDate(value: string) {
-  return new Intl.DateTimeFormat("es-HN", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-function getAnalysis(record: FeedbackRecord) {
-  return record.ai_analyses?.[0] ?? null;
-}
-
-function getTone(record: FeedbackRecord): "success" | "warning" | "danger" {
-  const analysis = getAnalysis(record);
-
-  if (
-    analysis?.sentiment === "negative" ||
-    analysis?.urgency === "high" ||
-    analysis?.urgency === "critical" ||
-    (record.csat_score !== null && record.csat_score <= 2)
-  ) {
-    return "danger";
-  }
-
-  if (analysis?.sentiment === "positive" || (record.csat_score ?? 0) >= 4) {
-    return "success";
-  }
-
-  return "warning";
-}
-
-function getSentiment(record: FeedbackRecord): "Positivo" | "Neutral" | "Riesgo" {
-  const tone = getTone(record);
-  if (tone === "danger") return "Riesgo";
-  if (tone === "success") return "Positivo";
-  return "Neutral";
-}
-
-function getStatus(record: FeedbackRecord): "Nuevo" | "En revisión" | "Resuelto" | "Escalado" {
-  const analysis = getAnalysis(record);
-  if (analysis?.urgency === "critical") return "Escalado";
-  if (analysis?.urgency === "high" || getTone(record) === "danger") {
-    return "En revisión";
-  }
-  return "Nuevo";
-}
-
-function truncate(text: string, length: number) {
-  if (text.length <= length) return text;
-  return `${text.slice(0, length - 3).trim()}...`;
-}
 
 function buildMetrics(branches: Branch[], feedback: FeedbackRecord[]): DashboardMetric[] {
   const csatScores = feedback
@@ -321,141 +238,36 @@ function buildInsight(feedback: FeedbackRecord[]): DashboardInsight | null {
   };
 }
 
-function buildNotifications(feedback: FeedbackRecord[]): DashboardNotification[] {
-  if (feedback.length === 0) {
-    return [];
-  }
-
-  const risky = feedback.filter((record) => getTone(record) === "danger");
-  const positive = feedback.filter((record) => getTone(record) === "success");
-  const branchRiskMap = new Map<
-    string,
-    {
-      branch: string;
-      count: number;
-      latestAt: string;
-      latestCategory: string | null;
-    }
-  >();
-
-  for (const record of risky) {
-    const branch = record.branches?.name ?? "Sucursal";
-    const current = branchRiskMap.get(branch);
-    const nextLatestAt =
-      !current || new Date(record.created_at) > new Date(current.latestAt)
-        ? record.created_at
-        : current.latestAt;
-    const nextCategory =
-      !current || new Date(record.created_at) > new Date(current.latestAt)
-        ? getAnalysis(record)?.category ?? null
-        : current.latestCategory;
-
-    branchRiskMap.set(branch, {
-      branch,
-      count: (current?.count ?? 0) + 1,
-      latestAt: nextLatestAt,
-      latestCategory: nextCategory,
-    });
-  }
-
-  const topRiskBranch = [...branchRiskMap.values()].sort((a, b) => b.count - a.count)[0];
-  const csatScores = feedback
-    .map((record) => record.csat_score)
-    .filter((score): score is number => typeof score === "number");
-  const averageCsat =
-    csatScores.length > 0
-      ? csatScores.reduce((sum, score) => sum + score, 0) / csatScores.length
-      : null;
-
-  const notifications: DashboardNotification[] = [];
-
-  if (topRiskBranch) {
-    notifications.push({
-      id: "manager-risk-summary",
-      title: `${topRiskBranch.branch} concentra la mayor friccion del periodo`,
-      detail:
-        topRiskBranch.latestCategory === null
-          ? `${topRiskBranch.count} comentarios en riesgo sugieren revisar la operacion de esa sucursal.`
-          : `${topRiskBranch.count} comentarios en riesgo apuntan a ${topRiskBranch.latestCategory.toLowerCase()} y conviene revisarlo con gerencia.`,
-      time: formatRelativeDate(topRiskBranch.latestAt),
-      href: "/dashboard#alertas",
-      unread: true,
-      tone: "danger",
-    });
-  }
-
-  notifications.push({
-    id: "manager-period-summary",
-    title: `Resumen ejecutivo: ${feedback.length} comentarios en ${feedback.length === 1 ? "el periodo" : "este periodo"}`,
-    detail:
-      risky.length > 0
-        ? `${risky.length} requieren seguimiento y ${positive.length} reflejan una experiencia positiva.`
-        : `No hay señales criticas; ${positive.length} reflejan una experiencia positiva y el resto se mantiene estable.`,
-    time: paramsTimeFromFeedback(feedback),
-    href: "/dashboard#resumen",
-    unread: risky.length > 0,
-    tone: risky.length > 0 ? "warning" : "success",
+async function loadDashboardNotifications(
+  client: Client,
+  params: {
+    organizationId: string;
+    dateRange: DashboardDateRange;
+    feedback: FeedbackRecord[];
+  },
+) {
+  const drafts = buildExecutiveNotificationDrafts(params.feedback, {
+    organizationId: params.organizationId,
+    dateRange: params.dateRange,
   });
 
-  const positiveBranchScores = new Map<
-    string,
-    {
-      branch: string;
-      total: number;
-      count: number;
-      latestAt: string;
-    }
-  >();
-
-  for (const record of positive) {
-    const branch = record.branches?.name ?? "Sucursal";
-    const current = positiveBranchScores.get(branch);
-    const score = record.csat_score ?? 0;
-
-    positiveBranchScores.set(branch, {
-      branch,
-      total: (current?.total ?? 0) + score,
-      count: (current?.count ?? 0) + 1,
-      latestAt:
-        !current || new Date(record.created_at) > new Date(current.latestAt)
-          ? record.created_at
-          : current.latestAt,
-    });
+  try {
+    await syncNotificationDrafts(client, drafts);
+  } catch {
+    // La sincronización no debe bloquear el dashboard.
   }
 
-  const positiveSummary = [...positiveBranchScores.values()]
-    .map((item) => ({
-      ...item,
-      average: item.count > 0 ? item.total / item.count : 0,
-    }))
-    .sort((a, b) => b.average - a.average || b.count - a.count)[0];
-
-  if (positiveSummary) {
-    notifications.push({
-      id: "manager-positive-summary",
-      title: `${positiveSummary.branch} sostiene la mejor percepcion reciente`,
-      detail:
-        averageCsat === null
-          ? `${positiveSummary.count} comentarios positivos marcan una señal de estabilidad para el gerente.`
-          : `${positiveSummary.count} comentarios positivos ayudan a sostener un CSAT general de ${averageCsat.toFixed(1)}/5.`,
-      time: formatRelativeDate(positiveSummary.latestAt),
-      href: "/dashboard#comentarios",
-      unread: false,
-      tone: "success",
-    });
-  }
-
-  return notifications.slice(0, 3);
-}
-
-function paramsTimeFromFeedback(feedback: FeedbackRecord[]) {
-  const latest = feedback[0];
-  return latest ? formatRelativeDate(latest.created_at) : "Ahora";
+  return getNotificationsForOrganization(client, params.organizationId, {
+    startIso: params.dateRange.startIso,
+    endIso: params.dateRange.endIso,
+    limit: 20,
+  });
 }
 
 export async function getDashboardSummaryData(
   client: Client,
   params: {
+    organizationId?: string;
     organizationName?: string;
     branches: Branch[];
     dateRange: DashboardDateRange;
@@ -493,6 +305,21 @@ export async function getDashboardSummaryData(
     }
   }
 
+  const notifications =
+    params.organizationId && feedback.length > 0
+      ? await loadDashboardNotifications(client, {
+          organizationId: params.organizationId,
+          dateRange: params.dateRange,
+          feedback,
+        })
+      : params.organizationId
+        ? await getNotificationsForOrganization(client, params.organizationId, {
+            startIso: params.dateRange.startIso,
+            endIso: params.dateRange.endIso,
+            limit: 20,
+          })
+        : [];
+
   return {
     organizationName: params.organizationName,
     scope:
@@ -507,6 +334,6 @@ export async function getDashboardSummaryData(
     branchHealth: buildBranchHealth(params.branches, feedback),
     recentComments: buildRecentComments(feedback),
     comments: buildComments(feedback),
-    notifications: buildNotifications(feedback),
+    notifications,
   };
 }

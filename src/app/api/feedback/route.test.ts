@@ -1,6 +1,23 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearRateLimitStore } from "@/lib/security/rate-limit";
+
+const maybeSingle = vi.fn(async () => ({ data: null, error: null }));
+
+vi.mock("@/lib/supabase/service", () => ({
+  createServiceClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle,
+          })),
+        })),
+      })),
+    })),
+  })),
+}));
+
 import { POST } from "./route";
 
 describe("POST /api/feedback", () => {
@@ -8,6 +25,7 @@ describe("POST /api/feedback", () => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
     clearRateLimitStore();
+    maybeSingle.mockResolvedValue({ data: null, error: null });
   });
 
   it("rejects invalid feedback payloads", async () => {
@@ -27,7 +45,34 @@ describe("POST /api/feedback", () => {
     expect(response.status).toBe(400);
   });
 
+  it("returns 404 when branch is missing", async () => {
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role");
+    maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+
+    const response = await POST(
+      new Request("http://localhost/api/feedback", {
+        method: "POST",
+        body: JSON.stringify({
+          branchSlug: "missing-branch",
+          type: "complaint",
+          csatScore: 2,
+          emotionScore: 2,
+          freeText: "El servicio fue lento y nadie me dio una respuesta clara.",
+          consentAccepted: true,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+  });
+
   it("accepts a valid feedback payload", async () => {
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role");
+    maybeSingle.mockResolvedValueOnce({
+      data: { id: "branch-1", name: "Demo Cafe", organization_id: "org-1" },
+      error: null,
+    });
+
     const response = await POST(
       new Request("http://localhost/api/feedback", {
         method: "POST",
@@ -54,6 +99,11 @@ describe("POST /api/feedback", () => {
 
   it("returns sentiment analysis when Hugging Face is configured", async () => {
     vi.stubEnv("HUGGINGFACE_API_TOKEN", "test-token");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role");
+    maybeSingle.mockResolvedValueOnce({
+      data: { id: "branch-1", name: "Demo Cafe", organization_id: "org-1" },
+      error: null,
+    });
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
@@ -94,6 +144,12 @@ describe("POST /api/feedback", () => {
   });
 
   it("rate limits repeated feedback submissions from the same IP", async () => {
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role");
+    maybeSingle.mockResolvedValue({
+      data: { id: "branch-1", name: "Demo Cafe", organization_id: "org-1" },
+      error: null,
+    });
+
     let lastResponse: Response | null = null;
 
     for (let attempt = 0; attempt < 26; attempt += 1) {

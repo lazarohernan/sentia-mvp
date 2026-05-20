@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 
+import { signOutAction } from "@/app/auth/actions";
 import type { DashboardNotification } from "@/domain/dashboard/schemas";
 import { dashboardMockNotifications } from "./dashboard.mock-data";
 
@@ -70,7 +71,14 @@ type DashboardFloatingNavProps = {
   activeView: DashboardNavView;
   onViewChange: (view: DashboardNavView) => void;
   notifications?: DashboardNotification[];
+  useMockNotifications?: boolean;
 };
+
+async function markNotificationAsRead(notificationId: string) {
+  await fetch(`/api/notifications/${notificationId}/read`, {
+    method: "PATCH",
+  });
+}
 
 function shouldUseClientNavigation(event: MouseEvent<HTMLAnchorElement>) {
   return (
@@ -85,11 +93,14 @@ function shouldUseClientNavigation(event: MouseEvent<HTMLAnchorElement>) {
 export function DashboardFloatingNav({
   activeView,
   onViewChange,
-  notifications = dashboardMockNotifications,
+  notifications,
+  useMockNotifications = false,
 }: DashboardFloatingNavProps) {
+  const resolvedNotifications =
+    notifications ?? (useMockNotifications ? dashboardMockNotifications : []);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement | null>(null);
-  const unreadCount = notifications.filter(
+  const unreadCount = resolvedNotifications.filter(
     (notification) => notification.unread,
   ).length;
 
@@ -227,7 +238,7 @@ export function DashboardFloatingNav({
                 </div>
 
                 <div className="max-h-[26rem] overflow-y-auto p-2">
-                  {notifications.length === 0 ? (
+                  {resolvedNotifications.length === 0 ? (
                     <div className="px-3 py-8 text-center">
                       <p className="text-sm font-semibold text-slate-900">
                         Sin novedades para gerencia
@@ -236,7 +247,7 @@ export function DashboardFloatingNav({
                         Cuando entren nuevas señales resumidas aparecerán aquí.
                       </p>
                     </div>
-                  ) : notifications.map((notification) => {
+                  ) : resolvedNotifications.map((notification) => {
                     const toneClass =
                       notification.tone === "danger"
                         ? "bg-red-500"
@@ -248,7 +259,12 @@ export function DashboardFloatingNav({
                       <Link
                         key={notification.id}
                         href={notification.href}
-                        onClick={() => setIsNotificationsOpen(false)}
+                        onClick={() => {
+                          if (notification.unread) {
+                            void markNotificationAsRead(notification.id);
+                          }
+                          setIsNotificationsOpen(false);
+                        }}
                         className="flex gap-3 rounded-2xl px-3 py-3 transition hover:bg-slate-50"
                       >
                         <span
@@ -281,13 +297,15 @@ export function DashboardFloatingNav({
             ) : null}
           </div>
 
-          <Link
-            href="/login"
-            className="flex size-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-950"
-            aria-label="Salir"
-          >
-            <LogOut size={18} aria-hidden="true" />
-          </Link>
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="flex size-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-950"
+              aria-label="Salir"
+            >
+              <LogOut size={18} aria-hidden="true" />
+            </button>
+          </form>
         </div>
       </div>
     </nav>
