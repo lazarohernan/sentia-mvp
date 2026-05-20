@@ -3,13 +3,12 @@
 import {
   Bell,
   BellRing,
-  Building2,
   ChartNoAxesCombined,
+  Ear,
   Home,
   LogOut,
   MessageSquareText,
-  QrCode,
-  UsersRound,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -23,24 +22,23 @@ import { dashboardMockNotifications } from "./dashboard.mock-data";
 export type DashboardNavView =
   | "resumen"
   | "comentarios"
-  | "qr"
   | "alertas"
-  | "sucursales"
-  | "equipo";
+  | "gestion"
+  | "escucha";
 
 const navItems = [
   { label: "Resumen", href: "/dashboard", view: "resumen", icon: Home },
   {
-    label: "Comentarios",
+    label: "Escucha",
+    href: "/dashboard/escucha",
+    view: "escucha",
+    icon: Ear,
+  },
+  {
+    label: "Valoraciones",
     href: "/dashboard#comentarios",
     view: "comentarios",
     icon: MessageSquareText,
-  },
-  {
-    label: "QR",
-    href: "/dashboard#qr",
-    view: "qr",
-    icon: QrCode,
   },
   {
     label: "Alertas",
@@ -49,16 +47,10 @@ const navItems = [
     icon: Bell,
   },
   {
-    label: "Sucursales",
-    href: "/dashboard#sucursales",
-    view: "sucursales",
-    icon: Building2,
-  },
-  {
-    label: "Equipo",
+    label: "Gestión",
     href: "/dashboard#equipo",
-    view: "equipo",
-    icon: UsersRound,
+    view: "gestion",
+    icon: SlidersHorizontal,
   },
 ] satisfies Array<{
   label: string;
@@ -130,6 +122,11 @@ export function DashboardFloatingNav({
       return;
     }
 
+    const targetUrl = new URL(href, window.location.origin);
+    if (targetUrl.pathname !== window.location.pathname) {
+      return;
+    }
+
     event.preventDefault();
     window.history.pushState({}, "", href);
     onViewChange(view);
@@ -150,7 +147,7 @@ export function DashboardFloatingNav({
             <ChartNoAxesCombined size={18} aria-hidden="true" />
           </span>
           <span className="hidden text-sm font-semibold tracking-normal sm:inline">
-            Escucha
+            Perks
           </span>
         </Link>
 

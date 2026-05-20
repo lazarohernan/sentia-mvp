@@ -53,11 +53,12 @@ describe("DashboardShell", () => {
 
     expect(screen.getByRole("heading", { name: "Resumen" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("link", { name: /^qr$/i }));
+    fireEvent.click(screen.getByRole("link", { name: /gestión/i }));
 
-    expect(screen.getByRole("heading", { name: "QR" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Gestión" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Equipo" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Resumen" })).not.toBeInTheDocument();
-    expect(window.location.hash).toBe("#qr");
+    expect(window.location.hash).toBe("#equipo");
   }, 15_000);
 
   it("opens the notifications panel with mocked items", () => {
@@ -90,6 +91,30 @@ describe("DashboardShell", () => {
       "href",
       "/feedback/cafeteria-centro",
     );
+  });
+
+  it("switches between operational tabs inside the management view", async () => {
+    window.history.pushState({}, "", "/dashboard#qr");
+
+    render(<DashboardShell />);
+
+    expect(screen.getByRole("heading", { name: "Gestión" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "QR" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Equipo" }));
+
+    expect(window.location.hash).toBe("#equipo");
+    expect(screen.getByRole("heading", { name: "Equipo" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "QR" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sucursales" }));
+
+    expect(window.location.hash).toBe("#sucursales");
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Sucursales" }),
+      ).toBeInTheDocument();
+    });
   });
 
   it("renders real QR records from branches when demo data is off", async () => {
@@ -136,6 +161,7 @@ describe("DashboardShell", () => {
           recentComments: [],
           comments: [],
           notifications: [],
+          qrScanCounts: {},
         }}
       />,
     );
@@ -147,7 +173,7 @@ describe("DashboardShell", () => {
     expect(screen.getAllByText("Sayit")).toHaveLength(2);
     expect(screen.getAllByText("Mall Norte")).toHaveLength(2);
     expect(screen.getByText("/feedback/mall-norte")).toBeInTheDocument();
-    expect(screen.getByText("12 comentarios")).toBeInTheDocument();
+    expect(screen.getByText("0 escaneos - 12 comentarios")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /abrir/i })).toHaveAttribute(
       "href",
       "/feedback/mall-norte",

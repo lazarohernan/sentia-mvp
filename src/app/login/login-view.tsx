@@ -12,9 +12,23 @@ import { REGISTRATION_ENABLED } from "@/domain/auth/config";
 type LoginViewProps = {
   mode?: "login" | "registro";
   redirectTo?: string;
+  errorCode?: string;
 };
 
-export function LoginView({ mode = "login", redirectTo }: LoginViewProps) {
+const errorMessages: Record<string, string> = {
+  auth_failed: "Correo o contrasena incorrectos.",
+  invalid_credentials: "Revisa tu correo y contrasena.",
+  auth_callback_failed: "El enlace expiro o ya fue usado. Solicita uno nuevo.",
+  rate_limited: "Demasiados intentos. Espera unos minutos.",
+  supabase_not_configured: "Autenticacion no configurada.",
+  registration_disabled: "El registro publico esta desactivado.",
+};
+
+export function LoginView({
+  mode = "login",
+  redirectTo,
+  errorCode,
+}: LoginViewProps) {
   const isRegisterMode = REGISTRATION_ENABLED && mode === "registro";
 
   return (
@@ -25,7 +39,7 @@ export function LoginView({ mode = "login", redirectTo }: LoginViewProps) {
           className="flex min-h-[660px] flex-col bg-[radial-gradient(circle_at_top_left,rgba(86,178,152,0.08),transparent_28%),linear-gradient(180deg,#07120e_0%,#081410_100%)] px-6 py-7 sm:px-10 lg:min-h-0 lg:px-16"
         >
           <div className="mx-auto flex h-full w-full max-w-xl flex-col">
-            <h1 className="sr-only">Escucha mejor. Actua a tiempo.</h1>
+            <h1 className="sr-only">Perks. Escucha mejor y actua a tiempo.</h1>
 
             <div className="my-auto py-10">
               <div className="text-center">
@@ -35,9 +49,15 @@ export function LoginView({ mode = "login", redirectTo }: LoginViewProps) {
                 <p className="mx-auto mt-4 max-w-sm text-base leading-7 text-white/55">
                   {isRegisterMode
                     ? "Configura tu empresa y empieza a organizar la experiencia de tus clientes."
-                    : "Ingresa para revisar comentarios, alertas y oportunidades de mejora."}
+                    : "Ingresa para evaluar escucha o revisar comentarios y alertas."}
                 </p>
               </div>
+
+              {errorCode ? (
+                <p className="mt-6 rounded-lg border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                  {errorMessages[errorCode] ?? "No se pudo iniciar sesion."}
+                </p>
+              ) : null}
 
               {REGISTRATION_ENABLED ? (
                 <div className="mt-7 grid h-12 grid-cols-2 rounded-lg border border-white/10 bg-white/15 p-1">
@@ -192,6 +212,21 @@ export function LoginView({ mode = "login", redirectTo }: LoginViewProps) {
                 {isRegisterMode ? "Crear cuenta" : "Iniciar sesion"}
               </button>
 
+              {!isRegisterMode ? (
+                <p className="mt-5 text-center text-sm text-white/50">
+                  ¿Olvidaste tu contrasena? Pide ayuda a tu gerente.
+                </p>
+              ) : null}
+
+              <p className="mt-5 text-center text-xs leading-5 text-white/45">
+                Al continuar aceptas nuestros{" "}
+                <span className="font-semibold text-white/70">Términos de uso</span>
+                {" "}y{" "}
+                <span className="font-semibold text-white/70">
+                  Política de Privacidad
+                </span>
+                .
+              </p>
             </div>
           </div>
         </form>

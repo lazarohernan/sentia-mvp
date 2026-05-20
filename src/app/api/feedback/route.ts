@@ -91,12 +91,22 @@ export async function POST(request: Request) {
         consent_accepted: parsed.data.consentAccepted,
       });
 
-      await insertAiAnalysis(db, submissionId, {
-        status: sentimentAnalysis.status,
-        model: sentimentAnalysis.model,
-        analysis: sentimentAnalysis.status === "completed" ? sentimentAnalysis.analysis : undefined,
-        confidence: sentimentAnalysis.status === "completed" ? sentimentAnalysis.confidence : undefined,
-      });
+      try {
+        await insertAiAnalysis(db, submissionId, {
+          status: sentimentAnalysis.status,
+          model: sentimentAnalysis.model,
+          analysis:
+            sentimentAnalysis.status === "completed"
+              ? sentimentAnalysis.analysis
+              : undefined,
+          confidence:
+            sentimentAnalysis.status === "completed"
+              ? sentimentAnalysis.confidence
+              : undefined,
+        });
+      } catch {
+        // AI persistence should not block feedback acceptance.
+      }
 
       const isRiskyFeedback =
         (parsed.data.csatScore !== undefined && parsed.data.csatScore <= 2) ||
@@ -104,24 +114,28 @@ export async function POST(request: Request) {
           sentimentAnalysis.analysis?.sentiment === "negative");
 
       if (isRiskyFeedback) {
-        await upsertNotificationDraft(
-          db,
-          buildFeedbackAlertDraft({
-            organizationId: branch.organization_id,
-            branchId: branch.id,
-            branchName: branch.name,
-            submissionId,
-            freeText: parsed.data.freeText,
-            category:
-              sentimentAnalysis.status === "completed"
-                ? sentimentAnalysis.analysis?.category
-                : null,
-            recommendedAction:
-              sentimentAnalysis.status === "completed"
-                ? sentimentAnalysis.analysis?.recommendedAction
-                : null,
-          }),
-        );
+        try {
+          await upsertNotificationDraft(
+            db,
+            buildFeedbackAlertDraft({
+              organizationId: branch.organization_id,
+              branchId: branch.id,
+              branchName: branch.name,
+              submissionId,
+              freeText: parsed.data.freeText,
+              category:
+                sentimentAnalysis.status === "completed"
+                  ? sentimentAnalysis.analysis?.category
+                  : null,
+              recommendedAction:
+                sentimentAnalysis.status === "completed"
+                  ? sentimentAnalysis.analysis?.recommendedAction
+                  : null,
+            }),
+          );
+        } catch {
+          // Notification sync should not block feedback acceptance.
+        }
       }
     } catch {
       // Persistence failure is non-blocking — we still return 202

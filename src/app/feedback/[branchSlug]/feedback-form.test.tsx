@@ -33,6 +33,11 @@ describe("FeedbackForm", () => {
       expect(screen.getByText(/gracias por tu comentario/i)).toBeInTheDocument();
     });
 
+    expect(fetch).toHaveBeenCalledWith("/api/feedback/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ branchSlug: "cafeteria-centro" }),
+    });
     expect(fetch).toHaveBeenCalledWith("/api/feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

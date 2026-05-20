@@ -14,6 +14,7 @@ type DropdownProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  menuAlign?: "left" | "right";
 };
 
 export function Dropdown({
@@ -22,6 +23,7 @@ export function Dropdown({
   value,
   onChange,
   placeholder = "Seleccionar",
+  menuAlign = "right",
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const listboxId = useId();
@@ -128,7 +130,10 @@ export function Dropdown({
           id={listboxId}
           role="listbox"
           aria-label={label}
-          className="absolute right-0 top-full z-50 mt-2 min-w-[10rem] overflow-hidden rounded-2xl border border-slate-200 bg-white py-1.5 shadow-[0_8px_32px_rgba(15,23,42,0.12)]"
+          className={[
+            "absolute top-full z-50 mt-2 min-w-[10rem] overflow-hidden rounded-2xl border border-slate-200 bg-white py-1.5 shadow-[0_8px_32px_rgba(15,23,42,0.12)]",
+            menuAlign === "left" ? "left-0" : "right-0",
+          ].join(" ")}
         >
           {options.map((option) => {
             const isSelected = option.value === value;

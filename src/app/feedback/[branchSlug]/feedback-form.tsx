@@ -10,7 +10,7 @@ import {
   Smile,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import type { FeedbackType } from "@/domain/feedback/schemas";
@@ -74,6 +74,14 @@ type FormStatus = "idle" | "submitting" | "success" | "error";
 export function FeedbackForm({ branchSlug, branchName }: FeedbackFormProps) {
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetch("/api/feedback/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ branchSlug }),
+    }).catch(() => undefined);
+  }, [branchSlug]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

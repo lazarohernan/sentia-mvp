@@ -1,0 +1,12 @@
+<p style="margin:0 0 16px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#111827;">
+  Te invitaron a Escucha. Activa tu cuenta para empezar.
+</p>
+
+<p style="margin:0 0 24px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#111827;">
+  <a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&amp;type=invite&amp;next=%2Fauth%2Factivar-cuenta" style="color:#0f5f49;font-weight:600;text-decoration:underline;">Activar cuenta</a>
+</p>
+
+<p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;color:#6b7280;">
+  Si el enlace no abre, copia esto en tu navegador:<br />
+  {{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&amp;type=invite&amp;next=%2Fauth%2Factivar-cuenta
+</p>

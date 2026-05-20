@@ -1,0 +1,5 @@
+project_id = "wdajoegbbfjywnbggben"
+
+[auth.email.template.invite]
+subject = "Activa tu cuenta en Escucha"
+content_path = "./supabase/templates/invite.html"

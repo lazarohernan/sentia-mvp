@@ -49,16 +49,19 @@ export interface Database {
         Row: {
           user_id: string;
           organization_id: string;
+          branch_id: string | null;
           role: "owner" | "manager" | "collaborator";
           created_at: string;
         };
         Insert: {
           user_id: string;
           organization_id: string;
+          branch_id?: string | null;
           role: "owner" | "manager" | "collaborator";
           created_at?: string;
         };
         Update: {
+          branch_id?: string | null;
           role?: "owner" | "manager" | "collaborator";
         };
       };
@@ -87,6 +90,23 @@ export interface Database {
           address?: string | null;
           is_active?: boolean;
         };
+      };
+      branch_qr_scans: {
+        Row: {
+          id: string;
+          organization_id: string;
+          branch_id: string;
+          source: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          branch_id: string;
+          source?: string;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
       };
       notifications: {
         Row: {

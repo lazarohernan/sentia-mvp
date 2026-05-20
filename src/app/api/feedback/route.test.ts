@@ -132,7 +132,7 @@ describe("POST /api/feedback", () => {
       status: "accepted",
       analysisStatus: "completed",
       sentimentAnalysis: {
-        model: "pysentimiento/robertuito-sentiment-analysis",
+        model: "finiteautomata/beto-sentiment-analysis",
         rawLabel: "NEG",
         confidence: 0.91,
         analysis: {

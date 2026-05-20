@@ -86,4 +86,5 @@ export type DashboardSummaryData = {
   recentComments: DashboardRecentComment[];
   comments: DashboardCommentRow[];
   notifications: DashboardNotification[];
+  qrScanCounts: Record<string, number>;
 };

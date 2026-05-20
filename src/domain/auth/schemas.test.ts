@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  getSafeRedirectPath,
+  activateAccountSchema,
   signInSchema,
   signUpSchema,
 } from "./schemas";
@@ -40,15 +40,14 @@ describe("signUpSchema", () => {
   });
 });
 
-describe("getSafeRedirectPath", () => {
-  it("allows internal dashboard redirects", () => {
-    expect(getSafeRedirectPath("/dashboard/comments")).toBe(
-      "/dashboard/comments",
-    );
-  });
+describe("activateAccountSchema", () => {
+  it("requires matching passwords", () => {
+    const result = activateAccountSchema.safeParse({
+      fullName: "Ana Lopez",
+      password: "super-secreto",
+      confirmPassword: "otra-clave",
+    });
 
-  it("falls back when redirect is external or empty", () => {
-    expect(getSafeRedirectPath("https://malicioso.com")).toBe("/dashboard");
-    expect(getSafeRedirectPath("")).toBe("/dashboard");
+    expect(result.success).toBe(false);
   });
 });

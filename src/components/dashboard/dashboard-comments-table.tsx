@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Clock3,
   ClipboardCheck,
+  Eye,
   Frown,
   Laugh,
   MapPin,
@@ -17,8 +18,10 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useId, useState } from "react";
 
+import type { DashboardDateRange } from "@/domain/dashboard/date-range";
 import { DashboardDataTable } from "./dashboard-data-table";
 import type { DashboardDataTableColumn } from "./dashboard-data-table";
+import { DashboardDateFilter } from "./dashboard-date-filter";
 import { dashboardMockComments } from "./dashboard.mock-data";
 
 type DashboardComment = (typeof dashboardMockComments)[number];
@@ -26,6 +29,7 @@ type CommentStatus = "Nuevo" | "En revisión" | "Resuelto" | "Escalado";
 
 type DashboardCommentsTableProps = {
   comments?: DashboardComment[];
+  dateRange: DashboardDateRange;
 };
 
 const commentStatuses: CommentStatus[] = [
@@ -298,6 +302,109 @@ function CsatScaleStrip({ score }: { score: number }) {
   );
 }
 
+function getHealthStatus(csat: number | null) {
+  if (csat === null) {
+    return {
+      label: "Sin datos",
+      className: "bg-slate-100 text-slate-600",
+      textClassName: "text-slate-600",
+    };
+  }
+
+  if (csat >= 4) {
+    return {
+      label: "Bueno",
+      className: "bg-emerald-50 text-emerald-800",
+      textClassName: "text-emerald-800",
+    };
+  }
+
+  if (csat >= 3) {
+    return {
+      label: "Observación",
+      className: "bg-amber-50 text-amber-800",
+      textClassName: "text-amber-800",
+    };
+  }
+
+  return {
+    label: "Riesgo",
+    className: "bg-red-50 text-red-700",
+    textClassName: "text-red-700",
+  };
+}
+
+function RatingsHealthSummary({ comments }: { comments: DashboardComment[] }) {
+  const scores = comments
+    .map((comment) => comment.csatScore)
+    .filter((score): score is number => typeof score === "number");
+  const average =
+    scores.length > 0
+      ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+      : null;
+  const marker =
+    average === null ? 0 : Math.max(0, Math.min(100, ((average - 1) / 4) * 100));
+  const health = getHealthStatus(average);
+  const formattedAverage = average === null ? "N/A" : average.toFixed(1);
+
+  return (
+    <section>
+      <div className="grid gap-5 lg:grid-cols-[190px_1fr_130px] lg:items-center">
+        <div className="flex items-center gap-3">
+          <span
+            className={`inline-flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-bold ${health.className}`}
+          >
+            {formattedAverage}
+          </span>
+          <div>
+            <h3 className="text-base font-semibold text-slate-950">
+              Salud de valoraciones
+            </h3>
+            <p className={`mt-0.5 text-sm font-semibold ${health.textClassName}`}>
+              {health.label}
+            </p>
+          </div>
+        </div>
+        <div className="min-w-0">
+          <div className="relative pb-5 pt-10">
+            <div
+              className="absolute top-0 z-10 flex -translate-x-1/2 flex-col items-center"
+              style={{ left: `${marker}%` }}
+            >
+              <span
+                className={`relative whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold shadow-sm ring-1 ring-white ${health.className} after:absolute after:left-1/2 after:top-full after:size-2 after:-translate-x-1/2 after:-translate-y-1/2 after:rotate-45 after:bg-current after:opacity-20`}
+              >
+                CSAT {formattedAverage}
+              </span>
+              <span className={`mt-1 h-5 w-0.5 rounded-full ${health.className}`} />
+            </div>
+            <div className="relative grid h-4 overflow-hidden rounded-full bg-slate-100 grid-cols-[40fr_20fr_40fr] shadow-inner">
+              <span className="bg-red-500" />
+              <span className="bg-amber-400" />
+              <span className="bg-emerald-500" />
+              <span
+                className="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-950 shadow-[0_4px_12px_rgba(15,23,42,0.28)]"
+                style={{ left: `${marker}%` }}
+              />
+            </div>
+            <div className="mt-2 grid grid-cols-3 text-[11px] font-medium text-slate-500">
+              <span>Riesgo</span>
+              <span className="text-center">Observación</span>
+              <span className="text-right">Bueno</span>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-2xl bg-[#f7f8f4] px-4 py-3 text-left lg:text-right">
+          <p className="text-xl font-semibold text-slate-950">{comments.length}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            Valoraciones
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CommentDetailView({
   comment,
   onBack,
@@ -325,13 +432,13 @@ function CommentDetailView({
           className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-100"
         >
           <ArrowLeft size={16} aria-hidden="true" />
-          Volver a comentarios
+          Volver a valoraciones
         </button>
 
         <div className="mt-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-              Detalle del comentario
+              Detalle de valoración
             </p>
             <h3 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950">
               {comment.business} · {comment.branch}
@@ -360,7 +467,7 @@ function CommentDetailView({
         <div className="rounded-[1.25rem] border border-slate-100 p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <MessageSquareText size={17} className="text-emerald-700" />
-            Comentario recibido
+            Valoración recibida
           </div>
           <p className="mt-4 text-base leading-8 text-slate-700">
             “{comment.message}”
@@ -495,7 +602,10 @@ function CommentDetailView({
   );
 }
 
-const columns: DashboardDataTableColumn<DashboardComment>[] = [
+function buildColumns(
+  onView: (comment: DashboardComment) => void,
+): Array<DashboardDataTableColumn<DashboardComment>> {
+  return [
   {
     key: "customer",
     header: "Cliente",
@@ -522,7 +632,7 @@ const columns: DashboardDataTableColumn<DashboardComment>[] = [
   },
   {
     key: "message",
-    header: "Comentario",
+    header: "Valoración",
     className: "min-w-[320px]",
     cell: (comment) => (
       <p className="max-w-xl leading-6 text-slate-600">{comment.message}</p>
@@ -552,10 +662,30 @@ const columns: DashboardDataTableColumn<DashboardComment>[] = [
     header: "Estado",
     cell: (comment) => <StatusBadge status={comment.status} />,
   },
+  {
+    key: "actions",
+    header: "Acciones",
+    className: "w-24 text-right",
+    cell: (comment) => (
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onView(comment);
+        }}
+        className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+        aria-label={`Ver detalle de la valoración de ${comment.customer}`}
+      >
+        <Eye size={16} aria-hidden="true" />
+      </button>
+    ),
+  },
 ];
+}
 
 export function DashboardCommentsTable({
   comments = [],
+  dateRange,
 }: DashboardCommentsTableProps) {
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(
     null,
@@ -571,12 +701,13 @@ export function DashboardCommentsTable({
   const selectedComment =
     displayedComments.find((comment) => comment.id === selectedCommentId) ??
     null;
-  const businesses = Array.from(
-    new Set(displayedComments.map((comment) => comment.business)),
+  const branches = Array.from(
+    new Set(displayedComments.map((comment) => comment.branch)),
   );
   const sentiments = Array.from(
     new Set(displayedComments.map((comment) => comment.sentiment)),
   );
+  const columns = buildColumns((comment) => setSelectedCommentId(comment.id));
 
   function updateSelectedCommentStatus(status: CommentStatus) {
     if (!selectedCommentId) {
@@ -606,7 +737,7 @@ export function DashboardCommentsTable({
       getRowKey={(comment) => comment.id}
       onRowClick={(comment) => setSelectedCommentId(comment.id)}
       rowActionLabel={(comment) =>
-        `Ver detalle del comentario de ${comment.customer}`
+        `Ver detalle de la valoración de ${comment.customer}`
       }
       getSearchText={(comment) =>
         [
@@ -620,12 +751,17 @@ export function DashboardCommentsTable({
         ].join(" ")
       }
       filters={[
-        {
-          key: "business",
-          label: "Filtrar por negocio",
-          options: businesses,
-          getValue: (comment) => comment.business,
-        },
+        ...(branches.length > 0
+          ? [
+              {
+                key: "branch",
+                label: "Filtrar por sucursal",
+                options: branches,
+                getValue: (comment: DashboardComment) => comment.branch,
+                align: "left" as const,
+              },
+            ]
+          : []),
         {
           key: "sentiment",
           label: "Filtrar por sentimiento",
@@ -633,9 +769,14 @@ export function DashboardCommentsTable({
           getValue: (comment) => comment.sentiment,
         },
       ]}
-      searchPlaceholder="Buscar comentario"
+      searchPlaceholder="Buscar valoración"
       pageSize={5}
-      emptyTitle="Sin comentarios registrados"
+      emptyTitle="Sin valoraciones registradas"
+      topContent={<RatingsHealthSummary comments={displayedComments} />}
+      toolbarContent={
+        <DashboardDateFilter dateRange={dateRange} targetHash="comentarios" />
+      }
+      showSearch={false}
     />
   );
 }

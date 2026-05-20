@@ -15,14 +15,12 @@ import { useMemo, useState } from "react";
 import type { Branch } from "@/domain/branches/schemas";
 import type { DashboardSummaryData } from "@/domain/dashboard/schemas";
 import { dashboardMockQrRecords } from "./dashboard.mock-data";
-import { DashboardDemoDataToggle } from "./dashboard-demo-data-toggle";
 import { DashboardEmptyState } from "./dashboard-empty-state";
 import { DashboardQrPreview } from "./dashboard-qr-preview";
 import { DashboardSection } from "./dashboard-section";
 
 type DashboardQrViewProps = {
   showDemoData: boolean;
-  onToggleDemoData: () => void;
   organizationName?: string;
   branches?: Branch[];
   dashboardData?: DashboardSummaryData;
@@ -66,7 +64,6 @@ function getBranchCommentCount(
 
 export function DashboardQrView({
   showDemoData,
-  onToggleDemoData,
   organizationName,
   branches = [],
   dashboardData,
@@ -86,7 +83,7 @@ export function DashboardQrView({
         slug: item.slug,
         status: item.is_active ? "Activo" : "Inactivo",
         createdAt: item.created_at.slice(0, 10),
-        scans: 0,
+        scans: dashboardData?.qrScanCounts?.[item.id] ?? 0,
         comments: Number.parseInt(
           getBranchCommentCount(item.name, dashboardData).replace(/\D+/g, ""),
           10,
@@ -144,10 +141,6 @@ export function DashboardQrView({
       description="Crea y administra los codigos QR por negocio o sucursal."
       action={
         <div className="flex flex-wrap gap-2">
-          <DashboardDemoDataToggle
-            pressed={showDemoData}
-            onPressedChange={onToggleDemoData}
-          />
           {showDemoData ? (
             <button
               type="button"
@@ -245,9 +238,7 @@ export function DashboardQrView({
                             {record.createdAt}
                           </td>
                           <td className="px-5 py-4 text-sm text-slate-600">
-                            {showDemoData
-                              ? `${record.scans} escaneos - ${record.comments} comentarios`
-                              : `${record.comments} comentarios`}
+                            {`${record.scans} escaneos - ${record.comments} comentarios`}
                           </td>
                         </tr>
                       );
@@ -280,7 +271,7 @@ export function DashboardQrView({
                 </p>
                 {!showDemoData ? (
                   <p className="mt-2 text-sm text-slate-500">
-                    {selectedRecord.comments} comentarios vinculados
+                    {selectedRecord.scans} escaneos · {selectedRecord.comments} comentarios
                   </p>
                 ) : null}
                 <div className="mt-4 flex w-full max-w-sm items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600">

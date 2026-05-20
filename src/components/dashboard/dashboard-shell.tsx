@@ -22,15 +22,10 @@ import { buildDashboardAlertItems } from "@/domain/dashboard/alerts";
 import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
 import type { DashboardSummaryData } from "@/domain/dashboard/schemas";
+import type { ListeningEventRow } from "@/domain/listening/schemas";
 import type { TeamMember } from "@/domain/organizations/team";
-import {
-  dashboardMockAlerts,
-  dashboardMockBranches,
-  dashboardMockComments,
-  dashboardMockTeam,
-} from "./dashboard.mock-data";
+import { AddTeamMemberDrawer } from "./add-team-member-drawer";
 import { DashboardCommentsTable } from "./dashboard-comments-table";
-import { DashboardDemoDataToggle } from "./dashboard-demo-data-toggle";
 import { DashboardEmptyState } from "./dashboard-empty-state";
 import { DashboardExecutiveHeader } from "./dashboard-executive-header";
 import { DashboardFloatingNav } from "./dashboard-floating-nav";
@@ -38,6 +33,9 @@ import type { DashboardNavView } from "./dashboard-floating-nav";
 import { DashboardQrView } from "./dashboard-qr-view";
 import { DashboardSection } from "./dashboard-section";
 import { DashboardSummaryView } from "./dashboard-summary-view";
+import { DashboardTeamPanel } from "./dashboard-team-panel";
+
+type OperationsTab = "qr" | "sucursales" | "equipo";
 
 function getDashboardViewFromHash(): DashboardNavView {
   if (typeof window === "undefined") {
@@ -46,23 +44,39 @@ function getDashboardViewFromHash(): DashboardNavView {
 
   const hash = window.location.hash.replace("#", "");
 
-  if (
-    hash === "comentarios" ||
-    hash === "qr" ||
-    hash === "alertas" ||
-    hash === "sucursales" ||
-    hash === "equipo"
-  ) {
+  if (hash === "comentarios" || hash === "alertas") {
     return hash;
+  }
+
+  if (hash === "qr" || hash === "sucursales" || hash === "equipo") {
+    return "gestion";
   }
 
   return "resumen";
 }
 
+function getOperationsTabFromHash(): OperationsTab {
+  if (typeof window === "undefined") {
+    return "equipo";
+  }
+
+  const hash = window.location.hash.replace("#", "");
+
+  if (hash === "qr" || hash === "sucursales" || hash === "equipo") {
+    return hash;
+  }
+
+  return "equipo";
+}
+
 type DashboardShellProps = {
   organizationName?: string;
   branches?: Branch[];
+  selectedBranchId?: string;
   teamMembers?: TeamMember[];
+  canManageTeam?: boolean;
+  actorRole?: "owner" | "manager";
+  listeningEvents?: ListeningEventRow[];
   dashboardData?: DashboardSummaryData;
   dateRange?: DashboardDateRange;
 };
@@ -202,6 +216,53 @@ function DashboardBranchesList({
           </article>
         );
       })}
+    </div>
+  );
+}
+
+function OperationsTabs({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: OperationsTab;
+  onTabChange: (tab: OperationsTab) => void;
+}) {
+  const tabs = [
+    { id: "equipo", label: "Equipo", icon: UsersRound },
+    { id: "sucursales", label: "Sucursales", icon: Building2 },
+    { id: "qr", label: "QR", icon: QrCode },
+  ] satisfies Array<{
+    id: OperationsTab;
+    label: string;
+    icon: typeof QrCode;
+  }>;
+
+  return (
+    <div className="mb-5 w-fit max-w-full overflow-x-auto rounded-full border border-white/70 bg-white/75 p-1 shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5 backdrop-blur">
+      <div className="flex min-w-max gap-1">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onTabChange(tab.id)}
+              aria-pressed={isActive}
+              className={[
+                "inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition",
+                isActive
+                  ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
+                  : "text-slate-600 hover:bg-white hover:text-emerald-900",
+              ].join(" ")}
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -435,7 +496,11 @@ function CreateBranchDrawer({
 export function DashboardShell({
   organizationName,
   branches,
-  teamMembers = [],
+  selectedBranchId,
+  teamMembers: initialTeamMembers = [],
+  canManageTeam = false,
+  actorRole,
+  listeningEvents = [],
   dashboardData,
   dateRange = getDashboardDateRange({}),
 }: DashboardShellProps) {
@@ -443,9 +508,13 @@ export function DashboardShell({
   const serverBranchIds = new Set(serverBranches.map((branch) => branch.id));
   const [showDemoData, setShowDemoData] = useState(false);
   const [activeView, setActiveView] = useState<DashboardNavView>("resumen");
+  const [activeOperationsTab, setActiveOperationsTab] =
+    useState<OperationsTab>("equipo");
   const [createdBranches, setCreatedBranches] = useState<Branch[]>([]);
   const [updatedBranches, setUpdatedBranches] = useState<Record<string, Branch>>({});
+  const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
   const [isBranchDrawerOpen, setIsBranchDrawerOpen] = useState(false);
+  const [isTeamMemberDrawerOpen, setIsTeamMemberDrawerOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const liveBranches = [
     ...createdBranches.filter((branch) => !serverBranchIds.has(branch.id)),
@@ -453,8 +522,13 @@ export function DashboardShell({
   ];
 
   useEffect(() => {
+    setTeamMembers(initialTeamMembers);
+  }, [initialTeamMembers]);
+
+  useEffect(() => {
     function updateActiveView() {
       setActiveView(getDashboardViewFromHash());
+      setActiveOperationsTab(getOperationsTabFromHash());
     }
 
     updateActiveView();
@@ -486,6 +560,12 @@ export function DashboardShell({
     setIsBranchDrawerOpen(false);
   }
 
+  function handleOperationsTabChange(tab: OperationsTab) {
+    window.history.pushState({}, "", `/dashboard#${tab}`);
+    setActiveView("gestion");
+    setActiveOperationsTab(tab);
+  }
+
   function handleBranchSaved(branch: Branch) {
     setCreatedBranches((current) => {
       const existsInCreated = current.some((item) => item.id === branch.id);
@@ -509,15 +589,8 @@ export function DashboardShell({
     }
   }
 
-  const demoDataToggle = (
-    <DashboardDemoDataToggle
-      pressed={showDemoData}
-      onPressedChange={toggleDemoData}
-    />
-  );
   const branchesAction = (
     <div className="flex flex-wrap items-center gap-3">
-      {demoDataToggle}
       <button
         type="button"
         onClick={openCreateBranchDrawer}
@@ -528,6 +601,16 @@ export function DashboardShell({
       </button>
     </div>
   );
+  const teamAction = canManageTeam ? (
+    <button
+      type="button"
+      onClick={() => setIsTeamMemberDrawerOpen(true)}
+      className="inline-flex h-10 items-center gap-2 rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900"
+    >
+      <Plus className="h-4 w-4" aria-hidden="true" />
+      Agregar colaborador
+    </button>
+  ) : null;
 
   const liveAlerts =
     dashboardData === undefined
@@ -536,14 +619,15 @@ export function DashboardShell({
           notifications: dashboardData.notifications,
           attentionItems: dashboardData.attentionItems,
         });
+  const useSummaryDemoData = activeView === "resumen" && showDemoData;
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#f4f8f5_0%,#e9f0ed_100%)] text-slate-950">
       <DashboardFloatingNav
         activeView={activeView}
         onViewChange={setActiveView}
-        notifications={showDemoData ? undefined : dashboardData?.notifications}
-        useMockNotifications={showDemoData}
+        notifications={useSummaryDemoData ? undefined : dashboardData?.notifications}
+        useMockNotifications={useSummaryDemoData}
       />
       <section className="mx-auto w-full max-w-[92rem] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div>
@@ -552,10 +636,10 @@ export function DashboardShell({
               <DashboardExecutiveHeader
                 showDemoData={showDemoData}
                 onToggleDemoData={toggleDemoData}
-                organizationName={organizationName}
-                branchCount={liveBranches.length}
                 dashboardData={dashboardData}
                 dateRange={dateRange}
+                branches={liveBranches}
+                selectedBranchId={selectedBranchId}
               />
               <DashboardSummaryView
                 showDemoData={showDemoData}
@@ -567,26 +651,75 @@ export function DashboardShell({
           {activeView === "comentarios" ? (
             <DashboardSection
               id="comentarios"
-              title="Comentarios"
-              description="Entradas recibidas desde los canales de feedback."
-              action={demoDataToggle}
+              title="Valoraciones"
+              description="Opiniones, calificaciones y señales recibidas desde los canales de feedback."
             >
               <DashboardCommentsTable
-                comments={
-                  showDemoData ? dashboardMockComments : dashboardData?.comments ?? []
-                }
+                comments={dashboardData?.comments ?? []}
+                dateRange={dashboardData?.dateRange ?? dateRange}
               />
             </DashboardSection>
           ) : null}
 
-          {activeView === "qr" ? (
-            <DashboardQrView
-              showDemoData={showDemoData}
-              onToggleDemoData={toggleDemoData}
-              organizationName={organizationName}
-              branches={liveBranches}
-              dashboardData={dashboardData}
-            />
+          {activeView === "gestion" ? (
+            <section id="gestion" className="scroll-mt-28">
+              <div className="mb-5">
+                <h2 className="text-2xl font-semibold tracking-normal text-slate-950">
+                  Gestión
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+                  Administra QR, sucursales y equipo desde una sola vista.
+                </p>
+              </div>
+
+              <OperationsTabs
+                activeTab={activeOperationsTab}
+                onTabChange={handleOperationsTabChange}
+              />
+
+              {activeOperationsTab === "qr" ? (
+                <DashboardQrView
+                  showDemoData={false}
+                  organizationName={organizationName}
+                  branches={liveBranches}
+                  dashboardData={dashboardData}
+                />
+              ) : null}
+
+              {activeOperationsTab === "sucursales" ? (
+                <DashboardSection
+                  id="sucursales"
+                  title="Sucursales"
+                  description="Puntos de atención o unidades operativas."
+                  action={branchesAction}
+                >
+                  {liveBranches.length > 0 ? (
+                    <DashboardBranchesList
+                      branches={liveBranches}
+                      dashboardData={dashboardData}
+                      onEdit={openEditBranchDrawer}
+                    />
+                  ) : (
+                    <DashboardEmptyState
+                      icon={Building2}
+                      title="Sin sucursales configuradas"
+                      description="Las sucursales aparecerán cuando se agreguen al sistema."
+                    />
+                  )}
+                </DashboardSection>
+              ) : null}
+
+              {activeOperationsTab === "equipo" ? (
+                <DashboardSection
+                  id="equipo"
+                  title="Equipo"
+                  description="Personas que participan en atención y seguimiento."
+                  action={teamAction}
+                >
+                  <DashboardTeamPanel teamMembers={teamMembers} />
+                </DashboardSection>
+              ) : null}
+            </section>
           ) : null}
 
           {activeView === "alertas" ? (
@@ -594,35 +727,8 @@ export function DashboardShell({
               id="alertas"
               title="Alertas"
               description="Situaciones que requieren atención o seguimiento."
-              action={demoDataToggle}
             >
-              {showDemoData ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {dashboardMockAlerts.map((alert) => (
-                    <article
-                      key={alert.title}
-                      className="rounded-lg border border-slate-200 bg-white p-5"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h3 className="text-base font-semibold text-slate-950">
-                            {alert.title}
-                          </h3>
-                          <p className="mt-1 text-sm text-slate-500">
-                            {alert.branch}
-                          </p>
-                        </div>
-                        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-                          {alert.priority}
-                        </span>
-                      </div>
-                      <p className="mt-4 text-sm leading-6 text-slate-600">
-                        {alert.detail}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              ) : liveAlerts.length > 0 ? (
+              {liveAlerts.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2">
                   {liveAlerts.map((alert) => (
                     <article
@@ -666,106 +772,6 @@ export function DashboardShell({
               )}
             </DashboardSection>
           ) : null}
-
-          {activeView === "sucursales" ? (
-            <DashboardSection
-              id="sucursales"
-              title="Sucursales"
-              description="Puntos de atención o unidades operativas."
-              action={branchesAction}
-            >
-              {showDemoData ? (
-                <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-                  {dashboardMockBranches.map((branch) => (
-                    <div
-                      key={branch.name}
-                      className="grid gap-3 border-b border-slate-100 p-5 last:border-b-0 sm:grid-cols-[1fr_auto_auto_auto] sm:items-center"
-                    >
-                      <h3 className="font-semibold text-slate-950">
-                        {branch.name}
-                      </h3>
-                      <p className="text-sm text-slate-600">
-                        Satisfaccion {branch.score}
-                      </p>
-                      <p className="text-sm text-slate-600">
-                        {branch.comments} comentarios
-                      </p>
-                      <p className="text-sm font-semibold text-emerald-800">
-                        {branch.status}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : liveBranches.length > 0 ? (
-                <DashboardBranchesList
-                  branches={liveBranches}
-                  dashboardData={dashboardData}
-                  onEdit={openEditBranchDrawer}
-                />
-              ) : (
-                <DashboardEmptyState
-                  icon={Building2}
-                  title="Sin sucursales configuradas"
-                  description="Las sucursales aparecerán cuando se agreguen al sistema."
-                />
-              )}
-            </DashboardSection>
-          ) : null}
-
-          {activeView === "equipo" ? (
-            <DashboardSection
-              id="equipo"
-              title="Equipo"
-              description="Personas que participan en atención y seguimiento."
-              action={demoDataToggle}
-            >
-              {showDemoData ? (
-                <div className="grid gap-4 md:grid-cols-3">
-                  {dashboardMockTeam.map((member) => (
-                    <article
-                      key={member.name}
-                      className="rounded-lg border border-slate-200 bg-white p-5"
-                    >
-                      <h3 className="font-semibold text-slate-950">
-                        {member.name}
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
-                        {member.role}
-                      </p>
-                      <p className="mt-5 text-sm font-semibold text-emerald-800">
-                        {member.status}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              ) : teamMembers.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-3">
-                  {teamMembers.map((member) => (
-                    <article
-                      key={member.userId}
-                      className="rounded-lg border border-slate-200 bg-white p-5"
-                    >
-                      <h3 className="font-semibold text-slate-950">
-                        {member.fullName}
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
-                        {member.roleLabel}
-                      </p>
-                      <p className="mt-5 text-sm font-semibold text-emerald-800">
-                        Activo
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <DashboardEmptyState
-                  icon={UsersRound}
-                  title="Sin equipo registrado"
-                  description="Los usuarios y colaboradores aparecerán en esta sección."
-                />
-              )}
-            </DashboardSection>
-          ) : null}
         </div>
       </section>
       <CreateBranchDrawer
@@ -775,6 +781,22 @@ export function DashboardShell({
         onClose={closeBranchDrawer}
         onSaved={handleBranchSaved}
       />
+      {actorRole ? (
+        <AddTeamMemberDrawer
+          key={isTeamMemberDrawerOpen ? "open" : "closed"}
+          open={isTeamMemberDrawerOpen}
+          onClose={() => setIsTeamMemberDrawerOpen(false)}
+          branches={liveBranches.filter((branch) => branch.is_active)}
+          actorRole={actorRole}
+          onSaved={(member) => {
+            setTeamMembers((current) =>
+              current.some((item) => item.userId === member.userId)
+                ? current.map((item) => (item.userId === member.userId ? member : item))
+                : [member, ...current],
+            );
+          }}
+        />
+      ) : null}
     </main>
   );
 }

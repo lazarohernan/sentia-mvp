@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import type { Branch } from "@/domain/branches/schemas";
 import type { Database } from "@/lib/supabase/database.types";
-import type { Organization } from "./schemas";
+import type { MemberRole, Organization } from "./schemas";
 
 type Client = SupabaseClient<Database>;
 
@@ -18,6 +19,47 @@ export async function getOrganizationByUser(
 
   const first = data[0] as { organizations: Organization };
   return first.organizations ?? null;
+}
+
+export type OrganizationMembership = {
+  userId: string;
+  organizationId: string;
+  branchId: string | null;
+  role: MemberRole;
+  createdAt: string;
+  branch: Branch | null;
+};
+
+type OrganizationMembershipRow = {
+  user_id: string;
+  organization_id: string;
+  branch_id: string | null;
+  role: MemberRole;
+  created_at: string;
+  branches: Branch | null;
+};
+
+export async function getOrganizationMembershipByUser(
+  client: Client,
+  userId: string,
+): Promise<OrganizationMembership | null> {
+  const { data, error } = await client
+    .from("organization_members")
+    .select("user_id, organization_id, branch_id, role, created_at, branches(*)")
+    .eq("user_id", userId)
+    .limit(1);
+
+  if (error || !data || data.length === 0) return null;
+
+  const membership = data[0] as OrganizationMembershipRow;
+  return {
+    userId: membership.user_id,
+    organizationId: membership.organization_id,
+    branchId: membership.branch_id,
+    role: membership.role,
+    createdAt: membership.created_at,
+    branch: membership.branches,
+  };
 }
 
 export async function createUserOrganization(

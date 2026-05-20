@@ -10,6 +10,7 @@ export const organizationSchema = z.object({
 export const organizationMemberSchema = z.object({
   user_id: z.string().uuid(),
   organization_id: z.string().uuid(),
+  branch_id: z.string().uuid().nullable(),
   role: z.enum(["owner", "manager", "collaborator"]),
   created_at: z.string(),
 });

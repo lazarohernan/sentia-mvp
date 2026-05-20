@@ -29,13 +29,20 @@ export const signUpSchema = signInSchema.extend({
     .pipe(z.string().min(2).max(160)),
 });
 
-export function getSafeRedirectPath(value: string | null | undefined) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/dashboard";
-  }
+export const activateAccountSchema = z
+  .object({
+    fullName: z
+      .string()
+      .transform(sanitizeTextInput)
+      .pipe(z.string().min(2).max(120)),
+    password: passwordSchema,
+    confirmPassword: z.string().min(8).max(128),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    message: "Las contrasenas no coinciden.",
+    path: ["confirmPassword"],
+  });
 
-  return value;
-}
-
+export type ActivateAccountInput = z.infer<typeof activateAccountSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;

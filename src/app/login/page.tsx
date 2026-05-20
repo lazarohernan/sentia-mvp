@@ -5,6 +5,7 @@ type LoginPageProps = {
   searchParams: Promise<{
     mode?: string;
     redirectTo?: string;
+    error?: string;
   }>;
 };
 
@@ -17,6 +18,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         REGISTRATION_ENABLED && params.mode === "registro" ? "registro" : "login"
       }
       redirectTo={params.redirectTo}
+      errorCode={params.error}
     />
   );
 }

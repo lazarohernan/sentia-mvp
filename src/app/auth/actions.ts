@@ -4,17 +4,24 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import {
-  getSafeRedirectPath,
+  activateAccountSchema,
   signInSchema,
   signUpSchema,
 } from "@/domain/auth/schemas";
+import {
+  getHomePathForRole,
+  getSafeRedirectPath,
+} from "@/domain/auth/redirects";
 import { REGISTRATION_ENABLED } from "@/domain/auth/config";
 import { sanitizeEmailInput } from "@/lib/security/input";
 import {
   consumeRateLimit,
   getClientIpFromHeaders,
 } from "@/lib/security/rate-limit";
-import { createUserOrganization } from "@/domain/organizations/repository";
+import {
+  createUserOrganization,
+  getOrganizationMembershipByUser,
+} from "@/domain/organizations/repository";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -54,13 +61,19 @@ export async function signInAction(formData: FormData): Promise<void> {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data: authData, error } = await supabase.auth.signInWithPassword(parsed.data);
 
-  if (error) {
+  if (error || !authData.user) {
     redirect("/login?error=auth_failed");
   }
 
-  redirect(getSafeRedirectPath(formData.get("redirectTo")?.toString()));
+  const redirectTo = formData.get("redirectTo")?.toString();
+  if (redirectTo) {
+    redirect(getSafeRedirectPath(redirectTo));
+  }
+
+  const membership = await getOrganizationMembershipByUser(supabase, authData.user.id);
+  redirect(getHomePathForRole(membership?.role));
 }
 
 export async function signUpAction(formData: FormData): Promise<void> {
@@ -143,4 +156,65 @@ export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function activateAccountAction(formData: FormData): Promise<void> {
+  const headerStore = await headers();
+  const clientIp = getClientIpFromHeaders(headerStore);
+  const rateLimit = consumeRateLimit({
+    namespace: "auth:activate-account",
+    key: clientIp,
+    limit: 8,
+    windowMs: 15 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    redirect("/auth/activar-cuenta?error=rate_limited");
+  }
+
+  const parsed = activateAccountSchema.safeParse({
+    fullName: formData.get("fullName"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  if (!parsed.success) {
+    redirect("/auth/activar-cuenta?error=invalid_activation");
+  }
+
+  if (!hasSupabasePublicEnv()) {
+    redirect("/auth/activar-cuenta?error=supabase_not_configured");
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login?redirectTo=/auth/activar-cuenta");
+  }
+
+  const { error: passwordError } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+    data: {
+      full_name: parsed.data.fullName,
+    },
+  });
+
+  if (passwordError) {
+    redirect("/auth/activar-cuenta?error=activation_failed");
+  }
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ full_name: parsed.data.fullName })
+    .eq("id", user.id);
+
+  if (profileError) {
+    redirect("/auth/activar-cuenta?error=activation_failed");
+  }
+
+  const membership = await getOrganizationMembershipByUser(supabase, user.id);
+  redirect(getHomePathForRole(membership?.role));
 }

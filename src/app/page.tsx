@@ -19,7 +19,7 @@ export default function Home() {
             className="hero-enter-soft text-4xl font-bold leading-none text-[#053f34] sm:text-5xl"
             style={{ fontFamily: "var(--font-display)", animationDelay: "80ms" }}
           >
-            Escucha
+            Perks
           </p>
 
           <div className="flex items-center justify-end gap-4">

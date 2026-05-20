@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Branch } from "@/domain/branches/schemas";
+import { getBranchQrScanCounts } from "@/domain/branches/qr-scans";
 import {
   formatRelativeDate,
   formatTableDate,
@@ -320,6 +321,10 @@ export async function getDashboardSummaryData(
           })
         : [];
 
+  const qrScanCounts = params.organizationId
+    ? await getBranchQrScanCounts(client, params.organizationId)
+    : {};
+
   return {
     organizationName: params.organizationName,
     scope:
@@ -335,5 +340,6 @@ export async function getDashboardSummaryData(
     recentComments: buildRecentComments(feedback),
     comments: buildComments(feedback),
     notifications,
+    qrScanCounts,
   };
 }

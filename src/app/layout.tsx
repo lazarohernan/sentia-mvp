@@ -19,7 +19,7 @@ const cormorantGaramond = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Escucha MVP",
+  title: "Perks",
   description: "Plataforma de feedback, analitica IA y fidelizacion.",
 };
 

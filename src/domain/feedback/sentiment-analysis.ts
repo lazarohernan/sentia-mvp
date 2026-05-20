@@ -1,6 +1,7 @@
 import type { AiAnalysis, FeedbackSubmission } from "./schemas";
 
-const defaultModel = "pysentimiento/robertuito-sentiment-analysis";
+const defaultModel = "finiteautomata/beto-sentiment-analysis";
+const inferenceBaseUrl = "https://router.huggingface.co/hf-inference/models";
 
 type HuggingFaceClassification = {
   label: string;
@@ -124,23 +125,20 @@ export async function analyzeFeedbackSentiment(
   }
 
   try {
-    const response = await fetch(
-      `https://api-inference.huggingface.co/models/${model}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: submission.freeText,
-          options: {
-            wait_for_model: true,
-          },
-        }),
-        signal: AbortSignal.timeout(12_000),
+    const response = await fetch(`${inferenceBaseUrl}/${model}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        inputs: submission.freeText,
+        options: {
+          wait_for_model: true,
+        },
+      }),
+      signal: AbortSignal.timeout(12_000),
+    });
 
     if (!response.ok) {
       return {

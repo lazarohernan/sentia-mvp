@@ -491,11 +491,15 @@ function BranchHealth({ items }: { items: DashboardBranchHealthItem[] }) {
       <div className="mt-4 divide-y divide-slate-100">
         {items.map((branch) => {
           const classes = toneClasses(branch.tone);
+          const numericCsat = Number.parseFloat(branch.csat);
+          const marker = Number.isFinite(numericCsat)
+            ? Math.max(0, Math.min(100, ((numericCsat - 1) / 4) * 100))
+            : 0;
 
           return (
             <article
               key={branch.branch}
-              className="grid gap-3 py-3 sm:grid-cols-[150px_1fr_auto] sm:items-center"
+              className="grid gap-4 py-4 lg:grid-cols-[180px_1fr_120px] lg:items-center"
             >
               <div className="flex items-center gap-3">
                 <span
@@ -510,50 +514,47 @@ function BranchHealth({ items }: { items: DashboardBranchHealthItem[] }) {
                   <p className="text-sm text-slate-500">{branch.status}</p>
                 </div>
               </div>
-              <div>
-                <div className="relative flex h-2 overflow-hidden rounded-full bg-slate-100">
-                  <span
-                    className="bg-emerald-500"
-                    style={{ width: `${branch.segments[0]}%` }}
-                  />
-                  <span
-                    className="bg-amber-400"
-                    style={{ width: `${branch.segments[1]}%` }}
-                  />
-                  <span
-                    className="bg-red-500"
-                    style={{ width: `${branch.segments[2]}%` }}
-                  />
-                  <span
-                    className="absolute top-[-3px] h-4 w-0.5 rounded-full bg-slate-950"
-                    style={{ left: `${branch.marker}%` }}
-                  />
+              <div className="min-w-0">
+                <div className="relative pb-7 pt-10">
+                  <div
+                    className="absolute top-0 z-10 flex -translate-x-1/2 flex-col items-center"
+                    style={{ left: `${marker}%` }}
+                  >
+                    <span
+                      className={`relative whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold shadow-sm ring-1 ring-white ${classes.chip} after:absolute after:left-1/2 after:top-full after:size-2 after:-translate-x-1/2 after:-translate-y-1/2 after:rotate-45 after:bg-current after:opacity-20`}
+                    >
+                      CSAT {branch.csat}
+                    </span>
+                    <span className={`mt-1 h-5 w-0.5 rounded-full ${classes.bg}`} />
+                  </div>
+                  <div className="relative grid h-4 overflow-hidden rounded-full bg-slate-100 grid-cols-[40fr_20fr_40fr] shadow-inner">
+                    <span className="bg-red-500" />
+                    <span className="bg-amber-400" />
+                    <span className="bg-emerald-500" />
+                    <span
+                      className="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-950 shadow-[0_4px_12px_rgba(15,23,42,0.28)]"
+                      style={{ left: `${marker}%` }}
+                    />
+                  </div>
+                  <div className="mt-2 grid grid-cols-3 text-xs font-medium text-slate-500">
+                    <span>Riesgo</span>
+                    <span className="text-center">Observación</span>
+                    <span className="text-right">Bueno</span>
+                  </div>
+                  <div className="mt-1 grid grid-cols-3 text-[11px] text-slate-400">
+                    <span>1.0 - 2.9</span>
+                    <span className="text-center">3.0 - 3.9</span>
+                    <span className="text-right">4.0 - 5.0</span>
+                  </div>
                 </div>
               </div>
               <div className="text-left sm:text-right">
-                <p className={`text-sm font-semibold ${classes.text}`}>
-                  CSAT {branch.csat}
-                </p>
+                <p className={`text-sm font-semibold ${classes.text}`}>{branch.status}</p>
                 <p className="text-xs text-slate-500">{branch.comments}</p>
               </div>
             </article>
           );
         })}
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-4 border-t border-slate-100 pt-4 text-sm text-slate-600">
-        <span className="inline-flex items-center gap-2">
-          <span className="size-2.5 rounded-full bg-emerald-500" />
-          Bueno 4.0 - 5.0
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="size-2.5 rounded-full bg-amber-400" />
-          Observación 3.0 - 3.9
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="size-2.5 rounded-full bg-red-500" />
-          Riesgo 1.0 - 2.9
-        </span>
       </div>
     </section>
   );
@@ -688,14 +689,14 @@ export function DashboardSummaryView({
 
         {hasOperationalData && insight ? (
           <>
+            {branchHealthItems.length > 0 ? (
+              <BranchHealth items={branchHealthItems} />
+            ) : null}
             <div className="grid items-stretch gap-4 xl:grid-cols-[1fr_0.42fr]">
               <PriorityInsight insight={insight} />
               <AttentionQueue items={attentionItems} />
             </div>
-            <div className="grid gap-4 xl:grid-cols-2">
-              {branchHealthItems.length > 0 ? (
-                <BranchHealth items={branchHealthItems} />
-              ) : null}
+            <div className="grid gap-4">
               {recentCommentItems.length > 0 ? (
                 <RecentComments comments={recentCommentItems} />
               ) : null}

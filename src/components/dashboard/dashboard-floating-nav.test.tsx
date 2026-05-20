@@ -20,10 +20,15 @@ describe("DashboardFloatingNav", () => {
       "href",
       "/dashboard#comentarios",
     );
-    expect(screen.getByRole("link", { name: /^qr$/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /gestión/i })).toHaveAttribute(
       "href",
-      "/dashboard#qr",
+      "/dashboard#equipo",
     );
+    expect(
+      screen
+        .getAllByRole("link", { name: /escucha/i })
+        .find((link) => link.getAttribute("href") === "/dashboard/escucha"),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /notificaciones/i }),
     ).toBeInTheDocument();
@@ -50,10 +55,11 @@ describe("DashboardFloatingNav", () => {
       <DashboardFloatingNav activeView="resumen" onViewChange={onViewChange} />,
     );
 
-    fireEvent.click(screen.getByRole("link", { name: /^qr$/i }));
+    window.history.pushState({}, "", "/dashboard");
+    fireEvent.click(screen.getByRole("link", { name: /gestión/i }));
 
-    expect(onViewChange).toHaveBeenCalledWith("qr");
+    expect(onViewChange).toHaveBeenCalledWith("gestion");
     expect(window.location.pathname).toBe("/dashboard");
-    expect(window.location.hash).toBe("#qr");
+    expect(window.location.hash).toBe("#equipo");
   });
 });

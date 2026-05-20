@@ -18,6 +18,7 @@ export type DashboardDataTableFilter<Row> = {
   label: string;
   options: string[];
   getValue: (row: Row) => string;
+  align?: "left" | "right";
 };
 
 type DashboardDataTableProps<Row> = {
@@ -31,6 +32,10 @@ type DashboardDataTableProps<Row> = {
   searchPlaceholder?: string;
   pageSize?: number;
   emptyTitle?: string;
+  topContent?: ReactNode;
+  toolbarContent?: ReactNode;
+  leftToolbarContent?: ReactNode;
+  showSearch?: boolean;
 };
 
 const allOption = "Todos";
@@ -46,6 +51,10 @@ export function DashboardDataTable<Row>({
   searchPlaceholder = "Buscar",
   pageSize = 5,
   emptyTitle = "Sin resultados",
+  topContent,
+  toolbarContent,
+  leftToolbarContent,
+  showSearch = true,
 }: DashboardDataTableProps<Row>) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -90,40 +99,58 @@ export function DashboardDataTable<Row>({
     setPage(1);
   }
 
+  const leftFilters = filters.filter((filter) => filter.align === "left");
+  const rightFilters = filters.filter((filter) => filter.align !== "left");
+  const renderFilter = (filter: DashboardDataTableFilter<Row>) => (
+    <Dropdown
+      key={filter.key}
+      label={filter.label}
+      value={selectedFilters[filter.key] ?? allOption}
+      onChange={(value) => updateFilter(filter.key, value)}
+      options={[
+        { value: allOption, label: allOption },
+        ...filter.options.map((option) => ({ value: option, label: option })),
+      ]}
+      menuAlign={filter.align === "left" ? "left" : "right"}
+    />
+  );
+
   return (
-    <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white">
-      <div className="flex flex-col gap-3 border-b border-slate-100 p-4 lg:flex-row lg:items-center lg:justify-between">
-        <label className="relative block w-full lg:max-w-sm">
-          <span className="sr-only">{searchPlaceholder}</span>
-          <Search
-            size={16}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => updateQuery(event.target.value)}
-            placeholder={searchPlaceholder}
-            className="h-10 w-full rounded-full border border-slate-200 bg-[#f7f8f4] pl-9 pr-4 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-          />
-        </label>
+    <div className="rounded-[1.25rem] border border-slate-200 bg-white">
+      <div className="flex flex-col gap-3 border-b border-slate-100 bg-[#f7f8f4]/60 p-4 lg:flex-row lg:items-center lg:justify-between">
+        {showSearch ? (
+          <label className="relative block w-full lg:max-w-sm">
+            <span className="sr-only">{searchPlaceholder}</span>
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => updateQuery(event.target.value)}
+              placeholder={searchPlaceholder}
+              className="h-10 w-full rounded-full border border-slate-200 bg-[#f7f8f4] pl-9 pr-4 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+            />
+          </label>
+        ) : null}
+
+        {leftToolbarContent ? (
+          <div className="flex flex-wrap gap-2">
+            {leftToolbarContent}
+            {leftFilters.map(renderFilter)}
+          </div>
+        ) : leftFilters.length > 0 ? (
+          <div className="flex flex-wrap gap-2">{leftFilters.map(renderFilter)}</div>
+        ) : null}
 
         <div className="flex flex-wrap gap-2">
-          {filters.map((filter) => (
-            <Dropdown
-              key={filter.key}
-              label={filter.label}
-              value={selectedFilters[filter.key] ?? allOption}
-              onChange={(value) => updateFilter(filter.key, value)}
-              options={[
-                { value: allOption, label: allOption },
-                ...filter.options.map((option) => ({ value: option, label: option })),
-              ]}
-            />
-          ))}
+          {toolbarContent}
+          {rightFilters.map(renderFilter)}
         </div>
       </div>
+      {topContent ? <div className="border-b border-slate-100 p-5">{topContent}</div> : null}
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[880px] border-collapse text-left">
