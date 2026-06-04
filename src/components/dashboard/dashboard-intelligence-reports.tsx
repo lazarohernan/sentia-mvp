@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
-  FileText,
   Mail,
   TrendingUp,
 } from "lucide-react";
@@ -217,41 +216,6 @@ function buildReportReadiness(
   };
 }
 
-function buildExecutiveReading(
-  comments: DashboardCommentRow[],
-  reports: BranchReport[],
-) {
-  if (comments.length === 0) {
-    return {
-      headline: "Aún no hay suficientes valoraciones para generar un informe.",
-      detail:
-        "Cuando entren comentarios, esta vista separará señales accionables de comentarios que necesitan mejor captura.",
-      action: "Mantener activo el enlace QR y revisar la captura al cierre de la semana.",
-    };
-  }
-
-  const weakDataCount = reports.reduce(
-    (sum, report) => sum + report.partial + report.insufficient,
-    0,
-  );
-  const weakPercent = Math.round((weakDataCount / comments.length) * 100);
-  const mainBranch = reports[0];
-
-  return {
-    headline:
-      weakPercent >= 45
-        ? "La plataforma ya detecta señales, pero falta capturar mejor el motivo."
-        : "Hay información suficiente para dar seguimiento operativo esta semana.",
-    detail: mainBranch
-      ? `${mainBranch.branch} concentra la mayor oportunidad: ${mainBranch.total} valoraciones, ${mainBranch.insufficient + mainBranch.partial} con información parcial o insuficiente.`
-      : "El periodo actual no muestra una sucursal dominante.",
-    action:
-      weakPercent >= 45
-        ? "Agregar una pregunta de motivo principal cuando el comentario sea ambiguo."
-        : "Preparar un informe semanal con patrones, responsables y acciones cerradas.",
-  };
-}
-
 function MetricCard({
   label,
   value,
@@ -280,7 +244,7 @@ export function DashboardIntelligenceReports({
   const comments = dashboardData?.comments ?? [];
   const reports = buildBranchReports(comments);
   const readiness = buildReportReadiness(comments, reports);
-  const reading = buildExecutiveReading(comments, reports);
+  const priorityBranch = reports[0];
   const weakDataCount = reports.reduce(
     (sum, report) => sum + report.partial + report.insufficient,
     0,
@@ -291,60 +255,47 @@ export function DashboardIntelligenceReports({
   return (
     <div className="space-y-5">
       <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5">
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-              <FileText className="h-4 w-4 text-amber-700" aria-hidden="true" />
-              Informe inteligente
-            </div>
-            <h3 className="mt-3 text-2xl font-semibold tracking-normal text-slate-950">
-              {reading.headline}
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              {reading.detail}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-100 bg-[#f7f8f4] p-4 text-sm leading-6 text-slate-700 lg:max-w-sm">
-            <p className="font-semibold text-slate-950">Siguiente objetivo</p>
-            <p className="mt-1">{readiness.detail}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5">
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
               <TrendingUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
               Preparación del informe mensual
             </div>
-            <h3 className="mt-3 text-xl font-semibold tracking-normal text-slate-950">
-              {readiness.headline}
+            <h3 className="mt-3 text-2xl font-semibold tracking-normal text-slate-950">
+              {readiness.percent}% listo
             </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Meta: reunir suficientes valoraciones útiles por establecimiento.
-              Una valoración útil explica el motivo, no solo si la experiencia
-              fue buena o mala.
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              {readiness.missingUsefulResponses > 0
+                ? `Faltan ${readiness.missingUsefulResponses} valoraciones útiles para explicar mejor los patrones por sucursal.`
+                : "La base actual permite preparar un informe mensual con buena claridad."}
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                {readiness.usefulResponses.toFixed(1)} /{" "}
+                {readiness.targetUsefulResponses} respuestas útiles
+              </span>
+              <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                {readiness.qualityPercent}% claridad
+              </span>
+              {priorityBranch ? (
+                <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800">
+                  {priorityBranch.branch} requiere más contexto
+                </span>
+              ) : null}
+            </div>
           </div>
 
-          <div className="w-full lg:max-w-md">
+          <div className="w-full lg:max-w-sm">
             <div className="flex items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Avance
-                </p>
-                <p className="mt-1 text-3xl font-semibold text-slate-950">
-                  {readiness.percent}%
-                </p>
-              </div>
-              <p className="text-right text-sm leading-6 text-slate-500">
-                {readiness.usefulResponses.toFixed(1)} de{" "}
-                {readiness.targetUsefulResponses} respuestas útiles
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Avance
+              </p>
+              <p className="text-sm font-semibold text-slate-700">
+                {readiness.percent}%
               </p>
             </div>
             <div
-              className="mt-4 h-3 overflow-hidden rounded-full bg-slate-100"
+              className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100"
               role="progressbar"
               aria-label="Preparación del informe mensual"
               aria-valuemin={0}
@@ -356,10 +307,6 @@ export function DashboardIntelligenceReports({
                 style={{ width: `${readiness.percent}%` }}
               />
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-500">
-              Claridad actual: {readiness.qualityPercent}% de valoraciones con
-              información suficiente.
-            </p>
           </div>
         </div>
       </section>
