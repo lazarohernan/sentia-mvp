@@ -142,6 +142,47 @@ describe("DashboardShell", () => {
     expect(screen.getByText("Sin valoraciones registradas")).toBeInTheDocument();
   });
 
+  it("renders intelligence reports as an independent view from the hash", async () => {
+    window.history.pushState({}, "", "/dashboard#informes");
+
+    render(
+      <DashboardShell
+        dashboardData={buildShellDashboardData({
+          comments: [
+            {
+              id: "feedback-1",
+              customer: "Cliente anónimo",
+              business: "Feedback",
+              branch: "Centro",
+              feedbackType: "Observación",
+              sentiment: "Neutral",
+              csatScore: 3,
+              status: "Nuevo",
+              message: "Estuvo excelente, pero hay mucho que mejorar.",
+              receivedAt: "Hace 5 min",
+              analysisSummary:
+                "El cliente reconoce aspectos positivos pero no especifica la causa.",
+              recommendedAction:
+                "Pedir motivo principal cuando la valoración sea ambigua.",
+              dominantPattern: "Experiencia general",
+              analysisConfidence: "85% confianza",
+              analysisModel: "gpt-4.1-mini",
+            },
+          ],
+        })}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Informes" })).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Informe inteligente")).toBeInTheDocument();
+    expect(screen.getByText("Patrones por establecimiento")).toBeInTheDocument();
+    expect(screen.getByText("Entrega por defecto")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
+  });
+
   it("changes dashboard content when a menu item is clicked", () => {
     render(<DashboardShell />);
 

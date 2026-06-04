@@ -34,6 +34,7 @@ import { DashboardEmptyState } from "./dashboard-empty-state";
 import { DashboardExecutiveHeader } from "./dashboard-executive-header";
 import { DashboardFloatingNav } from "./dashboard-floating-nav";
 import type { DashboardNavView } from "./dashboard-floating-nav";
+import { DashboardIntelligenceReports } from "./dashboard-intelligence-reports";
 import { DashboardBranchQrPanel } from "./dashboard-branch-qr-panel";
 import { DashboardOrganizationSettingsPanel } from "./dashboard-organization-settings-panel";
 import { DashboardPermissionProfilesPanel } from "./dashboard-permission-profiles-panel";
@@ -51,7 +52,7 @@ function getDashboardViewFromHash(): DashboardNavView {
 
   const hash = window.location.hash.replace("#", "");
 
-  if (hash === "comentarios" || hash === "alertas") {
+  if (hash === "comentarios" || hash === "alertas" || hash === "informes") {
     return hash;
   }
 
@@ -595,11 +596,9 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const serverBranches = branches ?? [];
   const serverBranchIds = new Set(serverBranches.map((branch) => branch.id));
-  const [activeView, setActiveView] = useState<DashboardNavView>(() =>
-    getDashboardViewFromHash(),
-  );
+  const [activeView, setActiveView] = useState<DashboardNavView>("resumen");
   const [activeOperationsTab, setActiveOperationsTab] =
-    useState<OperationsTab>(() => getOperationsTabFromHash());
+    useState<OperationsTab>("equipo");
   const [createdBranches, setCreatedBranches] = useState<Branch[]>([]);
   const [updatedBranches, setUpdatedBranches] = useState<Record<string, Branch>>({});
   const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
@@ -766,6 +765,16 @@ export function DashboardShell({
                   setPendingCommentId(null);
                 }}
               />
+            </DashboardSection>
+          ) : null}
+
+          {activeView === "informes" ? (
+            <DashboardSection
+              id="informes"
+              title="Informes"
+              description="Resumen inteligente de patrones, calidad de información y acciones por establecimiento."
+            >
+              <DashboardIntelligenceReports dashboardData={dashboardData} />
             </DashboardSection>
           ) : null}
 
