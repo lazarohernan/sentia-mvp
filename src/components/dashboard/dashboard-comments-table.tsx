@@ -242,6 +242,37 @@ function FeedbackTypeBadge({ type }: { type: DashboardFeedbackType }) {
   );
 }
 
+function CommentMetaLine({
+  comment,
+  className = "",
+}: {
+  comment: DashboardComment;
+  className?: string;
+}) {
+  return (
+    <p
+      className={[
+        "flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600",
+        className,
+      ].join(" ")}
+    >
+      <span className="font-semibold text-slate-800">{comment.feedbackType}</span>
+      <span className="text-slate-300" aria-hidden="true">
+        |
+      </span>
+      <span>{comment.customer}</span>
+      <span className="text-slate-300" aria-hidden="true">
+        |
+      </span>
+      <span>{comment.branch}</span>
+      <span className="text-slate-300" aria-hidden="true">
+        |
+      </span>
+      <span className="text-slate-500">{comment.receivedAt}</span>
+    </p>
+  );
+}
+
 function CsatBadge({ score }: { score: number }) {
   const [isOpen, setIsOpen] = useState(false);
   const popoverId = useId();
@@ -519,7 +550,7 @@ function RatingsChartsPanel({ comments }: { comments: DashboardComment[] }) {
             </div>
           </header>
 
-          <div className="flex min-h-0 flex-1 flex-col justify-end">
+          <div className="mt-1">
             {metrics.scoredCount > 0 ? (
               <CsatHealthDistributionBar
                 zonePercents={zonePercents}
@@ -651,32 +682,19 @@ function CommentDetailView({
           Volver a valoraciones
         </button>
 
-        <div className="mt-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-          <div>
+        <div className="mt-5 flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
               Detalle de valoración
             </p>
             <h3 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950">
-              {comment.business} · {comment.branch}
+              {comment.business}
             </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Vista operativa para entender la señal, dar seguimiento y dejar
-              claro quién debe atenderla.
-            </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={[
-                "inline-flex rounded-full px-3 py-1.5 text-xs font-semibold",
-                sentimentStyles[comment.sentiment] ?? sentimentStyles.Neutral,
-              ].join(" ")}
-            >
-              {comment.sentiment}
-            </span>
-            <FeedbackTypeBadge type={comment.feedbackType} />
-            <StatusBadge status={currentStatus} />
-          </div>
+          <CommentMetaLine
+            comment={comment}
+            className="shrink-0 lg:max-w-md lg:justify-end lg:text-right"
+          />
         </div>
       </div>
 

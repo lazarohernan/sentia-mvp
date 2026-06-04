@@ -267,16 +267,14 @@ function BranchHealth({ items }: { items: DashboardBranchHealthItem[] }) {
                 />
               </div>
 
-              <div className="flex min-h-[11rem] min-w-0 flex-col space-y-2 lg:px-2">
+              <div className="min-w-0 space-y-2 lg:px-2">
                 <HealthDistributionHeading />
-                <div className="flex flex-1 flex-col">
                 <CsatHealthDistributionBar
                   zonePercents={branch.zonePercents}
                   zoneCounts={branch.zoneCounts}
                   showExplanation={false}
                   size="compact"
                 />
-                </div>
               </div>
 
               <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-4">
