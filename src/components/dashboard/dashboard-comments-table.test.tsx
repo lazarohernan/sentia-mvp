@@ -117,7 +117,17 @@ describe("DashboardCommentsTable", () => {
     expect(screen.getByText("Valoración recibida")).toBeInTheDocument();
     expect(screen.getAllByText("Felicitación").length).toBeGreaterThan(0);
     expect(screen.getByText("Lectura operativa")).toBeInTheDocument();
-    expect(screen.getByText("Marcar en revisión")).toBeInTheDocument();
+    expect(
+      screen.getByText(/El cliente destaca una atención rápida/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Reconocer al equipo y usar este caso/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText("OpenAI")).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Cambiar estado de seguimiento" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Escalar a responsable" })).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Volver a valoraciones" }),
@@ -145,7 +155,10 @@ describe("DashboardCommentsTable", () => {
     );
 
     fireEvent.click(screen.getByText("Cliente verificado"));
-    fireEvent.click(screen.getByRole("button", { name: "Escalado" }));
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Cambiar estado de seguimiento" }),
+      { target: { value: "Escalado" } },
+    );
 
     await waitFor(() => {
       expect(

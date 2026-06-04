@@ -65,6 +65,11 @@ export type DashboardCommentRow = {
   status: "Nuevo" | "En revisión" | "En proceso" | "Resuelto" | "Escalado";
   message: string;
   receivedAt: string;
+  analysisSummary?: string;
+  recommendedAction?: string;
+  dominantPattern?: string;
+  analysisConfidence?: string;
+  analysisModel?: string;
 };
 
 export type DashboardNotification = {

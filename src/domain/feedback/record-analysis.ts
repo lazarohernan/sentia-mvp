@@ -32,6 +32,7 @@ export type FeedbackRecord = {
         category: string | null;
         summary: string | null;
         recommended_action: string | null;
+        model_used: string | null;
         confidence: number | null;
       }>
     | null;

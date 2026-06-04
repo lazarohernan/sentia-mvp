@@ -42,12 +42,12 @@ describe("getDashboardSummaryData", () => {
   it("calculates executive metrics from every feedback page in the date range", async () => {
     const records = Array.from({ length: 1001 }, (_, index) => feedbackRecord(index));
 
-    const query = {
-      select: vi.fn(() => query),
-      in: vi.fn(() => query),
-      gte: vi.fn(() => query),
-      lte: vi.fn(() => query),
-      order: vi.fn(() => query),
+    const feedbackQuery = {
+      select: vi.fn(() => feedbackQuery),
+      in: vi.fn(() => feedbackQuery),
+      gte: vi.fn(() => feedbackQuery),
+      lte: vi.fn(() => feedbackQuery),
+      order: vi.fn(() => feedbackQuery),
       limit: vi.fn(async () => ({
         data: records.slice(0, 100),
         error: null,
@@ -57,9 +57,19 @@ describe("getDashboardSummaryData", () => {
         error: null,
       })),
     };
+    const analysesQuery = {
+      select: vi.fn(() => analysesQuery),
+      in: vi.fn(() => analysesQuery),
+      order: vi.fn(async () => ({
+        data: [],
+        error: null,
+      })),
+    };
 
     const client = {
-      from: vi.fn(() => query),
+      from: vi.fn((table: string) =>
+        table === "ai_analyses" ? analysesQuery : feedbackQuery,
+      ),
     } as unknown as Parameters<typeof getDashboardSummaryData>[0];
 
     const data = await getDashboardSummaryData(client, {
@@ -83,6 +93,78 @@ describe("getDashboardSummaryData", () => {
       comments: "1001 comentarios",
       scoredCount: 1001,
     });
-    expect(query.range).toHaveBeenCalledTimes(2);
+    expect(feedbackQuery.range).toHaveBeenCalledTimes(2);
+  });
+
+  it("maps stored AI analysis into dashboard comments", async () => {
+    const records = [feedbackRecord(1)];
+    records[0].type = "observation";
+    records[0].csat_score = 3;
+    records[0].free_text =
+      "Estuvo excelente, pero hay mucho que mejorar.";
+
+    const feedbackQuery = {
+      select: vi.fn(() => feedbackQuery),
+      in: vi.fn(() => feedbackQuery),
+      gte: vi.fn(() => feedbackQuery),
+      lte: vi.fn(() => feedbackQuery),
+      order: vi.fn(() => feedbackQuery),
+      range: vi.fn(async () => ({
+        data: records,
+        error: null,
+      })),
+    };
+    const analysesQuery = {
+      select: vi.fn(() => analysesQuery),
+      in: vi.fn(() => analysesQuery),
+      order: vi.fn(async () => ({
+        data: [
+          {
+            submission_id: "feedback-1",
+            status: "completed",
+            sentiment: "neutral",
+            urgency: "low",
+            category: "other",
+            summary:
+              "El cliente reconoce aspectos positivos, pero ve oportunidades de mejora.",
+            recommended_action:
+              "Revisar con el equipo las áreas específicas que pueden mejorar.",
+            model_used: "gpt-4.1-mini",
+            confidence: 0.85,
+          },
+        ],
+        error: null,
+      })),
+    };
+
+    const client = {
+      from: vi.fn((table: string) =>
+        table === "ai_analyses" ? analysesQuery : feedbackQuery,
+      ),
+    } as unknown as Parameters<typeof getDashboardSummaryData>[0];
+
+    const data = await getDashboardSummaryData(client, {
+      branches: [branch],
+      dateRange: {
+        period: "custom",
+        label: "Rango personalizado",
+        startDate: "2026-01-01",
+        endDate: "2026-01-02",
+        startIso: "2026-01-01T06:00:00.000Z",
+        endIso: "2026-01-03T05:59:59.999Z",
+      },
+    });
+
+    expect(data.comments[0]).toMatchObject({
+      analysisSummary:
+        "El cliente reconoce aspectos positivos, pero ve oportunidades de mejora.",
+      recommendedAction:
+        "Revisar con el equipo las áreas específicas que pueden mejorar.",
+      analysisModel: "gpt-4.1-mini",
+      analysisConfidence: "85% confianza",
+    });
+    expect(analysesQuery.in).toHaveBeenCalledWith("submission_id", [
+      "feedback-1",
+    ]);
   });
 });

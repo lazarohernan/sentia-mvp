@@ -636,8 +636,18 @@ function CommentDetailView({
     comment.sentiment === "Riesgo" || comment.csatScore <= 2
       ? "Gerencia de turno"
       : "Servicio al cliente";
-  const suggestedStatus =
-    currentStatus === "Nuevo" ? "En revisión" : currentStatus;
+  const operationalSummary = comment.analysisSummary?.trim() || csatStyle.meaning;
+  const operationalAction =
+    comment.recommendedAction?.trim() || csatStyle.action;
+  const dominantPattern = comment.dominantPattern ?? "Experiencia del cliente";
+  const canEscalate =
+    currentStatus !== "Escalado" && currentStatus !== "Resuelto";
+  const analysisSource =
+    comment.analysisModel?.startsWith("gpt")
+      ? "OpenAI"
+      : comment.analysisModel
+        ? "IA"
+        : "Operativo";
 
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
@@ -680,8 +690,66 @@ function CommentDetailView({
         </div>
       </div>
 
-      <div className="grid gap-5 p-5 lg:grid-cols-[1.35fr_0.85fr]">
-        <div className="rounded-[1.25rem] border border-slate-100 p-5">
+      <div className="space-y-5 p-5">
+        <section className="rounded-[1.25rem] border border-slate-100 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+              <ClipboardCheck size={17} className="text-emerald-700" />
+              Lectura operativa
+            </div>
+            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+              {analysisSource}
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">
+                  {dominantPattern}
+                </span>
+                {comment.analysisConfidence ? (
+                  <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500">
+                    {comment.analysisConfidence}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-3 text-sm leading-6 text-slate-800">
+                {operationalSummary}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-100 bg-[#f7f8f4] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Próxima acción
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-800">
+                {operationalAction}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-100 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Responsable
+              </p>
+              <p className="mt-2 text-sm font-semibold text-slate-800">
+                {responsibility}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-100 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Estado
+              </p>
+              <div className="mt-2">
+                <StatusBadge status={currentStatus} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-[1.25rem] border border-slate-100 p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <MessageSquareText size={17} className="text-emerald-700" />
             Valoración recibida
@@ -730,95 +798,83 @@ function CommentDetailView({
           </div>
 
           <CsatScaleStrip score={comment.csatScore} />
-        </div>
+        </section>
 
-        <aside className="rounded-[1.25rem] border border-slate-100 p-5">
+        <section className="rounded-[1.25rem] border border-slate-100 p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <ClipboardCheck size={17} className="text-emerald-700" />
-            Lectura operativa
+            Seguimiento
           </div>
 
-          <div className="mt-5 space-y-4">
+          <div className="mt-5 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Señal
-              </p>
-              <p className="mt-1 text-sm leading-6 text-slate-700">
-                {csatStyle.meaning}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Acción sugerida
-              </p>
-              <p className="mt-1 text-sm leading-6 text-slate-700">
-                {csatStyle.action}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Responsable sugerido
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-800">
-                {responsibility}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Estado actual
-              </p>
-              <div className="mt-2">
-                <StatusBadge status={currentStatus} />
-              </div>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                {statusDescriptions[currentStatus]}
-              </p>
-            </div>
-          </div>
-
-          {canManageFollowUp ? (
-            <>
-              <div className="mt-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Cambiar estado
-                </p>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {commentStatuses.map((status) => {
-                    const isSelected = status === currentStatus;
-
-                    return (
-                      <button
-                        key={status}
-                        type="button"
-                        disabled={isSaving}
-                        onClick={() => onStatusChange(status)}
-                        aria-pressed={isSelected}
-                        className={[
-                          "rounded-full border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60",
-                          isSelected
-                            ? "border-emerald-900 bg-emerald-900 text-white"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900",
-                        ].join(" ")}
-                      >
-                        {status}
-                      </button>
-                    );
-                  })}
+              {canManageFollowUp ? (
+                <div className="rounded-2xl border border-slate-100 p-4">
+                  <label className="block">
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Estado de seguimiento
+                    </span>
+                    <select
+                      value={currentStatus}
+                      disabled={isSaving}
+                      onChange={(event) =>
+                        onStatusChange(event.target.value as CommentStatus)
+                      }
+                      className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label="Cambiar estado de seguimiento"
+                    >
+                      {commentStatuses.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    {statusDescriptions[currentStatus]}
+                  </p>
+                  {canEscalate ? (
+                    <button
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => onStatusChange("Escalado")}
+                      className="mt-3 w-full rounded-full border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:border-amber-300 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Escalar a responsable
+                    </button>
+                  ) : null}
+                  {isSaving ? (
+                    <p className="mt-2 text-xs font-semibold text-slate-500">
+                      Guardando seguimiento...
+                    </p>
+                  ) : null}
                 </div>
-              </div>
+              ) : (
+                <p className="rounded-2xl border border-slate-100 p-4 text-sm leading-6 text-slate-500">
+                  Solo gerencia puede actualizar el seguimiento de este caso.
+                </p>
+              )}
+            </div>
 
-              <div className="mt-6">
-                <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                    Registrar acción
+            {canManageFollowUp ? (
+              <div>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Acción tomada
+                  </p>
+                  <span className="text-xs font-medium text-slate-400">
+                    Opcional
                   </span>
+                </div>
+                <label className="block">
+                  <span className="sr-only">Registrar acción tomada</span>
                   <textarea
                     value={followUpNote}
                     onChange={(event) =>
                       onFollowUpNoteChange?.(event.target.value)
                     }
                     maxLength={1000}
-                    placeholder="Describe qué hizo el equipo: llamada, compensación, visita a mesa..."
+                    placeholder="Ej. Se habló con el equipo, se contactó al cliente o se ajustó el turno."
                     className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                   />
                 </label>
@@ -831,41 +887,14 @@ function CommentDetailView({
                   Guardar nota de seguimiento
                 </button>
               </div>
+            ) : null}
+          </div>
 
-              <div className="mt-6 flex flex-col gap-2">
-                <button
-                  type="button"
-                  disabled={isSaving}
-                  onClick={() => onStatusChange(suggestedStatus)}
-                  className="rounded-full bg-emerald-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSaving
-                    ? "Guardando..."
-                    : currentStatus === "Nuevo"
-                      ? "Marcar en revisión"
-                      : "Guardar estado"}
-                </button>
-                <button
-                  type="button"
-                  disabled={isSaving}
-                  onClick={() => onStatusChange("Escalado")}
-                  className="rounded-full border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Escalar seguimiento
-                </button>
-              </div>
-
-              {saveError ? (
-                <p className="mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
-                  {saveError}
-                </p>
-              ) : null}
-            </>
-          ) : (
-            <p className="mt-6 text-sm leading-6 text-slate-500">
-              Solo gerencia puede actualizar el seguimiento de este caso.
+          {saveError ? (
+            <p className="mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+              {saveError}
             </p>
-          )}
+          ) : null}
 
           {followUpActions.length > 0 ? (
             <div className="mt-6">
@@ -909,7 +938,7 @@ function CommentDetailView({
               </ul>
             </div>
           ) : null}
-        </aside>
+        </section>
       </div>
     </article>
   );

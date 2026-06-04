@@ -81,9 +81,83 @@ const feedbackSelectColumns = `
   resolved_at,
   created_at,
   branch_id,
-  branches!inner(id, name, slug, organization_id),
-  ai_analyses(status, sentiment, urgency, category, summary, recommended_action, confidence)
+  branches!inner(id, name, slug, organization_id)
 `;
+
+type AiAnalysisRow = NonNullable<FeedbackRecord["ai_analyses"]>[number] & {
+  submission_id: string;
+};
+
+type AiAnalysesQueryClient = {
+  from: (table: "ai_analyses") => {
+    select: (columns: string) => {
+      in: (
+        column: "submission_id",
+        values: string[],
+      ) => {
+        order: (
+          column: "created_at",
+          options: { ascending: boolean },
+        ) => Promise<{
+          data: unknown;
+          error: unknown;
+        }>;
+      };
+    };
+  };
+};
+
+async function getAnalysesForFeedback(
+  client: Client,
+  submissionIds: string[],
+) {
+  const queryClient = client as unknown as AiAnalysesQueryClient;
+  const analysesBySubmission = new Map<string, AiAnalysisRow[]>();
+  const chunkSize = 500;
+
+  for (let index = 0; index < submissionIds.length; index += chunkSize) {
+    const chunk = submissionIds.slice(index, index + chunkSize);
+    const { data, error } = await queryClient
+      .from("ai_analyses")
+      .select(
+        "submission_id, status, sentiment, urgency, category, summary, recommended_action, model_used, confidence",
+      )
+      .in("submission_id", chunk)
+      .order("created_at", { ascending: false });
+
+    if (error || !data) {
+      continue;
+    }
+
+    for (const analysis of data as AiAnalysisRow[]) {
+      const current = analysesBySubmission.get(analysis.submission_id) ?? [];
+      current.push(analysis);
+      analysesBySubmission.set(analysis.submission_id, current);
+    }
+  }
+
+  return analysesBySubmission;
+}
+
+async function attachAnalysesToFeedback(
+  client: Client,
+  feedback: FeedbackRecord[],
+) {
+  if (feedback.length === 0) {
+    return feedback;
+  }
+
+  const analysesBySubmission = await getAnalysesForFeedback(
+    client,
+    feedback.map((record) => record.id),
+  );
+
+  return feedback.map((record) => ({
+    ...record,
+    ai_analyses:
+      analysesBySubmission.get(record.id) ?? record.ai_analyses ?? [],
+  }));
+}
 
 async function getFeedbackRecordsForDashboard(
   client: Client,
@@ -106,14 +180,14 @@ async function getFeedbackRecordsForDashboard(
       .range(offset, offset + FEEDBACK_QUERY_PAGE_SIZE - 1);
 
     if (error || !data) {
-      return records;
+      return attachAnalysesToFeedback(client, records);
     }
 
     const page = data as FeedbackRecord[];
     records.push(...page);
 
     if (page.length < FEEDBACK_QUERY_PAGE_SIZE) {
-      return records;
+      return attachAnalysesToFeedback(client, records);
     }
   }
 }
@@ -230,18 +304,33 @@ function buildBranchHealth(
 }
 
 function buildComments(feedback: FeedbackRecord[]): DashboardCommentRow[] {
-  return feedback.slice(0, 50).map((record) => ({
-    id: record.id,
-    customer: record.contact_name || "Cliente anónimo",
-    business: "Feedback",
-    branch: record.branches?.name ?? "Sucursal",
-    feedbackType: getFeedbackTypeLabel(record.type),
-    sentiment: getSentiment(record),
-    csatScore: record.csat_score ?? record.emotion_score,
-    status: getStatus(record),
-    message: record.free_text,
-    receivedAt: formatRelativeDate(record.created_at),
-  }));
+  return feedback.slice(0, 50).map((record) => {
+    const analysis = getAnalysis(record);
+    const confidence =
+      typeof analysis?.confidence === "number"
+        ? `${Math.round(analysis.confidence * 100)}% confianza`
+        : undefined;
+
+    return {
+      id: record.id,
+      customer: record.contact_name || "Cliente anónimo",
+      business: "Feedback",
+      branch: record.branches?.name ?? "Sucursal",
+      feedbackType: getFeedbackTypeLabel(record.type),
+      sentiment: getSentiment(record),
+      csatScore: record.csat_score ?? record.emotion_score,
+      status: getStatus(record),
+      message: record.free_text,
+      receivedAt: formatRelativeDate(record.created_at),
+      analysisSummary: analysis?.summary ?? undefined,
+      recommendedAction: analysis?.recommended_action ?? undefined,
+      dominantPattern: analysis?.category
+        ? getCategoryLabel(analysis.category)
+        : undefined,
+      analysisConfidence: confidence,
+      analysisModel: analysis?.model_used ?? undefined,
+    };
+  });
 }
 
 function buildRecentComments(feedback: FeedbackRecord[]): DashboardRecentComment[] {
