@@ -8,7 +8,7 @@ import {
 } from "@/domain/organizations/permission-profiles";
 import { removeTeamMember } from "@/domain/organizations/remove-team-member";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv, hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -33,7 +33,7 @@ export async function PATCH(request: Request, { params }: TeamMemberRouteProps) 
   const { userId: targetUserId } = await params;
   const clientIp = getClientIpFromHeaders(request.headers);
 
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:team-members:update-role",
     key: clientIp,
     limit: 40,
@@ -105,6 +105,7 @@ export async function PATCH(request: Request, { params }: TeamMemberRouteProps) 
       organizationId: membership.organizationId,
       targetUserId,
       organizationRoleId: parsed.data.organizationRoleId,
+      actorBranchId: membership.branchId,
     });
 
     return NextResponse.json(result);
@@ -113,6 +114,10 @@ export async function PATCH(request: Request, { params }: TeamMemberRouteProps) 
 
     if (message.includes("no pertenece")) {
       return NextResponse.json({ error: message }, { status: 400 });
+    }
+
+    if (message.includes("permisos")) {
+      return NextResponse.json({ error: message }, { status: 403 });
     }
 
     return NextResponse.json(
@@ -126,7 +131,7 @@ export async function DELETE(request: Request, { params }: TeamMemberRouteProps)
   const { userId: targetUserId } = await params;
   const clientIp = getClientIpFromHeaders(request.headers);
 
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:team-members:delete",
     key: clientIp,
     limit: 20,
@@ -168,6 +173,7 @@ export async function DELETE(request: Request, { params }: TeamMemberRouteProps)
       targetUserId,
       actorUserId: user.id,
       actorRole: membership.role as "owner" | "manager",
+      actorBranchId: membership.branchId,
     });
 
     return NextResponse.json({ ok: true });

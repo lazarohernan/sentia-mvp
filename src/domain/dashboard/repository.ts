@@ -52,8 +52,9 @@ type FeedbackQueryClient = {
               column: "created_at",
               options: { ascending: boolean },
             ) => {
-              limit: (
-                count: number,
+              range: (
+                from: number,
+                to: number,
               ) => Promise<{
                 data: unknown;
                 error: unknown;
@@ -65,6 +66,57 @@ type FeedbackQueryClient = {
     };
   };
 };
+
+const FEEDBACK_QUERY_PAGE_SIZE = 1000;
+const feedbackSelectColumns = `
+  id,
+  type,
+  emotion_score,
+  csat_score,
+  free_text,
+  contact_name,
+  workflow_status,
+  assigned_user_id,
+  first_response_at,
+  resolved_at,
+  created_at,
+  branch_id,
+  branches!inner(id, name, slug, organization_id),
+  ai_analyses(status, sentiment, urgency, category, summary, recommended_action, confidence)
+`;
+
+async function getFeedbackRecordsForDashboard(
+  client: Client,
+  params: {
+    branchIds: string[];
+    dateRange: DashboardDateRange;
+  },
+): Promise<FeedbackRecord[]> {
+  const queryClient = client as unknown as FeedbackQueryClient;
+  const records: FeedbackRecord[] = [];
+
+  for (let offset = 0; ; offset += FEEDBACK_QUERY_PAGE_SIZE) {
+    const { data, error } = await queryClient
+      .from("feedback_submissions")
+      .select(feedbackSelectColumns)
+      .in("branch_id", params.branchIds)
+      .gte("created_at", params.dateRange.startIso)
+      .lte("created_at", params.dateRange.endIso)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + FEEDBACK_QUERY_PAGE_SIZE - 1);
+
+    if (error || !data) {
+      return records;
+    }
+
+    const page = data as FeedbackRecord[];
+    records.push(...page);
+
+    if (page.length < FEEDBACK_QUERY_PAGE_SIZE) {
+      return records;
+    }
+  }
+}
 
 function buildMetrics(branches: Branch[], feedback: FeedbackRecord[]): DashboardMetric[] {
   const csatScores = feedback
@@ -349,36 +401,10 @@ export async function getDashboardSummaryData(
   let feedback: FeedbackRecord[] = [];
 
   if (branchIds.length > 0) {
-    const queryClient = client as unknown as FeedbackQueryClient;
-    const { data, error } = await queryClient
-      .from("feedback_submissions")
-      .select(
-        `
-          id,
-          type,
-          emotion_score,
-          csat_score,
-          free_text,
-          contact_name,
-          workflow_status,
-          assigned_user_id,
-          first_response_at,
-          resolved_at,
-          created_at,
-          branch_id,
-          branches!inner(id, name, slug, organization_id),
-          ai_analyses(status, sentiment, urgency, category, summary, recommended_action, confidence)
-        `,
-      )
-      .in("branch_id", branchIds)
-      .gte("created_at", params.dateRange.startIso)
-      .lte("created_at", params.dateRange.endIso)
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    if (!error && data) {
-      feedback = data as FeedbackRecord[];
-    }
+    feedback = await getFeedbackRecordsForDashboard(client, {
+      branchIds,
+      dateRange: params.dateRange,
+    });
   }
 
   const notifications =

@@ -4,6 +4,13 @@ type RateLimitWindow = {
 };
 
 type RateLimitStore = Map<string, RateLimitWindow>;
+type RateLimitParams = {
+  namespace: string;
+  key: string;
+  limit: number;
+  windowMs: number;
+  now?: number;
+};
 
 declare global {
   var __escuchaRateLimitStore: RateLimitStore | undefined;
@@ -37,13 +44,7 @@ export function getClientIpFromHeaders(
   return fallback;
 }
 
-export function consumeRateLimit(params: {
-  namespace: string;
-  key: string;
-  limit: number;
-  windowMs: number;
-  now?: number;
-}) {
+export function consumeRateLimit(params: RateLimitParams) {
   const now = params.now ?? Date.now();
   const scopedKey = `${params.namespace}:${params.key}`;
   const store = getStore();
@@ -72,6 +73,81 @@ export function consumeRateLimit(params: {
     remaining: Math.max(0, params.limit - nextCount),
     resetAt: current.resetAt,
   };
+}
+
+function getUpstashRateLimitEnv() {
+  const url = process.env.UPSTASH_REDIS_REST_URL?.replace(/\/$/, "");
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    return null;
+  }
+
+  return { url, token };
+}
+
+type UpstashCommandResult = {
+  result?: unknown;
+  error?: string;
+};
+
+function numericResult(row: UpstashCommandResult | undefined, fallback: number) {
+  const value = row?.result;
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  return fallback;
+}
+
+export async function consumeDistributedRateLimit(params: RateLimitParams) {
+  const upstash = getUpstashRateLimitEnv();
+  if (!upstash) {
+    return consumeRateLimit(params);
+  }
+
+  const now = params.now ?? Date.now();
+  const redisKey = `rate-limit:${params.namespace}:${params.key}`;
+
+  try {
+    const response = await fetch(`${upstash.url}/pipeline`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${upstash.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([
+        ["INCR", redisKey],
+        ["PEXPIRE", redisKey, params.windowMs, "NX"],
+        ["PTTL", redisKey],
+      ]),
+    });
+
+    if (!response.ok) {
+      return consumeRateLimit(params);
+    }
+
+    const rows = (await response.json()) as UpstashCommandResult[];
+    if (!Array.isArray(rows) || rows.some((row) => row.error)) {
+      return consumeRateLimit(params);
+    }
+
+    const count = numericResult(rows[0], 1);
+    const ttl = Math.max(0, numericResult(rows[2], params.windowMs));
+
+    return {
+      allowed: count <= params.limit,
+      remaining: Math.max(0, params.limit - count),
+      resetAt: now + ttl,
+    };
+  } catch {
+    return consumeRateLimit(params);
+  }
 }
 
 export function clearRateLimitStore() {

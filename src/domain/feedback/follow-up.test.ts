@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { computeFollowUpMetrics, getWorkflowStatusForRecord } from "./follow-up";
+import {
+  canAccessFeedbackBranch,
+  computeFollowUpMetrics,
+  getWorkflowStatusForRecord,
+} from "./follow-up";
 import type { FeedbackRecord } from "./record-analysis";
 
 function buildRecord(
@@ -66,5 +70,16 @@ describe("computeFollowUpMetrics", () => {
     expect(metrics.resolvedCount).toBe(1);
     expect(metrics.avgResponseHours).toBe(1.5);
     expect(metrics.avgResolutionHours).toBe(3);
+  });
+});
+
+describe("canAccessFeedbackBranch", () => {
+  it("allows organization-wide users and matching branch-scoped users", () => {
+    expect(canAccessFeedbackBranch(null, "branch-1")).toBe(true);
+    expect(canAccessFeedbackBranch("branch-1", "branch-1")).toBe(true);
+  });
+
+  it("blocks branch-scoped users from other branches", () => {
+    expect(canAccessFeedbackBranch("branch-1", "branch-2")).toBe(false);
   });
 });

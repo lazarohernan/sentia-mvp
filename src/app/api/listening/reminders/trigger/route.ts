@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { triggerListeningSurveyForOrganization } from "@/domain/listening/reminder-trigger";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,7 +11,7 @@ function canTriggerSurvey(role: string) {
 }
 
 export async function POST(request: Request) {
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:listening-reminders:trigger",
     key: getClientIpFromHeaders(request.headers),
     limit: 10,

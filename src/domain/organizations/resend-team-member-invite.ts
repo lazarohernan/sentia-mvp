@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
 import { createInviteActivationLink } from "./invite-link";
+import { canManageTeamMemberInBranchScope } from "./remove-team-member";
 import type { TeamMemberAccountStatus } from "./team";
 
 type ServiceClient = SupabaseClient<Database>;
@@ -17,11 +18,12 @@ export async function resendTeamMemberInvite(
     organizationId: string;
     targetUserId: string;
     siteUrl: string;
+    actorBranchId?: string | null;
   },
 ): Promise<ResendTeamMemberInviteResult> {
   const { data: member, error: memberError } = await client
     .from("organization_members")
-    .select("user_id, role, profiles(full_name)")
+    .select("user_id, role, branch_id, profiles(full_name)")
     .eq("organization_id", params.organizationId)
     .eq("user_id", params.targetUserId)
     .maybeSingle();
@@ -32,11 +34,16 @@ export async function resendTeamMemberInvite(
 
   const memberRow = member as {
     role: string;
+    branch_id: string | null;
     profiles: { full_name: string } | null;
   };
 
   if (memberRow.role === "owner") {
     throw new Error("No puedes reenviar invitacion al propietario.");
+  }
+
+  if (!canManageTeamMemberInBranchScope(params.actorBranchId ?? null, memberRow.branch_id)) {
+    throw new Error("No tienes permisos para administrar esta sucursal.");
   }
 
   const { data: authData, error: authError } = await client.auth.admin.getUserById(

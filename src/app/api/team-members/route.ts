@@ -6,8 +6,9 @@ import {
   getPermissionProfileById,
   inferMemberRoleFromPermissionProfile,
 } from "@/domain/organizations/permission-profiles";
+import { canManageTeamMemberInBranchScope } from "@/domain/organizations/remove-team-member";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv, hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -26,7 +27,7 @@ function canAssignRole(actorRole: string, targetRole: "manager" | "collaborator"
 
 export async function POST(request: Request) {
   const clientIp = getClientIpFromHeaders(request.headers);
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:team-members:create",
     key: clientIp,
     limit: 10,
@@ -92,6 +93,13 @@ export async function POST(request: Request) {
   if (!canAssignRole(membership.role, targetRole)) {
     return NextResponse.json(
       { error: "No puedes asignar ese rol con tu cuenta." },
+      { status: 403 },
+    );
+  }
+
+  if (!canManageTeamMemberInBranchScope(membership.branchId, parsed.data.branchId ?? null)) {
+    return NextResponse.json(
+      { error: "Solo puedes administrar colaboradores de tu sucursal asignada." },
       { status: 403 },
     );
   }

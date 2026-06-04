@@ -15,7 +15,7 @@ import {
 import { REGISTRATION_ENABLED } from "@/domain/auth/config";
 import { sanitizeEmailInput } from "@/lib/security/input";
 import {
-  consumeRateLimit,
+  consumeDistributedRateLimit,
   getClientIpFromHeaders,
 } from "@/lib/security/rate-limit";
 import {
@@ -36,7 +36,7 @@ export async function signInAction(formData: FormData): Promise<void> {
   const emailValue = formData.get("email");
   const email =
     typeof emailValue === "string" ? sanitizeEmailInput(emailValue) : "unknown";
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "auth:sign-in",
     key: `${clientIp}:${email}`,
     limit: 5,
@@ -86,7 +86,7 @@ export async function signUpAction(formData: FormData): Promise<void> {
   const emailValue = formData.get("email");
   const email =
     typeof emailValue === "string" ? sanitizeEmailInput(emailValue) : "unknown";
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "auth:sign-up",
     key: `${clientIp}:${email}`,
     limit: 3,
@@ -161,7 +161,7 @@ export async function signOutAction() {
 export async function activateAccountAction(formData: FormData): Promise<void> {
   const headerStore = await headers();
   const clientIp = getClientIpFromHeaders(headerStore);
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "auth:activate-account",
     key: clientIp,
     limit: 8,

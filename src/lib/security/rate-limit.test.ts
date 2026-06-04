@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   clearRateLimitStore,
+  consumeDistributedRateLimit,
   consumeRateLimit,
   getClientIpFromHeaders,
 } from "./rate-limit";
@@ -9,6 +10,8 @@ import {
 describe("consumeRateLimit", () => {
   afterEach(() => {
     clearRateLimitStore();
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   it("blocks requests after the configured limit", () => {
@@ -56,6 +59,42 @@ describe("consumeRateLimit", () => {
     });
 
     expect(retried.allowed).toBe(true);
+  });
+
+  it("uses Upstash Redis REST when configured", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.example.com");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "secret-token");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json([
+          { result: 3 },
+          { result: 1 },
+          { result: 120_000 },
+        ]),
+      ),
+    );
+
+    const result = await consumeDistributedRateLimit({
+      namespace: "api:test",
+      key: "203.0.113.10",
+      limit: 2,
+      windowMs: 120_000,
+    });
+
+    expect(result).toMatchObject({
+      allowed: false,
+      remaining: 0,
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      "https://redis.example.com/pipeline",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer secret-token",
+        }),
+      }),
+    );
   });
 });
 

@@ -17,7 +17,11 @@ describe("FeedbackForm", () => {
     );
 
     const { container } = render(
-      <FeedbackForm branchSlug="cafeteria-centro" />,
+      <FeedbackForm
+        branchId="11111111-1111-4111-8111-111111111111"
+        branchSlug="cafeteria-centro"
+        branchToken="signed-token"
+      />,
     );
     const form = container.querySelector("form");
     expect(form).not.toBeNull();
@@ -43,6 +47,8 @@ describe("FeedbackForm", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         branchSlug: "cafeteria-centro",
+        branchId: "11111111-1111-4111-8111-111111111111",
+        branchToken: "signed-token",
         type: "compliment",
         csatScore: 5,
         emotionScore: 5,

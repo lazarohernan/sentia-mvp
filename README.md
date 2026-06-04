@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SayIt / Escucha MVP
 
-## Getting Started
+Aplicacion Next.js para capturar valoraciones por sucursal, validar enlaces QR firmados, interpretar feedback operativo y mostrar seguimiento ejecutivo en dashboard.
 
-First, run the development server:
+## Desarrollo
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variables de entorno
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Usar `.env.example` como base:
 
-## Learn More
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+QR_SIGNING_SECRET=
+HUGGINGFACE_API_TOKEN=
+HUGGINGFACE_SENTIMENT_MODEL=finiteautomata/beto-sentiment-analysis
+OPENAI_API_KEY=
+OPENAI_MODEL=
+OPENAI_ALERTS_MODEL=
+OPENAI_SUMMARY_MODEL=
+OPENAI_GUIDANCE_MODEL=
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+```
 
-To learn more about Next.js, take a look at the following resources:
+`SUPABASE_SERVICE_ROLE_KEY` es requerido para persistir feedback y operaciones server-side. Si falta, el API de feedback responde error en vez de aceptar una valoracion que no se puede guardar.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`QR_SIGNING_SECRET` firma y valida los QR por sucursal. Debe mantenerse estable en produccion para que los QR impresos sigan funcionando.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`OPENAI_API_KEY` activa el triage operativo de alertas con salida estructurada interna y lenguaje natural visible para gerentes. Si no esta configurado, la app conserva el analisis anterior con Hugging Face cuando `HUGGINGFACE_API_TOKEN` existe.
 
-## Deploy on Vercel
+`OPENAI_ALERTS_MODEL` permite controlar el modelo usado para clasificar feedback, severidad, causa probable y accion recomendada. Si queda vacio, se usa el default de la aplicacion.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Rate limiting con Upstash
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Upstash Redis es opcional. Se usa solo para rate limiting distribuido cuando existen estas dos variables:
+
+```bash
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+```
+
+Si no estan configuradas, la app usa rate limiting local en memoria. Eso sirve en desarrollo y como fallback, pero en produccion serverless cada instancia tendria su propio contador.
+
+Beneficios de activarlo en produccion:
+
+- Bloqueo consistente por IP/ruta aunque Vercel/Next ejecute varias instancias.
+- Menos riesgo de abuso contra endpoints publicos como feedback, QR scan, login, invitaciones y administracion.
+- Evita usar Supabase como contador de requests en caliente.
+- Si Upstash falla temporalmente, el codigo cae al limitador local para no romper el flujo.
+
+Costo esperado:
+
+- El plan Free de Upstash Redis cubre 500K comandos/mes y 256 MB.
+- El modo pay-as-you-go cobra por comandos; la implementacion actual usa aproximadamente 3 comandos por request limitado.
+- Con trafico inicial normal deberia entrar en el free tier. Para produccion con tarjeta, configurar budget cap en Upstash para evitar sorpresas.
+
+## Verificacion antes de deploy
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+## Notas de produccion
+
+- Configurar variables de Supabase, QR y modelo de sentimiento antes del deploy.
+- Activar Upstash cuando haya trafico real o cuando el despliegue tenga multiples instancias.
+- Mantener `QR_SIGNING_SECRET` fuera del repositorio y no rotarlo sin plan de regenerar QR impresos.

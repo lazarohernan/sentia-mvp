@@ -9,7 +9,7 @@ import {
   getOrganizationByUser,
   getOrganizationMembershipByUser,
 } from "@/domain/organizations/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -79,7 +79,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   const clientIp = getClientIpFromHeaders(request.headers);
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:organization:alert-escalation:update",
     key: clientIp,
     limit: 30,

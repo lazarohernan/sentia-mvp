@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import type { Database } from "@/lib/supabase/database.types";
 import type { MemberRole } from "./schemas";
+import { canManageTeamMemberInBranchScope } from "./remove-team-member";
 
 export type PermissionKey =
   | "summary"
@@ -374,6 +375,7 @@ export async function updateTeamMemberPermissionProfile(
     organizationId: string;
     targetUserId: string;
     organizationRoleId: string | null;
+    actorBranchId?: string | null;
   },
 ): Promise<{
   permissionProfileId: string | null;
@@ -389,6 +391,25 @@ export async function updateTeamMemberPermissionProfile(
 
   if (params.organizationRoleId && !permissionProfile) {
     throw new Error("El rol seleccionado no pertenece a la organizacion.");
+  }
+
+  if (params.actorBranchId) {
+    const { data: targetMember, error: targetError } = await client
+      .from("organization_members")
+      .select("branch_id")
+      .eq("organization_id", params.organizationId)
+      .eq("user_id", params.targetUserId)
+      .neq("role", "owner")
+      .maybeSingle();
+
+    if (targetError || !targetMember) {
+      throw new Error("No se pudo actualizar el rol del colaborador.");
+    }
+
+    const targetRow = targetMember as { branch_id: string | null };
+    if (!canManageTeamMemberInBranchScope(params.actorBranchId, targetRow.branch_id)) {
+      throw new Error("No tienes permisos para administrar esta sucursal.");
+    }
   }
 
   const role = inferMemberRoleFromPermissionProfile(permissionProfile);

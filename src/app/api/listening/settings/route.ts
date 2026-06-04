@@ -6,7 +6,7 @@ import {
   updateListeningSettingsInputSchema,
 } from "@/domain/listening/settings";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -63,7 +63,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:listening-settings:update",
     key: getClientIpFromHeaders(request.headers),
     limit: 20,

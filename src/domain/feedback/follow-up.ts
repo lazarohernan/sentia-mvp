@@ -66,6 +66,13 @@ export function getCommentStatusLabel(
   return workflowStatusToLabel(getWorkflowStatusForRecord(record));
 }
 
+export function canAccessFeedbackBranch(
+  actorBranchId: string | null,
+  feedbackBranchId: string,
+): boolean {
+  return !actorBranchId || actorBranchId === feedbackBranchId;
+}
+
 function hoursBetween(startIso: string, endIso: string): number {
   const start = new Date(startIso).getTime();
   const end = new Date(endIso).getTime();
@@ -157,7 +164,26 @@ function mapActionRow(row: FollowUpActionRow): FeedbackFollowUpAction {
 export async function getFeedbackFollowUpActions(
   client: Client,
   submissionId: string,
+  scope?: {
+    organizationId: string;
+    actorBranchId?: string | null;
+  },
 ): Promise<FeedbackFollowUpAction[]> {
+  if (scope) {
+    const submission = await getSubmissionForFollowUp(client, submissionId);
+    if (!submission?.branches) {
+      return [];
+    }
+
+    if (submission.branches.organization_id !== scope.organizationId) {
+      return [];
+    }
+
+    if (!canAccessFeedbackBranch(scope.actorBranchId ?? null, submission.branch_id)) {
+      return [];
+    }
+  }
+
   const { data, error } = await client
     .from("feedback_follow_up_actions")
     .select(
@@ -217,6 +243,7 @@ export async function updateFeedbackFollowUp(
     submissionId: string;
     organizationId: string;
     actorUserId: string;
+    actorBranchId?: string | null;
     input: UpdateFeedbackFollowUpInput;
   },
 ): Promise<{
@@ -233,6 +260,10 @@ export async function updateFeedbackFollowUp(
   }
 
   if (submission.branches.organization_id !== params.organizationId) {
+    return null;
+  }
+
+  if (!canAccessFeedbackBranch(params.actorBranchId ?? null, submission.branch_id)) {
     return null;
   }
 
@@ -303,7 +334,10 @@ export async function updateFeedbackFollowUp(
     }
   }
 
-  const actions = await getFeedbackFollowUpActions(client, params.submissionId);
+  const actions = await getFeedbackFollowUpActions(client, params.submissionId, {
+    organizationId: params.organizationId,
+    actorBranchId: params.actorBranchId,
+  });
 
   return {
     workflowStatus: nextStatus,

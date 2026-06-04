@@ -5,7 +5,7 @@ import {
   createPermissionProfileInputSchema,
 } from "@/domain/organizations/permission-profiles";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv, hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -15,7 +15,7 @@ function canManageRoles(role: string) {
 }
 
 export async function POST(request: Request) {
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:organization-roles:create",
     key: getClientIpFromHeaders(request.headers),
     limit: 20,

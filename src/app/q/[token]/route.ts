@@ -6,7 +6,7 @@ import {
   verifyBranchQrTokenSignature,
 } from "@/domain/branches/qr-token";
 import { getActiveBranchById } from "@/domain/branches/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasQrSigningSecret } from "@/lib/security/qr-signing";
 import { hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -18,7 +18,7 @@ type SignedQrRouteProps = {
 export async function GET(request: Request, { params }: SignedQrRouteProps) {
   const { token } = await params;
   const clientIp = getClientIpFromHeaders(request.headers);
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "qr:signed:redirect",
     key: clientIp,
     limit: 120,
@@ -65,5 +65,7 @@ export async function GET(request: Request, { params }: SignedQrRouteProps) {
     // Continue to feedback even if analytics insert fails.
   }
 
-  return NextResponse.redirect(new URL(`/feedback/${branch.slug}`, request.url));
+  return NextResponse.redirect(
+    new URL(`/feedback/${branch.slug}?token=${encodeURIComponent(token)}`, request.url),
+  );
 }

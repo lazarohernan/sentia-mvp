@@ -10,7 +10,7 @@ import {
   getOrganizationByUser,
   getOrganizationMembershipByUser,
 } from "@/domain/organizations/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -70,6 +70,10 @@ export async function GET(_request: Request, context: RouteContext) {
   const actions = await getFeedbackFollowUpActions(
     authResult.supabase,
     submissionId,
+    {
+      organizationId: authResult.organization.id,
+      actorBranchId: authResult.membership.branchId,
+    },
   );
 
   return NextResponse.json({ actions });
@@ -77,7 +81,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
 export async function PATCH(request: Request, context: RouteContext) {
   const clientIp = getClientIpFromHeaders(request.headers);
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:feedback:follow-up",
     key: clientIp,
     limit: 80,
@@ -112,6 +116,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     submissionId,
     organizationId: authResult.organization.id,
     actorUserId: authResult.user.id,
+    actorBranchId: authResult.membership.branchId,
     input: parsed.data,
   });
 
