@@ -3,6 +3,7 @@
 import {
   Angry,
   ArrowLeft,
+  ArrowRight,
   Clock3,
   ClipboardCheck,
   Eye,
@@ -12,6 +13,7 @@ import {
   Meh,
   MessageSquareText,
   Smile,
+  Sparkles,
   UserRound,
   X,
 } from "lucide-react";
@@ -361,7 +363,7 @@ function CsatScaleStrip({ score }: { score: number }) {
   const selectedStyle = csatStyles[score] ?? csatStyles[3];
 
   return (
-    <div className="mt-5 rounded-[1.25rem] border border-slate-100 bg-[#f7f8f4] p-4">
+    <div className="rounded-[1.25rem] border border-slate-100 bg-[#f7f8f4] p-4">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
@@ -393,7 +395,12 @@ function CsatScaleStrip({ score }: { score: number }) {
               aria-current={isSelected ? "true" : undefined}
             >
               <LevelIcon size={24} aria-hidden="true" />
-              <span className="mt-2 text-xs font-bold">{level.score}</span>
+              {isSelected ? (
+                <span className="mb-1 rounded-full bg-slate-900 px-2 py-0.5 text-[0.62rem] font-semibold text-white">
+                  Elegido
+                </span>
+              ) : null}
+              <span className="mt-1 text-xs font-bold">{level.score}</span>
               <span className="mt-0.5 max-w-full text-[0.68rem] font-semibold leading-4">
                 {level.label}
               </span>
@@ -642,12 +649,9 @@ function CommentDetailView({
   const dominantPattern = comment.dominantPattern ?? "Experiencia del cliente";
   const canEscalate =
     currentStatus !== "Escalado" && currentStatus !== "Resuelto";
-  const analysisSource =
-    comment.analysisModel?.startsWith("gpt")
-      ? "OpenAI"
-      : comment.analysisModel
-        ? "IA"
-        : "Operativo";
+  const analysisStatus = comment.analysisModel
+    ? "Analizado correctamente"
+    : "Lectura operativa";
 
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
@@ -692,24 +696,55 @@ function CommentDetailView({
 
       <div className="space-y-5 p-5">
         <section className="rounded-[1.25rem] border border-slate-100 p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-              <ClipboardCheck size={17} className="text-emerald-700" />
-              Lectura operativa
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                <Sparkles size={18} aria-hidden="true" />
+              </span>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h4 className="text-sm font-semibold text-slate-950">
+                    Lectura operativa
+                  </h4>
+                  <span className="text-xs font-semibold text-slate-400">
+                    {analysisStatus}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Interpretación resumida para decidir qué hacer sin revisar el
+                  caso desde cero.
+                </p>
+              </div>
             </div>
-            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
-              {analysisSource}
-            </span>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[420px]">
+              <div className="rounded-2xl border border-slate-100 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Responsable
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {responsibility}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Estado
+                </p>
+                <div className="mt-1">
+                  <StatusBadge status={currentStatus} />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.9fr]">
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">
+          <div className="mt-5 grid items-stretch gap-3 lg:grid-cols-[1fr_auto_0.9fr]">
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   {dominantPattern}
-                </span>
+                </p>
                 {comment.analysisConfidence ? (
-                  <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500">
+                  <span className="text-xs font-semibold text-slate-400">
                     {comment.analysisConfidence}
                   </span>
                 ) : null}
@@ -717,6 +752,16 @@ function CommentDetailView({
               <p className="mt-3 text-sm leading-6 text-slate-800">
                 {operationalSummary}
               </p>
+            </div>
+
+            <div className="flex items-center justify-center">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm">
+                <ArrowRight
+                  size={16}
+                  className="rotate-90 lg:rotate-0"
+                  aria-hidden="true"
+                />
+              </span>
             </div>
 
             <div className="rounded-2xl border border-slate-100 bg-[#f7f8f4] p-4">
@@ -728,25 +773,6 @@ function CommentDetailView({
               </p>
             </div>
           </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-100 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Responsable
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-800">
-                {responsibility}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-100 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Estado
-              </p>
-              <div className="mt-2">
-                <StatusBadge status={currentStatus} />
-              </div>
-            </div>
-          </div>
         </section>
 
         <section className="rounded-[1.25rem] border border-slate-100 p-5">
@@ -754,7 +780,12 @@ function CommentDetailView({
             <MessageSquareText size={17} className="text-emerald-700" />
             Valoración recibida
           </div>
-          <p className="mt-4 text-base leading-8 text-slate-700">
+
+          <div className="mt-5">
+            <CsatScaleStrip score={comment.csatScore} />
+          </div>
+
+          <p className="mt-5 text-base leading-8 text-slate-700">
             “{comment.message}”
           </p>
 
@@ -796,8 +827,6 @@ function CommentDetailView({
               </p>
             </div>
           </div>
-
-          <CsatScaleStrip score={comment.csatScore} />
         </section>
 
         <section className="rounded-[1.25rem] border border-slate-100 p-5">

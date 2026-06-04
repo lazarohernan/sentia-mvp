@@ -123,7 +123,7 @@ describe("DashboardCommentsTable", () => {
     expect(
       screen.getByText(/Reconocer al equipo y usar este caso/i),
     ).toBeInTheDocument();
-    expect(screen.getByText("OpenAI")).toBeInTheDocument();
+    expect(screen.getByText("Analizado correctamente")).toBeInTheDocument();
     expect(
       screen.getByRole("combobox", { name: "Cambiar estado de seguimiento" }),
     ).toBeInTheDocument();
