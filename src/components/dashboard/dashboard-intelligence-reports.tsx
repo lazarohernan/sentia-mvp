@@ -285,7 +285,7 @@ export function DashboardIntelligenceReports({
             </div>
           </div>
 
-          <div className="w-full lg:max-w-sm">
+          <div className="w-full border-t border-slate-100 pt-5 lg:max-w-sm lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
             <div className="flex items-end justify-between gap-3">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                 Avance
@@ -307,6 +307,11 @@ export function DashboardIntelligenceReports({
                 style={{ width: `${readiness.percent}%` }}
               />
             </div>
+            <p className="mt-3 text-sm leading-6 text-slate-500">
+              El avance sube cuando entran valoraciones con motivo claro. Las
+              respuestas completas cuentan más; las ambiguas suman poco y las
+              genéricas no ayudan al informe.
+            </p>
           </div>
         </div>
       </section>
