@@ -278,7 +278,7 @@ export function DashboardIntelligenceReports({
                 {readiness.qualityPercent}% claridad
               </span>
               {priorityBranch ? (
-                <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800">
+                <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
                   {priorityBranch.branch} requiere más contexto
                 </span>
               ) : null}
