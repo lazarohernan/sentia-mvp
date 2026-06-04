@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createPermissionProfileInputSchema,
   inferMemberRoleFromPermissionProfile,
+  updatePermissionProfileInputSchema,
 } from "./permission-profiles";
 
 describe("inferMemberRoleFromPermissionProfile", () => {
@@ -44,5 +45,16 @@ describe("createPermissionProfileInputSchema", () => {
         permissions: ["billing"],
       }),
     ).toThrow();
+  });
+});
+
+describe("updatePermissionProfileInputSchema", () => {
+  it("accepts the same shape as create", () => {
+    expect(
+      updatePermissionProfileInputSchema.parse({
+        name: "Encargado de turno",
+        permissions: ["summary", "alerts"],
+      }).name,
+    ).toBe("Encargado de turno");
   });
 });

@@ -55,7 +55,7 @@ export function DashboardUserMenu({ user }: DashboardUserMenuProps) {
       <button
         type="button"
         className={[
-          "inline-flex max-w-[12rem] items-center gap-2 rounded-full border px-1.5 py-1.5 text-left transition sm:max-w-[14rem]",
+          "inline-flex max-w-48 items-center gap-2 rounded-full border px-1.5 py-1.5 text-left transition sm:max-w-56",
           isOpen
             ? "border-emerald-200 bg-emerald-50 text-emerald-950"
             : "border-transparent text-slate-600 hover:border-emerald-100 hover:bg-emerald-50/80 hover:text-emerald-950",

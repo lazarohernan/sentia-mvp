@@ -1,60 +1,15 @@
 "use client";
 
 import { Activity, AlertCircle, ChevronUp, Clock3, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { DashboardAlertItem } from "@/domain/dashboard/alerts";
-import type { DashboardAttentionItem, DashboardInsight } from "@/domain/dashboard/schemas";
-import { buildDashboardAlertItems } from "@/domain/dashboard/alerts";
-import {
-  dashboardMockAiInsight,
-  dashboardMockNotifications,
-} from "./dashboard.mock-data";
+import type { DashboardInsight } from "@/domain/dashboard/schemas";
 
 type DashboardAiAssistantProps = {
   insight?: DashboardInsight | null;
   alerts: DashboardAlertItem[];
-  showDemoData?: boolean;
 };
-
-const assistantMockAttention: DashboardAttentionItem[] = [
-  {
-    priority: "Prioridad alta",
-    title: "Mall Norte - Tiempo de espera alto",
-    description: "Asignar a gerencia de turno",
-    owner: "Operaciones",
-    age: "2h",
-    status: "Pendiente",
-    tone: "danger",
-  },
-  {
-    priority: "Prioridad media",
-    title: "Boulevard - Explicación al cliente",
-    description: "Revisar guion del personal",
-    owner: "Experiencia",
-    age: "4h",
-    status: "En revisión",
-    tone: "warning",
-  },
-];
-
-function getDemoInsight(): DashboardInsight {
-  return {
-    status: dashboardMockAiInsight.status,
-    confidence: dashboardMockAiInsight.confidence,
-    headline: "Mall Norte necesita revisión operativa hoy",
-    detail: dashboardMockAiInsight.detail,
-    action: dashboardMockAiInsight.action,
-    dominantPattern: "Tiempo de espera",
-    dominantPatternDetail: "Tema repetido en comentarios recientes",
-    actionDetail: "Revisar tiempos pico y redistribuir personal",
-    reasonMetrics: [
-      { value: "42%", label: "Aumento de menciones de espera" },
-      { value: "2.8/5", label: "CSAT en Mall Norte" },
-      { value: "+12 min", label: "Tiempo promedio de espera reportado" },
-    ],
-  };
-}
 
 function getToneClass(tone: DashboardAlertItem["tone"]) {
   if (tone === "danger") return "border-red-200 bg-white text-red-800";
@@ -65,33 +20,21 @@ function getToneClass(tone: DashboardAlertItem["tone"]) {
 export function DashboardAiAssistant({
   insight,
   alerts,
-  showDemoData = false,
 }: DashboardAiAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const assistantInsight = showDemoData ? getDemoInsight() : insight;
-  const assistantAlerts = useMemo(
-    () =>
-      showDemoData
-        ? buildDashboardAlertItems({
-            notifications: dashboardMockNotifications,
-            attentionItems: assistantMockAttention,
-          })
-        : alerts,
-    [alerts, showDemoData],
-  );
-  const activeAlert = assistantAlerts[activeIndex % Math.max(assistantAlerts.length, 1)];
-  const unreadCount = assistantAlerts.filter((alert) => alert.unread).length;
+  const activeAlert = alerts[activeIndex % Math.max(alerts.length, 1)];
+  const unreadCount = alerts.filter((alert) => alert.unread).length;
 
   useEffect(() => {
-    if (assistantAlerts.length <= 1) return;
+    if (alerts.length <= 1) return;
 
     const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % assistantAlerts.length);
+      setActiveIndex((current) => (current + 1) % alerts.length);
     }, 12_000);
 
     return () => window.clearInterval(timer);
-  }, [assistantAlerts.length]);
+  }, [alerts.length]);
 
   return (
     <aside className="fixed bottom-5 right-4 z-40 w-[calc(100vw-2rem)] max-w-sm sm:right-6">
@@ -129,15 +72,15 @@ export function DashboardAiAssistant({
                 Lectura IA
               </p>
               <h3 className="mt-2 text-base font-semibold leading-6 text-slate-950">
-                {assistantInsight?.headline ?? "Sin señales suficientes todavía"}
+                {insight?.headline ?? "Sin señales suficientes todavía"}
               </h3>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                {assistantInsight?.detail ??
+                {insight?.detail ??
                   "Cuando entren comentarios y alertas, el agente resumirá qué requiere atención."}
               </p>
-              {assistantInsight?.action ? (
+              {insight?.action ? (
                 <p className="mt-2 border-t border-slate-100 pt-2 text-sm font-semibold text-slate-900">
-                  Acción sugerida: {assistantInsight.action}
+                  Acción sugerida: {insight.action}
                 </p>
               ) : null}
             </div>
@@ -148,7 +91,7 @@ export function DashboardAiAssistant({
                   Alertas activas
                 </p>
                 <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                  {assistantAlerts.length}
+                  {alerts.length}
                 </span>
               </div>
 

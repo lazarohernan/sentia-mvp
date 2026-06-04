@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Clock3, Settings2, ShieldAlert, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import type { DashboardAlertItem } from "@/domain/dashboard/alerts";
 import type { DashboardFollowUpMetrics } from "@/domain/dashboard/schemas";
@@ -15,6 +15,15 @@ import { DashboardEmptyState } from "./dashboard-empty-state";
 import { DashboardSection } from "./dashboard-section";
 
 const ESCALATION_TIP_DISMISS_KEY = "perks.dashboard.alerts.escalation-tip.dismissed";
+
+function subscribeToEscalationTipDismissed(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
+}
+
+function isEscalationTipDismissed() {
+  return localStorage.getItem(ESCALATION_TIP_DISMISS_KEY) === "1";
+}
 
 type DashboardAlertsViewProps = {
   alerts: DashboardAlertItem[];
@@ -76,36 +85,31 @@ export function DashboardAlertsView({
   onOpenSubmission,
 }: DashboardAlertsViewProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isTipVisible, setIsTipVisible] = useState(true);
-  const [escalationPhone, setEscalationPhone] = useState(
-    organizationSettings?.alertEscalationPhone ?? null,
+  const [tipDismissedOverride, setTipDismissedOverride] = useState(false);
+  const [escalationOverride, setEscalationOverride] =
+    useState<AlertEscalationSettings | null>(null);
+  const tipDismissedFromStorage = useSyncExternalStore(
+    subscribeToEscalationTipDismissed,
+    isEscalationTipDismissed,
+    () => false,
   );
-  const [escalationEmail, setEscalationEmail] = useState(
-    organizationSettings?.alertEscalationEmail ?? null,
-  );
-
-  useEffect(() => {
-    if (localStorage.getItem(ESCALATION_TIP_DISMISS_KEY) === "1") {
-      setIsTipVisible(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    setEscalationPhone(organizationSettings?.alertEscalationPhone ?? null);
-    setEscalationEmail(organizationSettings?.alertEscalationEmail ?? null);
-  }, [
-    organizationSettings?.alertEscalationPhone,
-    organizationSettings?.alertEscalationEmail,
-  ]);
+  const isTipVisible = !tipDismissedFromStorage && !tipDismissedOverride;
+  const escalationPhone =
+    escalationOverride?.alertEscalationPhone ??
+    organizationSettings?.alertEscalationPhone ??
+    null;
+  const escalationEmail =
+    escalationOverride?.alertEscalationEmail ??
+    organizationSettings?.alertEscalationEmail ??
+    null;
 
   function dismissTip() {
-    setIsTipVisible(false);
+    setTipDismissedOverride(true);
     localStorage.setItem(ESCALATION_TIP_DISMISS_KEY, "1");
   }
 
   function handleSettingsSaved(settings: AlertEscalationSettings) {
-    setEscalationPhone(settings.alertEscalationPhone);
-    setEscalationEmail(settings.alertEscalationEmail);
+    setEscalationOverride(settings);
     onEscalationSettingsSaved?.(settings);
   }
 

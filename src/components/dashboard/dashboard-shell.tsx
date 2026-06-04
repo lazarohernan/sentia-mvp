@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Bell,
   Building2,
   Loader2,
   MapPin,
@@ -596,7 +595,6 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const serverBranches = branches ?? [];
   const serverBranchIds = new Set(serverBranches.map((branch) => branch.id));
-  const [showDemoData, setShowDemoData] = useState(false);
   const [activeView, setActiveView] = useState<DashboardNavView>("resumen");
   const [activeOperationsTab, setActiveOperationsTab] =
     useState<OperationsTab>("equipo");
@@ -634,10 +632,6 @@ export function DashboardShell({
       window.removeEventListener("popstate", updateActiveView);
     };
   }, []);
-
-  function toggleDemoData() {
-    setShowDemoData((current) => !current);
-  }
 
   function openCreateBranchDrawer() {
     setSelectedBranch(null);
@@ -721,7 +715,6 @@ export function DashboardShell({
           notifications: dashboardData.notifications,
           attentionItems: dashboardData.attentionItems,
         });
-  const useSummaryDemoData = activeView === "resumen" && showDemoData;
   const qrBranch = qrBranchId
     ? liveBranches.find((branch) => branch.id === qrBranchId) ?? null
     : null;
@@ -731,17 +724,14 @@ export function DashboardShell({
       <DashboardFloatingNav
         activeView={activeView}
         onViewChange={setActiveView}
-        notifications={useSummaryDemoData ? undefined : dashboardData?.notifications}
-        useMockNotifications={useSummaryDemoData}
+        notifications={dashboardData?.notifications}
         currentUser={currentUser}
       />
-      <section className="mx-auto w-full max-w-[92rem] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+      <section className="mx-auto w-full max-w-368 px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div>
           {activeView === "resumen" ? (
             <>
               <DashboardExecutiveHeader
-                showDemoData={showDemoData}
-                onToggleDemoData={toggleDemoData}
                 dashboardData={dashboardData}
                 dateRange={dateRange}
                 branches={liveBranches}
@@ -749,8 +739,8 @@ export function DashboardShell({
                 lockedBranchScope={lockedBranchScope}
               />
               <DashboardSummaryView
-                showDemoData={showDemoData}
                 dashboardData={dashboardData}
+                alerts={liveAlerts}
               />
             </>
           ) : null}
@@ -766,6 +756,7 @@ export function DashboardShell({
                 dateRange={dashboardData?.dateRange ?? dateRange}
                 canManageFollowUp={canManageFollowUp}
                 initialSelectedCommentId={pendingCommentId}
+                onCloseDetail={() => setPendingCommentId(null)}
                 onCommentUpdated={() => {
                   setPendingCommentId(null);
                 }}
@@ -863,6 +854,32 @@ export function DashboardShell({
                     onProfileCreated={(profile) => {
                       setPermissionProfiles((current) => [...current, profile]);
                     }}
+                    onProfileUpdated={(profile) => {
+                      setPermissionProfiles((current) =>
+                        current.map((item) =>
+                          item.id === profile.id ? profile : item,
+                        ),
+                      );
+                    }}
+                    onProfileDeleted={(profileId, affectedMemberCount) => {
+                      setPermissionProfiles((current) =>
+                        current.filter((item) => item.id !== profileId),
+                      );
+
+                      if (affectedMemberCount > 0) {
+                        setTeamMembers((current) =>
+                          current.map((member) =>
+                            member.permissionProfileId === profileId
+                              ? {
+                                  ...member,
+                                  permissionProfileId: null,
+                                  permissionProfileName: null,
+                                }
+                              : member,
+                          ),
+                        );
+                      }
+                    }}
                   />
                 </DashboardSection>
               ) : null}
@@ -946,11 +963,7 @@ export function DashboardShell({
           }}
         />
       ) : null}
-      <DashboardAiAssistant
-        alerts={liveAlerts}
-        insight={dashboardData?.insight}
-        showDemoData={showDemoData}
-      />
+      <DashboardAiAssistant alerts={liveAlerts} insight={dashboardData?.insight} />
     </main>
   );
 }

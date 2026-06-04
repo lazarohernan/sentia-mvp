@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Mail, Phone, Save, Settings2, X } from "lucide-react";
+import { Loader2, Mail, Phone, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
@@ -14,44 +14,22 @@ type DashboardAlertsEscalationSettingsPanelProps = {
   onSaved?: (settings: AlertEscalationSettings) => void;
 };
 
-export function DashboardAlertsEscalationSettingsPanel({
-  open,
-  onClose,
+function EscalationSettingsForm({
   initialSettings,
-  canManage = false,
+  canManage,
+  onClose,
   onSaved,
-}: DashboardAlertsEscalationSettingsPanelProps) {
+}: {
+  initialSettings?: AlertEscalationSettings | null;
+  canManage: boolean;
+  onClose: () => void;
+  onSaved?: (settings: AlertEscalationSettings) => void;
+}) {
   const [phone, setPhone] = useState(initialSettings?.alertEscalationPhone ?? "");
   const [email, setEmail] = useState(initialSettings?.alertEscalationEmail ?? "");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    setPhone(initialSettings?.alertEscalationPhone ?? "");
-    setEmail(initialSettings?.alertEscalationEmail ?? "");
-    setError("");
-    setSuccess("");
-  }, [open, initialSettings?.alertEscalationPhone, initialSettings?.alertEscalationEmail]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -97,12 +75,9 @@ export function DashboardAlertsEscalationSettingsPanel({
     }
   }
 
-  if (!open) {
-    return null;
-  }
-
   return (
-    <div
+    <>
+      <div
       className="fixed inset-0 z-50 bg-slate-950/30 backdrop-blur-[2px]"
       role="presentation"
     >
@@ -224,5 +199,48 @@ export function DashboardAlertsEscalationSettingsPanel({
         </form>
       </aside>
     </div>
+    </>
+  );
+}
+
+export function DashboardAlertsEscalationSettingsPanel({
+  open,
+  onClose,
+  initialSettings,
+  canManage = false,
+  onSaved,
+}: DashboardAlertsEscalationSettingsPanelProps) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
+  if (!open) {
+    return null;
+  }
+
+  const formKey = [
+    initialSettings?.alertEscalationPhone ?? "",
+    initialSettings?.alertEscalationEmail ?? "",
+  ].join(":");
+
+  return (
+    <EscalationSettingsForm
+      key={formKey}
+      initialSettings={initialSettings}
+      canManage={canManage}
+      onClose={onClose}
+      onSaved={onSaved}
+    />
   );
 }

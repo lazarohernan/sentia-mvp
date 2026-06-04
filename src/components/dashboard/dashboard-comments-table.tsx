@@ -26,6 +26,13 @@ import {
 } from "@/domain/feedback/workflow-status";
 
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
+import { computeRatingsHealth } from "@/domain/dashboard/ratings-health";
+import {
+  CsatHealthDistributionBar,
+  CsatHealthExplanation,
+  healthZoneStyles,
+} from "./csat-health-distribution";
+import { HealthDistributionHeading } from "./health-distribution-heading";
 import type {
   DashboardCommentRow,
   DashboardFeedbackType,
@@ -33,6 +40,10 @@ import type {
 import { DashboardDataTable } from "./dashboard-data-table";
 import type { DashboardDataTableColumn } from "./dashboard-data-table";
 import { DashboardDateFilter } from "./dashboard-date-filter";
+import {
+  DashboardValoracionesTabs,
+  type ValoracionesTab,
+} from "./dashboard-valoraciones-tabs";
 
 type DashboardComment = DashboardCommentRow;
 type CommentStatus =
@@ -47,6 +58,7 @@ type DashboardCommentsTableProps = {
   dateRange?: DashboardDateRange;
   canManageFollowUp?: boolean;
   initialSelectedCommentId?: string | null;
+  onCloseDetail?: () => void;
   onCommentUpdated?: (commentId: string, status: CommentStatus) => void;
 };
 
@@ -106,8 +118,8 @@ const feedbackTypeStyles: Record<
   },
   Recomendación: {
     icon: MessageSquareText,
-    className: "bg-sky-50 text-sky-800",
-    softClassName: "bg-sky-50 text-sky-800",
+    className: "bg-slate-100 text-slate-600",
+    softClassName: "bg-slate-50 text-slate-600",
     description: "Idea o sugerencia para fortalecer la experiencia.",
   },
 };
@@ -393,111 +405,32 @@ function CsatScaleStrip({ score }: { score: number }) {
   );
 }
 
-function getHealthStatus(csat: number | null) {
-  if (csat === null) {
-    return {
-      label: "Sin datos",
-      className: "bg-slate-100 text-slate-600",
-      textClassName: "text-slate-600",
-    };
-  }
-
-  if (csat >= 4) {
-    return {
-      label: "Bueno",
-      className: "bg-emerald-50 text-emerald-800",
-      textClassName: "text-emerald-800",
-    };
-  }
-
-  if (csat >= 3) {
-    return {
-      label: "Observación",
-      className: "bg-amber-50 text-amber-800",
-      textClassName: "text-amber-800",
-    };
-  }
-
-  return {
-    label: "Riesgo",
-    className: "bg-red-50 text-red-700",
-    textClassName: "text-red-700",
-  };
-}
-
-function RatingsHealthSummary({ comments }: { comments: DashboardComment[] }) {
+function useValoracionesMetrics(comments: DashboardComment[]) {
   const scores = comments
     .map((comment) => comment.csatScore)
     .filter((score): score is number => typeof score === "number");
-  const average =
-    scores.length > 0
-      ? scores.reduce((sum, score) => sum + score, 0) / scores.length
-      : null;
-  const marker =
-    average === null ? 0 : Math.max(0, Math.min(100, ((average - 1) / 4) * 100));
-  const health = getHealthStatus(average);
-  const formattedAverage = average === null ? "N/A" : average.toFixed(1);
+  const metrics = computeRatingsHealth({
+    scores,
+    totalCount: comments.length,
+  });
+  const healthKey = metrics.zone === "none" ? "none" : metrics.zone;
+  const healthStyle = healthZoneStyles[healthKey];
+  const formattedAverage =
+    metrics.averageCsat === null ? "—" : metrics.averageCsat.toFixed(1);
   const typeCounts = feedbackTypeOrder.map((type) => ({
     type,
     count: comments.filter((comment) => comment.feedbackType === type).length,
     ...feedbackTypeStyles[type],
   }));
 
-  return (
-    <section className="space-y-5">
-      <div className="grid gap-5 lg:grid-cols-[190px_1fr_130px] lg:items-center">
-        <div className="flex items-center gap-3">
-          <span
-            className={`inline-flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-bold ${health.className}`}
-          >
-            {formattedAverage}
-          </span>
-          <div>
-            <h3 className="text-base font-semibold text-slate-950">
-              Salud de valoraciones
-            </h3>
-            <p className={`mt-0.5 text-sm font-semibold ${health.textClassName}`}>
-              {health.label}
-            </p>
-          </div>
-        </div>
-        <div className="min-w-0">
-          <div className="relative pb-5 pt-10">
-            <div
-              className="absolute top-0 z-10 flex -translate-x-1/2 flex-col items-center"
-              style={{ left: `${marker}%` }}
-            >
-              <span
-                className={`relative whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold shadow-sm ring-1 ring-white ${health.className} after:absolute after:left-1/2 after:top-full after:size-2 after:-translate-x-1/2 after:-translate-y-1/2 after:rotate-45 after:bg-current after:opacity-20`}
-              >
-                CSAT {formattedAverage}
-              </span>
-              <span className={`mt-1 h-5 w-0.5 rounded-full ${health.className}`} />
-            </div>
-            <div className="relative grid h-4 overflow-hidden rounded-full bg-slate-100 grid-cols-[40fr_20fr_40fr] shadow-inner">
-              <span className="bg-red-500" />
-              <span className="bg-amber-400" />
-              <span className="bg-emerald-500" />
-              <span
-                className="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-950 shadow-[0_4px_12px_rgba(15,23,42,0.28)]"
-                style={{ left: `${marker}%` }}
-              />
-            </div>
-            <div className="mt-2 grid grid-cols-3 text-[11px] font-medium text-slate-500">
-              <span>Riesgo</span>
-              <span className="text-center">Observación</span>
-              <span className="text-right">Bueno</span>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-2xl bg-[#f7f8f4] px-4 py-3 text-left lg:text-right">
-          <p className="text-xl font-semibold text-slate-950">{comments.length}</p>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-            Valoraciones
-          </p>
-        </div>
-      </div>
+  return { metrics, healthStyle, formattedAverage, typeCounts };
+}
 
+function RatingsStatCards({ comments }: { comments: DashboardComment[] }) {
+  const { typeCounts } = useValoracionesMetrics(comments);
+
+  return (
+    <section className="space-y-4" aria-label="Resumen por tipo de valoración">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3">
           <div className="flex items-center justify-between gap-3">
@@ -509,9 +442,12 @@ function RatingsHealthSummary({ comments }: { comments: DashboardComment[] }) {
                 {comments.length}
               </p>
             </div>
-            <span className="inline-flex size-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-              <MessageSquareText size={18} aria-hidden="true" />
-            </span>
+            <MessageSquareText
+              size={20}
+              className="shrink-0 text-slate-950"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
           </div>
           <p className="mt-2 text-xs leading-5 text-slate-500">
             Total recibido en el periodo.
@@ -535,14 +471,12 @@ function RatingsHealthSummary({ comments }: { comments: DashboardComment[] }) {
                     {type.count}
                   </p>
                 </div>
-                <span
-                  className={[
-                    "inline-flex size-10 items-center justify-center rounded-full",
-                    type.softClassName,
-                  ].join(" ")}
-                >
-                  <Icon size={18} aria-hidden="true" />
-                </span>
+                <Icon
+                  size={20}
+                  className="shrink-0 text-slate-950"
+                  strokeWidth={1.75}
+                  aria-hidden="true"
+                />
               </div>
               <p className="mt-2 text-xs leading-5 text-slate-500">
                 {type.description}
@@ -550,6 +484,124 @@ function RatingsHealthSummary({ comments }: { comments: DashboardComment[] }) {
             </div>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+function RatingsChartsPanel({ comments }: { comments: DashboardComment[] }) {
+  const { metrics, healthStyle, formattedAverage } =
+    useValoracionesMetrics(comments);
+  const emptyZones = {
+    risk: 0,
+    observation: 0,
+    good: 0,
+  } as const;
+  const zonePercents =
+    metrics.scoredCount > 0 ? metrics.zonePercents : emptyZones;
+  const zoneCounts =
+    metrics.scoredCount > 0 ? metrics.zoneCounts : emptyZones;
+
+  return (
+    <section
+      aria-label="Gráficos de valoraciones"
+      className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+    >
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_15.5rem] lg:divide-x lg:divide-slate-100">
+        {/* Gráfica principal */}
+        <div className="flex min-h-88 flex-col px-5 py-5 sm:min-h-104 sm:px-7 sm:py-7">
+          <header className="mb-5 shrink-0 border-b border-slate-100 pb-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Distribución del periodo
+            </p>
+            <div className="mt-2">
+              <HealthDistributionHeading titleClassName="text-lg font-semibold tracking-normal text-slate-950" />
+            </div>
+          </header>
+
+          <div className="flex min-h-0 flex-1 flex-col justify-end">
+            {metrics.scoredCount > 0 ? (
+              <CsatHealthDistributionBar
+                zonePercents={zonePercents}
+                zoneCounts={zoneCounts}
+                showExplanation={false}
+                size="wide"
+              />
+            ) : (
+              <div className="flex flex-1 flex-col justify-center">
+                <CsatHealthDistributionBar
+                  zonePercents={zonePercents}
+                  zoneCounts={zoneCounts}
+                  showExplanation={false}
+                  size="wide"
+                />
+                <p className="mt-4 max-w-md text-sm leading-6 text-slate-500">
+                  Cuando lleguen valoraciones con nota, verás cuántas experiencias
+                  fueron críticas, regulares o positivas.
+                </p>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* Métricas compactas al costado */}
+        <aside className="flex flex-col bg-[#f7f8f4] px-5 py-6 sm:px-6 lg:py-8">
+          <div className="text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Salud de valoraciones
+            </p>
+            <span
+              className={`mx-auto mt-4 inline-flex size-18 flex-col items-center justify-center rounded-2xl text-center font-bold leading-none ${healthStyle.badgeClassName}`}
+            >
+              <span className="text-2xl">{formattedAverage}</span>
+              {metrics.averageCsat !== null ? (
+                <span className="mt-0.5 text-[11px] font-semibold opacity-80">
+                  /5
+                </span>
+              ) : null}
+            </span>
+            <p
+              className={`mt-3 text-sm font-semibold leading-5 ${healthStyle.textClassName}`}
+            >
+              {metrics.label}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              {metrics.scoredCount > 0
+                ? `Promedio en ${metrics.scoredCount} ${
+                    metrics.scoredCount === 1 ? "nota" : "notas"
+                  }`
+                : "Sin notas CSAT en el periodo"}
+            </p>
+          </div>
+
+          <div className="my-6 border-t border-slate-200/80" />
+
+          <div className="space-y-1 text-center">
+            <p className="text-3xl font-semibold tabular-nums text-slate-950">
+              {metrics.totalCount}
+            </p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+              Recibidas
+            </p>
+            {metrics.scoredCount > 0 &&
+            metrics.scoredCount !== metrics.totalCount ? (
+              <p className="pt-1 text-xs text-slate-500">
+                {metrics.totalCount - metrics.scoredCount} sin nota numérica
+              </p>
+            ) : null}
+          </div>
+
+          {metrics.scoredCount > 0 ? (
+            <div className="mt-6 border-t border-slate-200/80 pt-5">
+              <CsatHealthExplanation
+                zoneCounts={zoneCounts}
+                zonePercents={zonePercents}
+                scoredCount={metrics.scoredCount}
+              />
+            </div>
+          ) : null}
+        </aside>
       </div>
     </section>
   );
@@ -588,7 +640,7 @@ function CommentDetailView({
     currentStatus === "Nuevo" ? "En revisión" : currentStatus;
 
   return (
-    <article className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
+    <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
       <div className="border-b border-slate-100 bg-[#f7f8f4] p-5">
         <button
           type="button"
@@ -986,11 +1038,11 @@ export function DashboardCommentsTable({
   dateRange,
   canManageFollowUp = false,
   initialSelectedCommentId = null,
+  onCloseDetail,
   onCommentUpdated,
 }: DashboardCommentsTableProps) {
-  const [selectedCommentId, setSelectedCommentId] = useState<string | null>(
-    initialSelectedCommentId,
-  );
+  const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
+  const activeCommentId = initialSelectedCommentId ?? selectedCommentId;
   const [statusOverrides, setStatusOverrides] = useState<
     Record<string, CommentStatus>
   >({});
@@ -1000,22 +1052,14 @@ export function DashboardCommentsTable({
   const [followUpNote, setFollowUpNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [activeTab, setActiveTab] = useState<ValoracionesTab>("listado");
 
   useEffect(() => {
-    if (initialSelectedCommentId) {
-      setSelectedCommentId(initialSelectedCommentId);
-    }
-  }, [initialSelectedCommentId]);
-
-  useEffect(() => {
-    if (!selectedCommentId) {
-      setFollowUpActions([]);
-      setFollowUpNote("");
-      setSaveError("");
+    if (!activeCommentId) {
       return;
     }
 
-    void fetch(`/api/feedback/${selectedCommentId}/follow-up`, {
+    void fetch(`/api/feedback/${activeCommentId}/follow-up`, {
       credentials: "same-origin",
     })
       .then(async (response) => {
@@ -1031,7 +1075,7 @@ export function DashboardCommentsTable({
       .catch(() => {
         setFollowUpActions([]);
       });
-  }, [selectedCommentId]);
+  }, [activeCommentId]);
 
   const displayedComments = comments.map((comment) => ({
     ...comment,
@@ -1039,7 +1083,7 @@ export function DashboardCommentsTable({
       statusOverrides[comment.id] ?? normalizeCommentStatus(comment.status),
   }));
   const selectedComment =
-    displayedComments.find((comment) => comment.id === selectedCommentId) ??
+    displayedComments.find((comment) => comment.id === activeCommentId) ??
     null;
   const branches = Array.from(
     new Set(displayedComments.map((comment) => comment.branch)),
@@ -1056,14 +1100,14 @@ export function DashboardCommentsTable({
   const columns = buildColumns((comment) => setSelectedCommentId(comment.id));
 
   async function updateSelectedCommentStatus(status: CommentStatus) {
-    if (!selectedCommentId) {
+    if (!activeCommentId) {
       return;
     }
 
     if (!canManageFollowUp) {
       setStatusOverrides((current) => ({
         ...current,
-        [selectedCommentId]: status,
+        [activeCommentId]: status,
       }));
       return;
     }
@@ -1073,7 +1117,7 @@ export function DashboardCommentsTable({
 
     try {
       const result = await persistFollowUp({
-        submissionId: selectedCommentId,
+        submissionId: activeCommentId,
         status,
         note: followUpNote.trim() || undefined,
       });
@@ -1083,11 +1127,11 @@ export function DashboardCommentsTable({
 
       setStatusOverrides((current) => ({
         ...current,
-        [selectedCommentId]: nextStatus,
+        [activeCommentId]: nextStatus,
       }));
       setFollowUpActions(result.actions ?? []);
       setFollowUpNote("");
-      onCommentUpdated?.(selectedCommentId, nextStatus);
+      onCommentUpdated?.(activeCommentId, nextStatus);
     } catch (error) {
       setSaveError(
         error instanceof Error ? error.message : "No se pudo guardar el seguimiento.",
@@ -1098,7 +1142,7 @@ export function DashboardCommentsTable({
   }
 
   async function saveFollowUpNote() {
-    if (!selectedCommentId || followUpNote.trim().length === 0) {
+    if (!activeCommentId || followUpNote.trim().length === 0) {
       return;
     }
 
@@ -1107,7 +1151,7 @@ export function DashboardCommentsTable({
 
     try {
       const result = await persistFollowUp({
-        submissionId: selectedCommentId,
+        submissionId: activeCommentId,
         note: followUpNote.trim(),
       });
       setFollowUpActions(result.actions ?? []);
@@ -1125,7 +1169,10 @@ export function DashboardCommentsTable({
     return (
       <CommentDetailView
         comment={selectedComment}
-        onBack={() => setSelectedCommentId(null)}
+        onBack={() => {
+          setSelectedCommentId(null);
+          onCloseDetail?.();
+        }}
         onStatusChange={(status) => {
           void updateSelectedCommentStatus(status);
         }}
@@ -1142,62 +1189,85 @@ export function DashboardCommentsTable({
     );
   }
 
+  const dateFilter = dateRange ? (
+    <DashboardDateFilter dateRange={dateRange} targetHash="comentarios" />
+  ) : null;
+
+  if (activeTab === "graficos") {
+    return (
+      <div>
+        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <DashboardValoracionesTabs
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+          {dateFilter}
+        </div>
+        <RatingsChartsPanel comments={displayedComments} />
+      </div>
+    );
+  }
+
   return (
-    <DashboardDataTable
-      data={displayedComments}
-      columns={columns}
-      getRowKey={(comment) => comment.id}
-      onRowClick={(comment) => setSelectedCommentId(comment.id)}
-      rowActionLabel={(comment) =>
-        `Ver detalle de la valoración de ${comment.customer}`
-      }
-      getSearchText={(comment) =>
-        [
-          comment.customer,
-          comment.business,
-          comment.branch,
-          comment.feedbackType,
-          comment.sentiment,
-          String(comment.csatScore),
-          comment.status,
-          comment.message,
-        ].join(" ")
-      }
-      filters={[
-        ...(branches.length > 0
-          ? [
-              {
-                key: "branch",
-                label: "Filtrar por sucursal",
-                options: branches,
-                getValue: (comment: DashboardComment) => comment.branch,
-                align: "left" as const,
-              },
-            ]
-          : []),
-        {
-          key: "feedbackType",
-          label: "Filtrar por tipo",
-          options: feedbackTypes,
-          getValue: (comment) => comment.feedbackType,
-        },
-        {
-          key: "sentiment",
-          label: "Filtrar por sentimiento",
-          options: sentiments,
-          getValue: (comment) => comment.sentiment,
-        },
-      ]}
-      searchPlaceholder="Buscar valoración"
-      pageSize={5}
-      emptyTitle="Sin valoraciones registradas"
-      topContent={<RatingsHealthSummary comments={displayedComments} />}
-      toolbarContent={
-        dateRange ? (
-          <DashboardDateFilter dateRange={dateRange} targetHash="comentarios" />
-        ) : null
-      }
-      showSearch={false}
-    />
+    <div>
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <DashboardValoracionesTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        {dateFilter}
+      </div>
+      <DashboardDataTable
+        data={displayedComments}
+        columns={columns}
+        getRowKey={(comment) => comment.id}
+        onRowClick={(comment) => setSelectedCommentId(comment.id)}
+        rowActionLabel={(comment) =>
+          `Ver detalle de la valoración de ${comment.customer}`
+        }
+        getSearchText={(comment) =>
+          [
+            comment.customer,
+            comment.business,
+            comment.branch,
+            comment.feedbackType,
+            comment.sentiment,
+            String(comment.csatScore),
+            comment.status,
+            comment.message,
+          ].join(" ")
+        }
+        filters={[
+          ...(branches.length > 0
+            ? [
+                {
+                  key: "branch",
+                  label: "Filtrar por sucursal",
+                  options: branches,
+                  getValue: (comment: DashboardComment) => comment.branch,
+                  align: "left" as const,
+                },
+              ]
+            : []),
+          {
+            key: "feedbackType",
+            label: "Filtrar por tipo",
+            options: feedbackTypes,
+            getValue: (comment) => comment.feedbackType,
+          },
+          {
+            key: "sentiment",
+            label: "Filtrar por sentimiento",
+            options: sentiments,
+            getValue: (comment) => comment.sentiment,
+          },
+        ]}
+        searchPlaceholder="Buscar valoración"
+        pageSize={5}
+        emptyTitle="Sin valoraciones registradas"
+        topContent={<RatingsStatCards comments={displayedComments} />}
+        showSearch={false}
+      />
+    </div>
   );
 }

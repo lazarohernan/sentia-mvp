@@ -7,11 +7,8 @@ import type { DashboardDateRange } from "@/domain/dashboard/date-range";
 import type { DashboardSummaryData } from "@/domain/dashboard/schemas";
 import { Dropdown } from "@/components/ui/dropdown";
 import { DashboardDateFilter } from "./dashboard-date-filter";
-import { DashboardDemoDataToggle } from "./dashboard-demo-data-toggle";
 
 type DashboardExecutiveHeaderProps = {
-  showDemoData: boolean;
-  onToggleDemoData: () => void;
   dashboardData?: DashboardSummaryData;
   dateRange: DashboardDateRange;
   branches: Branch[];
@@ -40,8 +37,6 @@ function buildBranchHref(params: {
 }
 
 export function DashboardExecutiveHeader({
-  showDemoData,
-  onToggleDemoData,
   dashboardData,
   dateRange,
   branches,
@@ -107,10 +102,6 @@ export function DashboardExecutiveHeader({
             menuWidthClassName="w-[min(18rem,calc(100vw-2rem))]"
             disabled={lockedBranchScope}
             leadingIcon={Filter}
-          />
-          <DashboardDemoDataToggle
-            pressed={showDemoData}
-            onPressedChange={onToggleDemoData}
           />
         </div>
       </div>

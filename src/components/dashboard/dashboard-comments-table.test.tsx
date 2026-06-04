@@ -1,16 +1,45 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardCommentsTable } from "./dashboard-comments-table";
 import { dashboardMockComments } from "./dashboard.mock-data";
 
 describe("DashboardCommentsTable", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("renders the reusable table structure without records", () => {
     render(<DashboardCommentsTable />);
 
-    expect(screen.getByText("Salud de valoraciones")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /listado/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByText("Opiniones")).toBeInTheDocument();
     expect(screen.getByText("Sin valoraciones registradas")).toBeInTheDocument();
     expect(screen.getByText("0 resultados")).toBeInTheDocument();
+  });
+
+  it("shows ratings health distribution from scored comments", () => {
+    render(<DashboardCommentsTable comments={dashboardMockComments} />);
+
+    fireEvent.click(screen.getByRole("tab", { name: /gráficos/i }));
+
+    expect(screen.getByText("Salud de valoraciones")).toBeInTheDocument();
+    expect(screen.getByText("Cómo calificaron los clientes")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Información sobre cómo leer esta gráfica",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", {
+        name: /Atención urgente: 3 valoraciones, 43%/i,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/3 valoraciones \(43%\)/)).toBeInTheDocument();
+    expect(screen.getByTitle(/Atención urgente: 3 valoraciones \(43%\)/)).toBeInTheDocument();
   });
 
   it("renders comments in a paginated reusable table", () => {
@@ -75,7 +104,12 @@ describe("DashboardCommentsTable", () => {
   });
 
   it("opens a comment detail view from the table", () => {
-    render(<DashboardCommentsTable comments={dashboardMockComments} />);
+    render(
+      <DashboardCommentsTable
+        comments={dashboardMockComments}
+        canManageFollowUp
+      />,
+    );
 
     fireEvent.click(screen.getByText("Cliente verificado"));
 
@@ -92,15 +126,32 @@ describe("DashboardCommentsTable", () => {
     expect(screen.getByText("1-5 de 7")).toBeInTheDocument();
   });
 
-  it("updates the visual workflow status from the detail view", () => {
-    render(<DashboardCommentsTable comments={dashboardMockComments} />);
+  it("updates the visual workflow status from the detail view", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          status: "Escalado",
+          actions: [],
+        }),
+      ),
+    );
+
+    render(
+      <DashboardCommentsTable
+        comments={dashboardMockComments}
+        canManageFollowUp
+      />,
+    );
 
     fireEvent.click(screen.getByText("Cliente verificado"));
     fireEvent.click(screen.getByRole("button", { name: "Escalado" }));
 
-    expect(
-      screen.getByText("Necesita atención de un responsable superior."),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText("Necesita atención de un responsable superior."),
+      ).toBeInTheDocument();
+    });
 
     fireEvent.click(
       screen.getByRole("button", { name: "Volver a valoraciones" }),

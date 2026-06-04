@@ -33,11 +33,10 @@ describe("DashboardFloatingNav", () => {
       "href",
       "/dashboard#equipo",
     );
+    // Escucha es un botón con submenú hover (no un link directo)
     expect(
-      screen
-        .getAllByRole("link", { name: /escucha/i })
-        .find((link) => link.getAttribute("href") === "/dashboard/escucha"),
-    ).toBeInTheDocument();
+      screen.getByRole("button", { name: /escucha/i }),
+    ).toHaveAttribute("aria-haspopup", "menu");
     expect(
       screen.getByRole("button", { name: /notificaciones/i }),
     ).toBeInTheDocument();
@@ -65,6 +64,44 @@ describe("DashboardFloatingNav", () => {
     expect(screen.getByRole("link", { name: /valoraciones/i })).toHaveAttribute(
       "aria-current",
       "page",
+    );
+  });
+
+  it("muestra el submenú de Escucha al hacer hover sobre el trigger", () => {
+    render(
+      <DashboardFloatingNav
+        activeView="escucha"
+        onViewChange={() => {}}
+        listeningSubNav={{
+          activeTab: "analytics",
+          analyticsHref: "/dashboard/escucha",
+          coachingHref: "/dashboard/escucha/coaching",
+        }}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", { name: /escucha/i });
+
+    // Atributos ARIA antes del hover
+    expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    // El submenú no existe en el DOM antes del hover (portal condicional)
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    // Hover sobre el contenedor padre
+    fireEvent.mouseEnter(trigger.closest("div")!);
+
+    // Tras el hover el menú se renderiza vía portal en document.body
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /analítica/i })).toHaveAttribute(
+      "href",
+      "/dashboard/escucha",
+    );
+    expect(screen.getByRole("menuitem", { name: /coaching/i })).toHaveAttribute(
+      "href",
+      "/dashboard/escucha/coaching",
     );
   });
 

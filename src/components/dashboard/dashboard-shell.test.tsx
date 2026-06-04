@@ -1,7 +1,37 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { getDashboardDateRange } from "@/domain/dashboard/date-range";
+import type { DashboardSummaryData } from "@/domain/dashboard/schemas";
+
 import { DashboardShell } from "./dashboard-shell";
+
+function buildShellDashboardData(
+  overrides: Partial<DashboardSummaryData> = {},
+): DashboardSummaryData {
+  return {
+    scope: "3 sucursales",
+    period: "Últimos 7 días",
+    dateRange: getDashboardDateRange({ period: "7d" }),
+    metrics: [],
+    insight: null,
+    attentionItems: [],
+    branchHealth: [],
+    recentComments: [],
+    comments: [],
+    notifications: [],
+    followUpMetrics: {
+      openCount: 0,
+      escalatedCount: 0,
+      inReviewCount: 0,
+      resolvedCount: 0,
+      avgResponseHours: null,
+      avgResolutionHours: null,
+    },
+    qrScanCounts: {},
+    ...overrides,
+  };
+}
 
 const mallNorteBranch = {
   id: "1f9f3375-2a3b-45f8-9f72-1db6f7189b52",
@@ -54,10 +84,6 @@ describe("DashboardShell", () => {
     expect(screen.queryByRole("heading", { name: "Comentarios" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Alertas" })).not.toBeInTheDocument();
     expect(screen.queryByText("1,248")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Vista con datos" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
   });
 
   it("renders comments as an independent view from the hash", async () => {
@@ -74,10 +100,6 @@ describe("DashboardShell", () => {
     expect(screen.queryByRole("heading", { name: "Resumen" })).not.toBeInTheDocument();
     expect(screen.getByPlaceholderText("Buscar comentario")).toBeInTheDocument();
     expect(screen.getByText("Sin comentarios registrados")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Vista con datos" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
   });
 
   it("changes dashboard content when a menu item is clicked", () => {
@@ -93,18 +115,41 @@ describe("DashboardShell", () => {
     expect(window.location.hash).toBe("#equipo");
   }, 15_000);
 
-  it("opens the notifications panel with mocked items", () => {
-    render(<DashboardShell />);
+  it("opens the notifications panel with server notifications", () => {
+    render(
+      <DashboardShell
+        dashboardData={buildShellDashboardData({
+          notifications: [
+            {
+              id: "notification-001",
+              title: "Norte requiere atención",
+              detail: "Subieron los comentarios por espera en la última hora.",
+              time: "Hace 8 min",
+              href: "/dashboard#alertas",
+              unread: true,
+              tone: "danger",
+            },
+            {
+              id: "notification-002",
+              title: "Nuevo comentario con riesgo",
+              detail: "Centro recibió una observación con CSAT 2/5.",
+              time: "Hace 21 min",
+              href: "/dashboard#comentarios",
+              unread: true,
+              tone: "warning",
+            },
+          ],
+        })}
+      />,
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "Vista con datos" }));
     fireEvent.click(screen.getByRole("button", { name: "Notificaciones" }));
 
     expect(
       screen.getByRole("dialog", { name: "Panel de notificaciones" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Mall Norte requiere atencion")).toBeInTheDocument();
+    expect(screen.getByText("Norte requiere atención")).toBeInTheDocument();
     expect(screen.getByText("Nuevo comentario con riesgo")).toBeInTheDocument();
-    expect(screen.getByText("Boulevard estabilizo servicio")).toBeInTheDocument();
   });
 
   it("redirects the legacy qr hash to sucursales", async () => {
@@ -214,10 +259,12 @@ describe("DashboardShell", () => {
           scope: "1 sucursal",
           period: "Ultimos 7 dias",
           dateRange: {
+            period: "7d",
             label: "Ultimos 7 dias",
-            from: "2026-05-06T00:00:00.000Z",
-            to: "2026-05-13T23:59:59.999Z",
-            timeZone: "America/Tegucigalpa",
+            startDate: "2026-05-06",
+            endDate: "2026-05-13",
+            startIso: "2026-05-06T06:00:00.000Z",
+            endIso: "2026-05-14T05:59:59.999Z",
           },
           metrics: [],
           insight: null,
@@ -233,12 +280,13 @@ describe("DashboardShell", () => {
           branchHealth: [
             {
               branch: "Mall Norte",
-              status: "Activa",
-              csat: "4.6/5",
+              status: "Bueno",
+              csat: "4.6",
               comments: "12 comentarios",
               tone: "success",
-              marker: 32,
-              segments: [40, 35, 25],
+              zoneCounts: { risk: 1, observation: 2, good: 9 },
+              zonePercents: { risk: 8, observation: 17, good: 75 },
+              scoredCount: 12,
             },
           ],
           recentComments: [],
@@ -398,18 +446,4 @@ describe("DashboardShell", () => {
     expect(screen.getByRole("button", { name: "Ver QR" })).toBeInTheDocument();
   }, 15_000);
 
-  it("shows separated demo data in the active view only when the visual toggle is active", async () => {
-    window.history.pushState({}, "", "/dashboard#comentarios");
-
-    render(<DashboardShell />);
-
-    const toggle = screen.getByRole("button", { name: "Vista con datos" });
-    fireEvent.click(toggle);
-
-    expect(toggle).toHaveAttribute("aria-pressed", "true");
-    expect(screen.queryByText("Operacion retail")).not.toBeInTheDocument();
-    expect(screen.queryByText("1,248")).not.toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Filtrar por negocio" })).toBeInTheDocument();
-    expect(screen.queryByText("Sin comentarios registrados")).not.toBeInTheDocument();
-  });
 });

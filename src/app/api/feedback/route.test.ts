@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearRateLimitStore } from "@/lib/security/rate-limit";
 
-const maybeSingle = vi.fn(async () => ({ data: null, error: null }));
+const maybeSingle = vi.fn(
+  async (): Promise<{
+    data: { id: string; name: string; organization_id: string } | null;
+    error: null;
+  }> => ({ data: null, error: null }),
+);
 
 vi.mock("@/lib/supabase/service", () => ({
   createServiceClient: vi.fn(() => ({

@@ -22,9 +22,18 @@ export type DashboardBranchHealthItem = {
   status: string;
   csat: string;
   comments: string;
-  tone: "success" | "warning" | "danger";
-  marker: number;
-  segments: [number, number, number];
+  tone: "success" | "warning" | "danger" | "neutral";
+  zoneCounts: {
+    risk: number;
+    observation: number;
+    good: number;
+  };
+  zonePercents: {
+    risk: number;
+    observation: number;
+    good: number;
+  };
+  scoredCount: number;
 };
 
 export type DashboardRecentComment = {

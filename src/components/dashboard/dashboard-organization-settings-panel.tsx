@@ -1,7 +1,7 @@
 "use client";
 
 import { Building2, Globe, ImagePlus, Loader2, Mail, MapPin, Phone, Save } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import type { OrganizationSettings } from "@/domain/organizations/organization-settings-schemas";
@@ -30,41 +30,29 @@ function emptySettings(): OrganizationSettings {
   };
 }
 
-export function DashboardOrganizationSettingsPanel({
+function OrganizationSettingsForm({
   initialSettings,
-  canManage = false,
+  canManage,
   onSaved,
-}: DashboardOrganizationSettingsPanelProps) {
-  const [settings, setSettings] = useState(initialSettings ?? emptySettings());
-  const [name, setName] = useState(initialSettings?.name ?? "");
-  const [tagline, setTagline] = useState(initialSettings?.tagline ?? "");
-  const [description, setDescription] = useState(initialSettings?.description ?? "");
-  const [contactEmail, setContactEmail] = useState(initialSettings?.contactEmail ?? "");
-  const [contactPhone, setContactPhone] = useState(initialSettings?.contactPhone ?? "");
-  const [websiteUrl, setWebsiteUrl] = useState(initialSettings?.websiteUrl ?? "");
-  const [address, setAddress] = useState(initialSettings?.address ?? "");
-  const [logoUrl, setLogoUrl] = useState(initialSettings?.logoUrl ?? "");
+}: {
+  initialSettings: OrganizationSettings;
+  canManage: boolean;
+  onSaved?: (settings: OrganizationSettings) => void;
+}) {
+  const [settings, setSettings] = useState(initialSettings);
+  const [name, setName] = useState(initialSettings.name);
+  const [tagline, setTagline] = useState(initialSettings.tagline ?? "");
+  const [description, setDescription] = useState(initialSettings.description ?? "");
+  const [contactEmail, setContactEmail] = useState(initialSettings.contactEmail ?? "");
+  const [contactPhone, setContactPhone] = useState(initialSettings.contactPhone ?? "");
+  const [websiteUrl, setWebsiteUrl] = useState(initialSettings.websiteUrl ?? "");
+  const [address, setAddress] = useState(initialSettings.address ?? "");
+  const [logoUrl, setLogoUrl] = useState(initialSettings.logoUrl ?? "");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (!initialSettings) {
-      return;
-    }
-
-    setSettings(initialSettings);
-    setName(initialSettings.name);
-    setTagline(initialSettings.tagline ?? "");
-    setDescription(initialSettings.description ?? "");
-    setContactEmail(initialSettings.contactEmail ?? "");
-    setContactPhone(initialSettings.contactPhone ?? "");
-    setWebsiteUrl(initialSettings.websiteUrl ?? "");
-    setAddress(initialSettings.address ?? "");
-    setLogoUrl(initialSettings.logoUrl ?? "");
-  }, [initialSettings]);
 
   async function handleLogoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -349,5 +337,30 @@ export function DashboardOrganizationSettingsPanel({
         ) : null}
       </div>
     </form>
+  );
+}
+
+export function DashboardOrganizationSettingsPanel({
+  initialSettings,
+  canManage = false,
+  onSaved,
+}: DashboardOrganizationSettingsPanelProps) {
+  const resolved = initialSettings ?? emptySettings();
+  const formKey = [
+    resolved.id,
+    resolved.name,
+    resolved.logoUrl ?? "",
+    resolved.tagline ?? "",
+    resolved.contactEmail ?? "",
+    resolved.contactPhone ?? "",
+  ].join(":");
+
+  return (
+    <OrganizationSettingsForm
+      key={formKey}
+      initialSettings={resolved}
+      canManage={canManage}
+      onSaved={onSaved}
+    />
   );
 }

@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
   const cookieStore = await cookies();
   const { url, publishableKey } = getSupabasePublicEnv();
-  let response = NextResponse.redirect(new URL(nextPath, requestUrl.origin));
+  const response = NextResponse.redirect(new URL(nextPath, requestUrl.origin));
 
   const supabase = createServerClient(url, publishableKey, {
     cookies: {

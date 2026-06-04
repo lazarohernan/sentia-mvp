@@ -48,6 +48,8 @@ describe("FeedbackPage", () => {
       contactPhone: null,
       websiteUrl: null,
       address: null,
+      alertEscalationPhone: null,
+      alertEscalationEmail: null,
       createdAt: "2026-01-01T00:00:00.000Z",
     });
   });

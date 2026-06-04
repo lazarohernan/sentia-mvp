@@ -26,6 +26,7 @@ import {
 } from "@/domain/notifications/repository";
 import type { Database } from "@/lib/supabase/database.types";
 import type { DashboardDateRange } from "./date-range";
+import { computeRatingsHealth } from "./ratings-health";
 import type {
   DashboardAttentionItem,
   DashboardBranchHealthItem,
@@ -103,44 +104,77 @@ function buildMetrics(branches: Branch[], feedback: FeedbackRecord[]): Dashboard
   ];
 }
 
+const BRANCH_HEALTH_PREVIEW_LIMIT = 3;
+
+const branchHealthToneOrder: Record<DashboardBranchHealthItem["tone"], number> = {
+  danger: 0,
+  warning: 1,
+  neutral: 2,
+  success: 3,
+};
+
+function compareBranchHealthPriority(
+  left: DashboardBranchHealthItem,
+  right: DashboardBranchHealthItem,
+) {
+  const toneDiff =
+    branchHealthToneOrder[left.tone] - branchHealthToneOrder[right.tone];
+  if (toneDiff !== 0) {
+    return toneDiff;
+  }
+
+  const riskDiff = right.zonePercents.risk - left.zonePercents.risk;
+  if (riskDiff !== 0) {
+    return riskDiff;
+  }
+
+  const leftCsat = left.csat === "N/A" ? Number.POSITIVE_INFINITY : Number.parseFloat(left.csat);
+  const rightCsat =
+    right.csat === "N/A" ? Number.POSITIVE_INFINITY : Number.parseFloat(right.csat);
+
+  return leftCsat - rightCsat;
+}
+
 function buildBranchHealth(
   branches: Branch[],
   feedback: FeedbackRecord[],
 ): DashboardBranchHealthItem[] {
-  return branches.slice(0, 4).map((branch) => {
-    const branchFeedback = feedback.filter((record) => record.branch_id === branch.id);
-    const scores = branchFeedback
-      .map((record) => record.csat_score)
-      .filter((score): score is number => typeof score === "number");
-    const average =
-      scores.length > 0
-        ? scores.reduce((sum, score) => sum + score, 0) / scores.length
-        : null;
-    const tone =
-      average === null || average >= 4
-        ? "success"
-        : average >= 3
-          ? "warning"
-          : "danger";
-    const marker = average === null ? 80 : Math.max(8, Math.min(92, (average / 5) * 100));
+  return branches
+    .map((branch) => {
+      const branchFeedback = feedback.filter(
+        (record) => record.branch_id === branch.id,
+      );
+      const scores = branchFeedback
+        .map((record) => record.csat_score)
+        .filter((score): score is number => typeof score === "number");
+      const metrics = computeRatingsHealth({
+        scores,
+        totalCount: branchFeedback.length,
+      });
+      const tone: DashboardBranchHealthItem["tone"] =
+        metrics.zone === "good"
+          ? "success"
+          : metrics.zone === "observation"
+            ? "warning"
+            : metrics.zone === "risk"
+              ? "danger"
+              : "neutral";
 
-    return {
-      branch: branch.name,
-      status:
-        average === null
-          ? "Sin comentarios"
-          : tone === "success"
-            ? "Estable"
-            : tone === "warning"
-              ? "Observación"
-              : "Riesgo",
-      csat: average === null ? "N/A" : average.toFixed(1),
-      comments: `${branchFeedback.length} comentarios`,
-      tone,
-      marker,
-      segments: [58, 20, 22],
-    };
-  });
+      return {
+        branch: branch.name,
+        status:
+          metrics.scoredCount === 0 ? "Sin comentarios" : metrics.label,
+        csat:
+          metrics.averageCsat === null ? "N/A" : metrics.averageCsat.toFixed(1),
+        comments: `${branchFeedback.length} comentarios`,
+        tone,
+        zoneCounts: metrics.zoneCounts,
+        zonePercents: metrics.zonePercents,
+        scoredCount: metrics.scoredCount,
+      };
+    })
+    .sort(compareBranchHealthPriority)
+    .slice(0, BRANCH_HEALTH_PREVIEW_LIMIT);
 }
 
 function buildComments(feedback: FeedbackRecord[]): DashboardCommentRow[] {
