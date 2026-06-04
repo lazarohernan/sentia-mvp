@@ -16,6 +16,9 @@ import type {
 
 type InformationQuality = "suficiente" | "parcial" | "insuficiente";
 
+const MONTHLY_USEFUL_RESPONSES_PER_BRANCH = 8;
+const MIN_MONTHLY_USEFUL_RESPONSES = 12;
+
 type BranchReport = {
   branch: string;
   total: number;
@@ -24,8 +27,23 @@ type BranchReport = {
   neutral: number;
   insufficient: number;
   partial: number;
+  sufficient: number;
+  usefulResponses: number;
+  targetUsefulResponses: number;
+  readinessPercent: number;
+  missingUsefulResponses: number;
   topPattern: string;
   recommendedAction: string;
+};
+
+type ReportReadiness = {
+  percent: number;
+  usefulResponses: number;
+  targetUsefulResponses: number;
+  missingUsefulResponses: number;
+  qualityPercent: number;
+  headline: string;
+  detail: string;
 };
 
 function classifyInformationQuality(comment: DashboardCommentRow): InformationQuality {
@@ -97,14 +115,28 @@ function buildBranchReports(comments: DashboardCommentRow[]): BranchReport[] {
         (comment) => comment.sentiment === "Positivo",
       ).length;
       const neutral = branchComments.length - risk - positive;
+      const targetUsefulResponses = MONTHLY_USEFUL_RESPONSES_PER_BRANCH;
+      const usefulResponses = qualityCounts.suficiente + qualityCounts.parcial * 0.5;
+      const readinessPercent = Math.min(
+        100,
+        Math.round((usefulResponses / targetUsefulResponses) * 100),
+      );
+      const missingUsefulResponses = Math.max(
+        0,
+        Math.ceil(targetUsefulResponses - usefulResponses),
+      );
       const topPattern = getMostCommonPattern(branchComments);
       const recommendedAction =
+        missingUsefulResponses > 0
+          ? `Faltan ${missingUsefulResponses} valoraciones con motivo claro para un informe mensual más sólido.`
+          : "Base suficiente para resumir patrones mensuales con mejor confianza.";
+      const captureAction =
         qualityCounts.insuficiente + qualityCounts.parcial >
         Math.ceil(branchComments.length / 2)
-          ? "Mejorar la captura: pedir motivo principal antes de cerrar la valoración."
+          ? " Pedir motivo principal cuando la valoración sea ambigua."
           : risk > positive
-            ? "Revisar casos de riesgo y documentar acciones de seguimiento."
-            : "Usar los comentarios positivos para repetir prácticas del equipo.";
+            ? " Revisar casos de riesgo y documentar acciones de seguimiento."
+            : " Usar los comentarios positivos para repetir prácticas del equipo.";
 
       return {
         branch,
@@ -114,8 +146,13 @@ function buildBranchReports(comments: DashboardCommentRow[]): BranchReport[] {
         neutral,
         insufficient: qualityCounts.insuficiente,
         partial: qualityCounts.parcial,
+        sufficient: qualityCounts.suficiente,
+        usefulResponses,
+        targetUsefulResponses,
+        readinessPercent,
+        missingUsefulResponses,
         topPattern,
-        recommendedAction,
+        recommendedAction: `${recommendedAction}${captureAction}`,
       };
     })
     .sort((left, right) => {
@@ -124,6 +161,60 @@ function buildBranchReports(comments: DashboardCommentRow[]): BranchReport[] {
       if (qualityDiff !== 0) return qualityDiff;
       return right.risk - left.risk;
     });
+}
+
+function buildReportReadiness(
+  comments: DashboardCommentRow[],
+  reports: BranchReport[],
+): ReportReadiness {
+  if (comments.length === 0 || reports.length === 0) {
+    return {
+      percent: 0,
+      usefulResponses: 0,
+      targetUsefulResponses: MIN_MONTHLY_USEFUL_RESPONSES,
+      missingUsefulResponses: MIN_MONTHLY_USEFUL_RESPONSES,
+      qualityPercent: 0,
+      headline: "Sin base suficiente para informe mensual.",
+      detail:
+        "Aún faltan valoraciones con motivo claro para explicar patrones por establecimiento.",
+    };
+  }
+
+  const usefulResponses = reports.reduce(
+    (sum, report) => sum + report.usefulResponses,
+    0,
+  );
+  const targetUsefulResponses = Math.max(
+    MIN_MONTHLY_USEFUL_RESPONSES,
+    reports.length * MONTHLY_USEFUL_RESPONSES_PER_BRANCH,
+  );
+  const clearResponses = reports.reduce((sum, report) => sum + report.sufficient, 0);
+  const qualityPercent = Math.round((clearResponses / comments.length) * 100);
+  const volumePercent = Math.min(100, (usefulResponses / targetUsefulResponses) * 100);
+  const percent = Math.min(
+    100,
+    Math.round(volumePercent * 0.7 + qualityPercent * 0.3),
+  );
+  const missingUsefulResponses = Math.max(
+    0,
+    Math.ceil(targetUsefulResponses - usefulResponses),
+  );
+
+  return {
+    percent,
+    usefulResponses,
+    targetUsefulResponses,
+    missingUsefulResponses,
+    qualityPercent,
+    headline:
+      percent >= 80
+        ? "Base mensual casi lista para un informe defendible."
+        : "Todavía falta información clara para un mejor informe mensual.",
+    detail:
+      missingUsefulResponses > 0
+        ? `Faltan ${missingUsefulResponses} valoraciones útiles: respuestas con motivo claro, categoría específica o detalle accionable.`
+        : "La base actual permite explicar patrones por sucursal con buena claridad.",
+  };
 }
 
 function buildExecutiveReading(
@@ -188,6 +279,7 @@ export function DashboardIntelligenceReports({
 }) {
   const comments = dashboardData?.comments ?? [];
   const reports = buildBranchReports(comments);
+  const readiness = buildReportReadiness(comments, reports);
   const reading = buildExecutiveReading(comments, reports);
   const weakDataCount = reports.reduce(
     (sum, report) => sum + report.partial + report.insufficient,
@@ -212,9 +304,62 @@ export function DashboardIntelligenceReports({
               {reading.detail}
             </p>
           </div>
-          <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4 text-sm leading-6 text-slate-700 lg:max-w-sm">
-            <p className="font-semibold text-slate-950">Acción recomendada</p>
-            <p className="mt-1">{reading.action}</p>
+          <div className="rounded-2xl border border-slate-100 bg-[#f7f8f4] p-4 text-sm leading-6 text-slate-700 lg:max-w-sm">
+            <p className="font-semibold text-slate-950">Siguiente objetivo</p>
+            <p className="mt-1">{readiness.detail}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5">
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+          <div className="max-w-2xl">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+              <TrendingUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
+              Preparación del informe mensual
+            </div>
+            <h3 className="mt-3 text-xl font-semibold tracking-normal text-slate-950">
+              {readiness.headline}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Meta: reunir suficientes valoraciones útiles por establecimiento.
+              Una valoración útil explica el motivo, no solo si la experiencia
+              fue buena o mala.
+            </p>
+          </div>
+
+          <div className="w-full lg:max-w-md">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Avance
+                </p>
+                <p className="mt-1 text-3xl font-semibold text-slate-950">
+                  {readiness.percent}%
+                </p>
+              </div>
+              <p className="text-right text-sm leading-6 text-slate-500">
+                {readiness.usefulResponses.toFixed(1)} de{" "}
+                {readiness.targetUsefulResponses} respuestas útiles
+              </p>
+            </div>
+            <div
+              className="mt-4 h-3 overflow-hidden rounded-full bg-slate-100"
+              role="progressbar"
+              aria-label="Preparación del informe mensual"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={readiness.percent}
+            >
+              <div
+                className="h-full rounded-full bg-slate-700 transition-all"
+                style={{ width: `${readiness.percent}%` }}
+              />
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-500">
+              Claridad actual: {readiness.qualityPercent}% de valoraciones con
+              información suficiente.
+            </p>
           </div>
         </div>
       </section>
@@ -308,6 +453,34 @@ export function DashboardIntelligenceReports({
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-800">
                     {report.topPattern}
+                  </p>
+                </div>
+
+                <div className="mt-3 rounded-xl bg-white p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Preparación mensual
+                    </p>
+                    <span className="text-xs font-semibold text-slate-500">
+                      {report.readinessPercent}%
+                    </span>
+                  </div>
+                  <div
+                    className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"
+                    role="progressbar"
+                    aria-label={`Preparación mensual de ${report.branch}`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={report.readinessPercent}
+                  >
+                    <div
+                      className="h-full rounded-full bg-slate-700"
+                      style={{ width: `${report.readinessPercent}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    {report.usefulResponses.toFixed(1)} de{" "}
+                    {report.targetUsefulResponses} respuestas útiles.
                   </p>
                 </div>
 

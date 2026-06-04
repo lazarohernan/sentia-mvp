@@ -178,6 +178,8 @@ describe("DashboardShell", () => {
     });
 
     expect(screen.getByText("Informe inteligente")).toBeInTheDocument();
+    expect(screen.getByText("Preparación del informe mensual")).toBeInTheDocument();
+    expect(screen.getAllByText(/Faltan/i).length).toBeGreaterThan(0);
     expect(screen.getByText("Patrones por establecimiento")).toBeInTheDocument();
     expect(screen.getByText("Entrega por defecto")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
