@@ -4,17 +4,14 @@ import {
   Angry,
   ArrowLeft,
   ArrowRight,
-  Clock3,
   ClipboardCheck,
   Eye,
   Frown,
   Laugh,
-  MapPin,
   Meh,
   MessageSquareText,
   Smile,
   Sparkles,
-  UserRound,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -244,6 +241,37 @@ function FeedbackTypeBadge({ type }: { type: DashboardFeedbackType }) {
   );
 }
 
+function CommentMetaLine({
+  comment,
+  className = "",
+}: {
+  comment: DashboardComment;
+  className?: string;
+}) {
+  return (
+    <p
+      className={[
+        "flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600",
+        className,
+      ].join(" ")}
+    >
+      <span className="font-semibold text-slate-800">{comment.feedbackType}</span>
+      <span className="text-slate-300" aria-hidden="true">
+        |
+      </span>
+      <span>{comment.customer}</span>
+      <span className="text-slate-300" aria-hidden="true">
+        |
+      </span>
+      <span>{comment.branch}</span>
+      <span className="text-slate-300" aria-hidden="true">
+        |
+      </span>
+      <span className="text-slate-500">{comment.receivedAt}</span>
+    </p>
+  );
+}
+
 function CsatBadge({ score }: { score: number }) {
   const [isOpen, setIsOpen] = useState(false);
   const popoverId = useId();
@@ -395,11 +423,6 @@ function CsatScaleStrip({ score }: { score: number }) {
               aria-current={isSelected ? "true" : undefined}
             >
               <LevelIcon size={24} aria-hidden="true" />
-              {isSelected ? (
-                <span className="mb-1 rounded-full bg-slate-900 px-2 py-0.5 text-[0.62rem] font-semibold text-white">
-                  Elegido
-                </span>
-              ) : null}
               <span className="mt-1 text-xs font-bold">{level.score}</span>
               <span className="mt-0.5 max-w-full text-[0.68rem] font-semibold leading-4">
                 {level.label}
@@ -526,7 +549,7 @@ function RatingsChartsPanel({ comments }: { comments: DashboardComment[] }) {
             </div>
           </header>
 
-          <div className="flex min-h-0 flex-1 flex-col justify-end">
+          <div className="mt-1">
             {metrics.scoredCount > 0 ? (
               <CsatHealthDistributionBar
                 zonePercents={zonePercents}
@@ -665,32 +688,19 @@ function CommentDetailView({
           Volver a valoraciones
         </button>
 
-        <div className="mt-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-          <div>
+        <div className="mt-5 flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
               Detalle de valoración
             </p>
             <h3 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950">
-              {comment.business} · {comment.branch}
+              {comment.business}
             </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Vista operativa para entender la señal, dar seguimiento y dejar
-              claro quién debe atenderla.
-            </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={[
-                "inline-flex rounded-full px-3 py-1.5 text-xs font-semibold",
-                sentimentStyles[comment.sentiment] ?? sentimentStyles.Neutral,
-              ].join(" ")}
-            >
-              {comment.sentiment}
-            </span>
-            <FeedbackTypeBadge type={comment.feedbackType} />
-            <StatusBadge status={currentStatus} />
-          </div>
+          <CommentMetaLine
+            comment={comment}
+            className="shrink-0 lg:max-w-md lg:justify-end lg:text-right"
+          />
         </div>
       </div>
 
@@ -698,7 +708,7 @@ function CommentDetailView({
         <section className="rounded-[1.25rem] border border-slate-100 p-5">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
             <div className="flex items-start gap-3">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500">
                 <Sparkles size={18} aria-hidden="true" />
               </span>
               <div>
@@ -738,9 +748,9 @@ function CommentDetailView({
           </div>
 
           <div className="mt-5 grid items-stretch gap-3 lg:grid-cols-[1fr_auto_0.9fr]">
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-4">
+            <div className="rounded-2xl border border-slate-100 bg-white p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                <p className="text-xs font-medium text-slate-500">
                   {dominantPattern}
                 </p>
                 {comment.analysisConfidence ? (
@@ -788,45 +798,6 @@ function CommentDetailView({
           <p className="mt-5 text-base leading-8 text-slate-700">
             “{comment.message}”
           </p>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl bg-[#f7f8f4] p-4">
-              <MessageSquareText size={17} className="text-slate-400" />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Tipo
-              </p>
-              <div className="mt-2">
-                <FeedbackTypeBadge type={comment.feedbackType} />
-              </div>
-            </div>
-            <div className="rounded-2xl bg-[#f7f8f4] p-4">
-              <UserRound size={17} className="text-slate-400" />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Cliente
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-800">
-                {comment.customer}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-[#f7f8f4] p-4">
-              <MapPin size={17} className="text-slate-400" />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Punto
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-800">
-                {comment.branch}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-[#f7f8f4] p-4">
-              <Clock3 size={17} className="text-slate-400" />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Recibido
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-800">
-                {comment.receivedAt}
-              </p>
-            </div>
-          </div>
         </section>
 
         <section className="rounded-[1.25rem] border border-slate-100 p-5">
@@ -867,7 +838,7 @@ function CommentDetailView({
                       type="button"
                       disabled={isSaving}
                       onClick={() => onStatusChange("Escalado")}
-                      className="mt-3 w-full rounded-full border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:border-amber-300 hover:bg-amber-100 focus:outline-none focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-3 w-full rounded-full bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Escalar a responsable
                     </button>

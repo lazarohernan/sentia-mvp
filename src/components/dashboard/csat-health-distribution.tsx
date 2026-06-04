@@ -166,25 +166,25 @@ type CsatHealthChartSize = "default" | "compact" | "wide";
 function chartSizeTokens(size: CsatHealthChartSize) {
   if (size === "compact") {
     return {
-      minHeight: "min-h-[10rem]",
+      trackHeight: "h-40",
       gridGap: "gap-2 sm:gap-3",
-      trackPadding: "px-2 pb-2 pt-6",
-      barMaxWidth: "max-w-10",
+      trackPadding: "px-2 pb-2 pt-7",
+      barWidth: "w-[72%] max-w-10",
     };
   }
   if (size === "wide") {
     return {
-      minHeight: "min-h-[13rem]",
+      trackHeight: "h-56 sm:h-64",
       gridGap: "gap-4 sm:gap-8 md:gap-10",
-      trackPadding: "px-1 pb-2 pt-7 sm:px-2",
-      barMaxWidth: "w-[88%] max-w-36 sm:max-w-40",
+      trackPadding: "px-2 pb-2 pt-8",
+      barWidth: "w-[78%] max-w-40",
     };
   }
   return {
-    minHeight: "min-h-[13rem]",
+    trackHeight: "h-52",
     gridGap: "gap-2 sm:gap-4",
-    trackPadding: "px-2 pb-2 pt-6",
-    barMaxWidth: "max-w-16",
+    trackPadding: "px-2 pb-2 pt-7",
+    barWidth: "w-[72%] max-w-16",
   };
 }
 
@@ -208,7 +208,7 @@ function CsatHealthVerticalBars({
 
   return (
     <div
-      className={`grid h-full grid-cols-3 items-stretch ${tokens.gridGap} ${tokens.minHeight}`}
+      className={`grid grid-cols-3 items-end ${tokens.gridGap}`}
       role="img"
       aria-label={buildHealthDistributionAriaLabel(zoneCounts, zonePercents)}
     >
@@ -217,36 +217,44 @@ function CsatHealthVerticalBars({
         const count = zoneCounts[zone];
         const copy = healthZoneCopy[zone];
         const barHeightPercent =
-          count > 0 ? Math.max(percent, 12) : 0;
+          count > 0 ? Math.max(percent, 8) : 0;
 
         return (
           <div
             key={zone}
-            className="flex h-full min-w-0 flex-col items-center text-center"
+            className="flex min-w-0 flex-col items-center text-center"
             title={`${healthZoneLabels[zone]}: ${formatValoraciones(count)} (${percent}%)`}
           >
             <div
-              className={`relative flex w-full flex-1 items-end justify-center rounded-lg bg-slate-100 ${tokens.trackPadding} ${tokens.minHeight}`}
+              className={[
+                "relative w-full overflow-hidden rounded-lg bg-slate-100",
+                tokens.trackHeight,
+                tokens.trackPadding,
+              ].join(" ")}
             >
               {count > 0 ? (
                 <>
-                  <span className="absolute top-2 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-800">
+                  <span className="absolute top-2 left-1/2 z-10 -translate-x-1/2 text-xs font-bold text-slate-800">
                     {count}
                   </span>
                   <div
+                    data-testid={`csat-health-bar-${zone}`}
                     className={[
-                      "rounded-t-lg shadow-sm",
-                      tokens.barMaxWidth,
+                      "absolute bottom-0 left-1/2 -translate-x-1/2 rounded-t-lg shadow-sm",
+                      tokens.barWidth,
                       healthZoneStyles[zone].barClassName,
                     ].join(" ")}
-                    style={{ height: `${barHeightPercent}%` }}
+                    style={{
+                      height: `${barHeightPercent}%`,
+                      minHeight: "0.5rem",
+                    }}
                   />
                 </>
               ) : (
                 <div
                   className={[
-                    "mb-2 h-1.5 rounded-full bg-slate-200",
-                    tokens.barMaxWidth,
+                    "absolute bottom-2 left-1/2 h-1.5 -translate-x-1/2 rounded-full bg-slate-200",
+                    tokens.barWidth,
                   ].join(" ")}
                 />
               )}
@@ -270,13 +278,13 @@ function CsatHealthEmptyBars({ size = "default" }: { size?: CsatHealthChartSize 
 
   return (
     <div
-      className={`grid grid-cols-3 ${tokens.gridGap} ${tokens.minHeight}`}
+      className={`grid grid-cols-3 items-end ${tokens.gridGap}`}
       aria-hidden="true"
     >
       {healthSegments.map((zone) => (
-        <div key={zone} className="flex h-full flex-col items-center">
+        <div key={zone} className="flex flex-col items-center">
           <div
-            className={`w-full flex-1 rounded-lg border border-dashed border-slate-200 bg-slate-50 ${tokens.minHeight}`}
+            className={`w-full rounded-lg border border-dashed border-slate-200 bg-slate-50 ${tokens.trackHeight}`}
           />
           <p className="mt-2 text-[11px] text-slate-400">
             Notas {healthZoneCopy[zone].scoreRange}
@@ -302,7 +310,7 @@ export function CsatHealthDistributionBar({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col space-y-3">
+    <div className="flex flex-col space-y-3">
       <CsatHealthVerticalBars
         zonePercents={zonePercents}
         zoneCounts={zoneCounts}
