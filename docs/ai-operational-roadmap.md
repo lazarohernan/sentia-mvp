@@ -140,6 +140,48 @@ Mall Norte esta acumulando comentarios sobre espera los viernes entre 5pm y 8pm.
 
 **Valor:** lectura en 2 minutos con decisiones claras.
 
+### Implementado: preparacion del informe mensual
+
+Se agrego una vista `Informes` en el dashboard para medir si la organizacion ya tiene suficiente informacion para entregar un informe mensual mas util. Esta capa no inventa causas: mide la calidad real de las valoraciones recibidas y muestra cuanto falta para una mejor lectura.
+
+**Algoritmo actual:**
+
+- Cada valoracion se clasifica por calidad de informacion:
+  - `suficiente`: explica motivo, categoria o detalle accionable.
+  - `parcial`: tiene senal util, pero le falta especificidad.
+  - `insuficiente`: es demasiado generica para explicar causa.
+- Peso por valoracion:
+  - suficiente = `1`
+  - parcial = `0.5`
+  - insuficiente = `0`
+- Meta mensual por sucursal: `8` respuestas utiles.
+- Meta minima global: `12` respuestas utiles.
+- Preparacion global combina:
+  - volumen de respuestas utiles: `70%`
+  - claridad de informacion suficiente: `30%`
+
+**Salida visible:**
+
+- Barra de `Preparacion del informe mensual`.
+- Porcentaje global de avance.
+- Total de respuestas utiles actuales contra meta.
+- Cuantas valoraciones utiles faltan.
+- Claridad actual del periodo.
+- Barra por sucursal con avance mensual.
+- Recomendacion concreta por establecimiento.
+
+**Ejemplo visible:**
+
+```text
+Preparacion del informe mensual: 36%
+10.0 de 24 respuestas utiles.
+Faltan 14 valoraciones utiles: respuestas con motivo claro, categoria especifica o detalle accionable.
+```
+
+**Criterio de producto:**
+
+La plataforma debe distinguir entre analizar comentarios y tener suficiente base para reportar. Un comentario como "hay mucho que mejorar" puede ser analizado correctamente, pero no debe contarse como evidencia completa para explicar la causa. Esa brecha se muestra como informacion faltante para mejorar captura e informes.
+
 ## Fase 4 - Follow-up inteligente
 
 **Problema:** El equipo puede dejar valoraciones criticas sin seguimiento o responder de forma inconsistente.
