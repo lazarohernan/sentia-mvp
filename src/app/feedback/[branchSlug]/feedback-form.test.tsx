@@ -17,7 +17,7 @@ describe("FeedbackForm", () => {
     );
 
     const { container } = render(
-      <FeedbackForm branchSlug="cafeteria-centro" branchName="Cafeteria Centro" />,
+      <FeedbackForm branchSlug="cafeteria-centro" />,
     );
     const form = container.querySelector("form");
     expect(form).not.toBeNull();

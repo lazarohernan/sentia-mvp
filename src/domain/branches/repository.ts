@@ -58,6 +58,21 @@ export async function getActiveBranchBySlug(
   return data as Branch;
 }
 
+export async function getActiveBranchById(
+  client: Client,
+  branchId: string,
+): Promise<Branch | null> {
+  const { data, error } = await client
+    .from("branches")
+    .select("*")
+    .eq("id", branchId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as Branch;
+}
+
 export async function createBranch(
   client: Client,
   organizationId: string,

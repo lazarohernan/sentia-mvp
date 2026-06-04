@@ -16,6 +16,8 @@ export type TeamMember = {
   email: string | null;
   role: MemberRole;
   roleLabel: string;
+  permissionProfileId?: string | null;
+  permissionProfileName?: string | null;
   joinedAt: string;
   accountStatus: TeamMemberAccountStatus;
 };
@@ -31,12 +33,16 @@ export { roleLabels };
 type TeamMemberRow = {
   user_id: string;
   branch_id: string | null;
+  organization_role_id: string | null;
   role: MemberRole;
   created_at: string;
   profiles: {
     full_name: string;
   } | null;
   branches: {
+    name: string;
+  } | null;
+  organization_roles: {
     name: string;
   } | null;
 };
@@ -50,6 +56,8 @@ function mapTeamMemberRow(member: TeamMemberRow): TeamMember {
     email: null,
     role: member.role,
     roleLabel: roleLabels[member.role],
+    permissionProfileId: member.organization_role_id,
+    permissionProfileName: member.organization_roles?.name ?? null,
     joinedAt: member.created_at,
     accountStatus: "active",
   };
@@ -61,7 +69,9 @@ export async function getTeamMembersByOrganization(
 ): Promise<TeamMember[]> {
   const { data, error } = await client
     .from("organization_members")
-    .select("user_id, branch_id, role, created_at, profiles(full_name), branches(name)")
+    .select(
+      "user_id, branch_id, organization_role_id, role, created_at, profiles(full_name), branches(name), organization_roles(name)",
+    )
     .eq("organization_id", organizationId)
     .neq("role", "owner")
     .order("created_at", { ascending: true });

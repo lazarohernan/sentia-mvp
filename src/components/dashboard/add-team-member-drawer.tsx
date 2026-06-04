@@ -1,10 +1,14 @@
 "use client";
 
-import { Check, Copy, Loader2, Plus, X } from "lucide-react";
+import { Check, Copy, Loader2, Mail, Plus, X } from "lucide-react";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
 import type { Branch } from "@/domain/branches/schemas";
+import {
+  inferMemberRoleFromPermissionProfile,
+  type PermissionProfile,
+} from "@/domain/organizations/permission-profiles";
 import type { TeamMember } from "@/domain/organizations/team";
 
 type AddTeamMemberDrawerProps = {
@@ -12,11 +16,13 @@ type AddTeamMemberDrawerProps = {
   onClose: () => void;
   branches: Branch[];
   actorRole: "owner" | "manager";
+  permissionProfiles?: PermissionProfile[];
   onSaved: (member: TeamMember) => void;
 };
 
 type SuccessState = {
   memberName: string;
+  email: string;
   inviteLink: string | null;
 };
 
@@ -25,12 +31,13 @@ export function AddTeamMemberDrawer({
   onClose,
   branches,
   actorRole,
+  permissionProfiles = [],
   onSaved,
 }: AddTeamMemberDrawerProps) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"manager" | "collaborator">("collaborator");
   const [branchId, setBranchId] = useState("");
+  const [permissionProfileId, setPermissionProfileId] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState<SuccessState | null>(null);
@@ -39,8 +46,8 @@ export function AddTeamMemberDrawer({
   function resetForm() {
     setFullName("");
     setEmail("");
-    setRole("collaborator");
     setBranchId("");
+    setPermissionProfileId("");
     setError("");
     setSuccess(null);
     setCopied(false);
@@ -66,6 +73,10 @@ export function AddTeamMemberDrawer({
     setIsSubmitting(true);
 
     try {
+      const selectedPermissionProfile =
+        assignablePermissionProfiles.find((profile) => profile.id === permissionProfileId) ??
+        null;
+
       const response = await fetch("/api/team-members", {
         method: "POST",
         credentials: "same-origin",
@@ -73,7 +84,8 @@ export function AddTeamMemberDrawer({
         body: JSON.stringify({
           fullName,
           email,
-          role,
+          role: inferMemberRoleFromPermissionProfile(selectedPermissionProfile),
+          organizationRoleId: selectedPermissionProfile?.id ?? null,
           branchId: branchId || undefined,
         }),
       });
@@ -89,9 +101,16 @@ export function AddTeamMemberDrawer({
         return;
       }
 
-      onSaved(body.member);
+      const memberWithProfile = {
+        ...body.member,
+        permissionProfileId: selectedPermissionProfile?.id ?? null,
+        permissionProfileName: selectedPermissionProfile?.name ?? null,
+      };
+
+      onSaved(memberWithProfile);
       setSuccess({
-        memberName: body.member.fullName,
+        memberName: memberWithProfile.fullName,
+        email,
         inviteLink: body.inviteLink ?? null,
       });
     } catch {
@@ -104,6 +123,25 @@ export function AddTeamMemberDrawer({
   if (!open) {
     return null;
   }
+
+  const assignablePermissionProfiles = permissionProfiles.filter((profile) => {
+    if (actorRole === "owner") {
+      return true;
+    }
+
+    return inferMemberRoleFromPermissionProfile(profile) === "collaborator";
+  });
+
+  const emailInviteHref =
+    success?.inviteLink && success.email
+      ? [
+          `mailto:${encodeURIComponent(success.email)}`,
+          `?subject=${encodeURIComponent("Activa tu acceso a Perks")}`,
+          `&body=${encodeURIComponent(
+            `Hola ${success.memberName},\n\nTe comparto tu enlace para activar tu cuenta en Perks. Abre este enlace, confirma tu nombre y crea tu contraseña:\n\n${success.inviteLink}\n\nDespués podrás entrar desde /login.`,
+          )}`,
+        ].join("")
+      : "";
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/30 backdrop-blur-[2px]">
@@ -169,6 +207,13 @@ export function AddTeamMemberDrawer({
                     {copied ? "Copiado" : "Copiar"}
                   </button>
                 </div>
+                <a
+                  href={emailInviteHref}
+                  className="mt-3 inline-flex h-10 items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-50"
+                >
+                  <Mail className="h-4 w-4" aria-hidden="true" />
+                  Enviar por correo
+                </a>
               </div>
             ) : (
               <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
@@ -217,22 +262,6 @@ export function AddTeamMemberDrawer({
               </label>
 
               <label className="block">
-                <span className="text-sm font-semibold text-slate-700">Rol</span>
-                <select
-                  value={role}
-                  onChange={(event) =>
-                    setRole(event.target.value as "manager" | "collaborator")
-                  }
-                  className="mt-2 h-12 w-full rounded-lg border border-slate-200 px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-                >
-                  <option value="collaborator">Colaborador</option>
-                  {actorRole === "owner" ? (
-                    <option value="manager">Gerente</option>
-                  ) : null}
-                </select>
-              </label>
-
-              <label className="block">
                 <span className="text-sm font-semibold text-slate-700">Sucursal</span>
                 <select
                   value={branchId}
@@ -246,6 +275,27 @@ export function AddTeamMemberDrawer({
                     </option>
                   ))}
                 </select>
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Rol</span>
+                <select
+                  aria-label="Rol"
+                  value={permissionProfileId}
+                  onChange={(event) => setPermissionProfileId(event.target.value)}
+                  className="mt-2 h-12 w-full rounded-lg border border-slate-200 px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                >
+                  <option value="">Sin rol asignado</option>
+                  {assignablePermissionProfiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-2 block text-xs leading-5 text-slate-500">
+                  Los roles se crean en Gestion &gt; Permisos y definen que puede ver
+                  cada persona.
+                </span>
               </label>
 
               <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-4 text-sm leading-6 text-emerald-950">

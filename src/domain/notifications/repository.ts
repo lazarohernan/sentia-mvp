@@ -112,6 +112,7 @@ export async function getNotificationsForOrganization(
   params: {
     startIso?: string;
     endIso?: string;
+    branchIds?: string[];
     limit?: number;
   } = {},
 ): Promise<DashboardNotification[]> {
@@ -130,6 +131,12 @@ export async function getNotificationsForOrganization(
 
   if (params.endIso) {
     query = query.lte("created_at", params.endIso);
+  }
+
+  if (params.branchIds && params.branchIds.length > 0) {
+    query = query.or(
+      `branch_id.is.null,branch_id.in.(${params.branchIds.join(",")})`,
+    );
   }
 
   const { data, error } = await query;

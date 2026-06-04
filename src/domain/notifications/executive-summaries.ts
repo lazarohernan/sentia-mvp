@@ -1,4 +1,5 @@
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
+import { getCategoryLabel } from "@/domain/feedback/sentiment-analysis";
 import {
   formatRelativeDate,
   getAnalysis,
@@ -192,7 +193,7 @@ export function buildFeedbackAlertDraft(params: {
     title: `Nuevo comentario en riesgo - ${params.branchName}`,
     detail:
       params.category && params.recommendedAction
-        ? `${params.category}: ${params.recommendedAction}`
+        ? `${getCategoryLabel(params.category)}: ${params.recommendedAction}`
         : excerpt,
     href: "/dashboard#comentarios",
     sourceTable: "feedback_submissions",

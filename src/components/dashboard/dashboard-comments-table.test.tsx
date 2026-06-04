@@ -8,10 +8,8 @@ describe("DashboardCommentsTable", () => {
   it("renders the reusable table structure without records", () => {
     render(<DashboardCommentsTable />);
 
-    expect(
-      screen.getByPlaceholderText("Buscar comentario"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Sin comentarios registrados")).toBeInTheDocument();
+    expect(screen.getByText("Salud de valoraciones")).toBeInTheDocument();
+    expect(screen.getByText("Sin valoraciones registradas")).toBeInTheDocument();
     expect(screen.getByText("0 resultados")).toBeInTheDocument();
   });
 
@@ -19,13 +17,14 @@ describe("DashboardCommentsTable", () => {
     render(<DashboardCommentsTable comments={dashboardMockComments} />);
 
     expect(
-      screen.getByPlaceholderText("Buscar comentario"),
+      screen.getByRole("combobox", { name: "Filtrar por sucursal" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("combobox", { name: "Filtrar por negocio" }),
+      screen.getByRole("combobox", { name: "Filtrar por tipo" }),
     ).toBeInTheDocument();
     expect(screen.getByText("1-5 de 7")).toBeInTheDocument();
     expect(screen.getByText("Cliente verificado")).toBeInTheDocument();
+    expect(screen.getAllByText("Felicitación").length).toBeGreaterThan(0);
     expect(screen.getAllByText("5/5").length).toBeGreaterThan(0);
     expect(
       screen.getAllByLabelText(/CSAT 5 de 5, Excelente/i).length,
@@ -49,16 +48,29 @@ describe("DashboardCommentsTable", () => {
     expect(screen.getByText("Cliente recurrente")).toBeInTheDocument();
   });
 
-  it("filters comments by business", () => {
+  it("filters comments by branch", () => {
     render(<DashboardCommentsTable comments={dashboardMockComments} />);
 
     fireEvent.click(
-      screen.getByRole("combobox", { name: "Filtrar por negocio" }),
+      screen.getByRole("combobox", { name: "Filtrar por sucursal" }),
     );
-    fireEvent.click(screen.getByRole("option", { name: "Restaurante" }));
+    fireEvent.click(screen.getByRole("option", { name: "Boulevard" }));
 
     expect(screen.getByText("1-2 de 2")).toBeInTheDocument();
     expect(screen.getByText("Visita familiar")).toBeInTheDocument();
+    expect(screen.queryByText("Cliente verificado")).not.toBeInTheDocument();
+  });
+
+  it("filters comments by feedback type", () => {
+    render(<DashboardCommentsTable comments={dashboardMockComments} />);
+
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "Filtrar por tipo" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: "Queja" }));
+
+    expect(screen.getByText("1-2 de 2")).toBeInTheDocument();
+    expect(screen.getByText("Compra reciente")).toBeInTheDocument();
     expect(screen.queryByText("Cliente verificado")).not.toBeInTheDocument();
   });
 
@@ -67,13 +79,14 @@ describe("DashboardCommentsTable", () => {
 
     fireEvent.click(screen.getByText("Cliente verificado"));
 
-    expect(screen.getByText("Detalle del comentario")).toBeInTheDocument();
-    expect(screen.getByText("Comentario recibido")).toBeInTheDocument();
+    expect(screen.getByText("Detalle de valoración")).toBeInTheDocument();
+    expect(screen.getByText("Valoración recibida")).toBeInTheDocument();
+    expect(screen.getAllByText("Felicitación").length).toBeGreaterThan(0);
     expect(screen.getByText("Lectura operativa")).toBeInTheDocument();
     expect(screen.getByText("Marcar en revisión")).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Volver a comentarios" }),
+      screen.getByRole("button", { name: "Volver a valoraciones" }),
     );
 
     expect(screen.getByText("1-5 de 7")).toBeInTheDocument();
@@ -90,7 +103,7 @@ describe("DashboardCommentsTable", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Volver a comentarios" }),
+      screen.getByRole("button", { name: "Volver a valoraciones" }),
     );
 
     expect(screen.getByText("Escalado")).toBeInTheDocument();

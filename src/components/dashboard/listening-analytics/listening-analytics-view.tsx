@@ -6,16 +6,53 @@ import {
   CalendarDays,
   CircleAlert,
   Ear,
+  Info,
   LineChart,
   MessageSquareText,
+  Settings2,
+  X,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
+import { DashboardDateFilter } from "@/components/dashboard/dashboard-date-filter";
+import type { Branch } from "@/domain/branches/schemas";
+import type { DashboardDateRange } from "@/domain/dashboard/date-range";
+import {
+  getListeningAverageSummary,
+  getListeningDailySummary,
+  getListeningModeSummary,
+} from "@/domain/listening/daily-summary";
 import type { ListeningEventRow } from "@/domain/listening/schemas";
+import type { ListeningSettings } from "@/domain/listening/settings";
+import {
+  listeningLevelDescriptions,
+  listeningLevelLabels,
+} from "@/domain/listening/schemas";
 import { DashboardFloatingNav } from "../dashboard-floating-nav";
+import type { DashboardCurrentUser } from "../dashboard-user-menu";
+import { ListeningBranchFilter } from "./listening-branch-filter";
+import { ListeningReminderSettingsPanel } from "./listening-reminder-settings-panel";
+import { buildListeningSectionHref } from "./listening-section-tabs";
 
 type ListeningAnalyticsViewProps = {
   listeningEvents: ListeningEventRow[];
+  currentUser?: DashboardCurrentUser;
+  listeningSettings: ListeningSettings;
+  canManageListening?: boolean;
+  dateRange: DashboardDateRange;
+  branches: Branch[];
+  selectedBranchIds: string[];
+  lockedBranchScope?: boolean;
 };
 
 const levelMeta: Record<
@@ -23,28 +60,28 @@ const levelMeta: Record<
   { label: string; color: string; bg: string; description: string }
 > = {
   download: {
-    label: "Descarga",
+    label: listeningLevelLabels.download,
     color: "#64748b",
     bg: "bg-slate-100 text-slate-700",
-    description: "Respuestas automáticas o hábitos.",
+    description: listeningLevelDescriptions.download,
   },
   debate: {
-    label: "Factual",
+    label: listeningLevelLabels.debate,
     color: "#14b8a6",
     bg: "bg-teal-50 text-teal-800",
-    description: "Datos nuevos o algo distinto.",
+    description: listeningLevelDescriptions.debate,
   },
   empathetic_listening: {
-    label: "Escucha empática",
+    label: listeningLevelLabels.empathetic_listening,
     color: "#0f766e",
     bg: "bg-emerald-50 text-emerald-800",
-    description: "Comprensión de emoción y contexto.",
+    description: listeningLevelDescriptions.empathetic_listening,
   },
   generative_dialogue: {
-    label: "Diálogo generativo",
+    label: listeningLevelLabels.generative_dialogue,
     color: "#0f2f5f",
     bg: "bg-blue-50 text-blue-900",
-    description: "Nueva posibilidad o decisión.",
+    description: listeningLevelDescriptions.generative_dialogue,
   },
 };
 
@@ -62,10 +99,91 @@ function getLevelCounts(events: ListeningEventRow[]) {
   }));
 }
 
+type ChartTooltipProps = {
+  active?: boolean;
+  payload?: Array<{
+    color?: string;
+    dataKey?: string;
+    value?: number;
+  }>;
+  label?: string;
+};
+
+const chartSeries = [
+  { key: "download", label: listeningLevelLabels.download, color: "#64748b" },
+  { key: "debate", label: listeningLevelLabels.debate, color: "#14b8a6" },
+  {
+    key: "empatheticListening",
+    label: listeningLevelLabels.empathetic_listening,
+    color: "#0f766e",
+  },
+  {
+    key: "generativeDialogue",
+    label: listeningLevelLabels.generative_dialogue,
+    color: "#0f2f5f",
+  },
+] as const;
+
+function ListeningChartTooltip({ active, payload, label }: ChartTooltipProps) {
+  if (!active || !payload?.length) return null;
+
+  const visiblePayload = payload.filter((item) => Number(item.value) > 0);
+  const total = payload.reduce((sum, item) => sum + Number(item.value ?? 0), 0);
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-[0_12px_36px_rgba(15,23,42,0.16)]">
+      <p className="text-xs font-semibold text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-950">
+        {total} registro{total === 1 ? "" : "s"}
+      </p>
+      <div className="mt-2 space-y-1">
+        {visiblePayload.length > 0 ? (
+          visiblePayload.map((item) => {
+            const series = chartSeries.find((entry) => entry.key === item.dataKey);
+            return (
+              <div
+                key={item.dataKey}
+                className="flex items-center justify-between gap-4 text-xs"
+              >
+                <span className="flex items-center gap-2 text-slate-600">
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  {series?.label ?? item.dataKey}
+                </span>
+                <span className="font-semibold text-slate-900">{item.value}</span>
+              </div>
+            );
+          })
+        ) : (
+          <p className="text-xs text-slate-500">Sin registros ese dia.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function formatListeningDate(value: string) {
+  return new Date(value).toLocaleString("es-HN").replace(/\u00a0/g, " ");
+}
+
 export function ListeningAnalyticsView({
   listeningEvents,
+  currentUser,
+  listeningSettings,
+  canManageListening = false,
+  dateRange,
+  branches,
+  selectedBranchIds,
+  lockedBranchScope = false,
 }: ListeningAnalyticsViewProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const levelCounts = getLevelCounts(listeningEvents);
+  const dailySummary = getListeningDailySummary(listeningEvents, dateRange);
+  const averageSummary = getListeningAverageSummary(listeningEvents);
+  const modeSummary = getListeningModeSummary(listeningEvents);
   const totalEvents = listeningEvents.length;
   const lowLevelEvents = listeningEvents.filter(
     (event) => event.level === "download" || event.level === "debate",
@@ -74,43 +192,67 @@ export function ListeningAnalyticsView({
   const highLevelRatio = totalEvents
     ? Math.round((highLevelEvents / totalEvents) * 100)
     : 0;
-  const lowLevelRatio = totalEvents
-    ? Math.round((lowLevelEvents / totalEvents) * 100)
-    : 0;
-  const dominantLevel = levelCounts.reduce(
-    (currentDominant, currentLevel) =>
-      currentLevel.count > currentDominant.count
-        ? currentLevel
-        : currentDominant,
-    levelCounts[0],
-  );
-  const dominantLevelLabel =
-    dominantLevel.count > 0 ? levelMeta[dominantLevel.level].label : "Sin datos";
-
   return (
-    <main className="min-h-screen bg-[#f5f6f1] text-slate-950">
-      <DashboardFloatingNav activeView="escucha" onViewChange={() => {}} />
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#f4f8f5_0%,#e9f0ed_100%)] text-slate-950">
+      <DashboardFloatingNav
+        activeView="escucha"
+        onViewChange={() => {}}
+        currentUser={currentUser}
+        listeningSubNav={{
+          activeTab: "analytics",
+          analyticsHref: buildListeningSectionHref(
+            "/dashboard/escucha",
+            dateRange,
+            selectedBranchIds,
+          ),
+          coachingHref: buildListeningSectionHref(
+            "/dashboard/escucha/coaching",
+            dateRange,
+            selectedBranchIds,
+          ),
+        }}
+      />
 
-      <section className="mx-auto w-full max-w-7xl px-6 pb-10 pt-28 sm:px-8 lg:px-10">
+      <section className="mx-auto w-full max-w-[92rem] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800">
-              Vista del gerente
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-normal text-slate-950 sm:text-4xl">
+            <h1 className="text-3xl font-semibold tracking-normal text-slate-950">
               Analítica de escucha
             </h1>
-            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
               Observa cómo evoluciona la práctica de escucha del equipo por
               nivel y registros recientes.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap gap-2">
+            <DashboardDateFilter
+              dateRange={dateRange}
+              basePath="/dashboard/escucha"
+              selectedBranchIds={selectedBranchIds}
+            />
+            <ListeningBranchFilter
+              dateRange={dateRange}
+              branches={branches}
+              selectedBranchIds={selectedBranchIds}
+              lockedBranchScope={lockedBranchScope}
+              basePath="/dashboard/escucha"
+            />
+            {canManageListening ? (
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                <Settings2 className="h-4 w-4" aria-hidden="true" />
+                Configurar
+              </button>
+            ) : null}
             <Link
               href="/escucha"
-              className="inline-flex items-center gap-2 rounded-full bg-emerald-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-900"
+              aria-label="Abrir evaluación"
+              title="Abrir evaluación"
+              className="inline-flex size-10 items-center justify-center rounded-full bg-emerald-800 text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900"
             >
-              Abrir evaluación
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
@@ -131,15 +273,18 @@ export function ListeningAnalyticsView({
               icon: LineChart,
             },
             {
-              label: "Escucha inicial",
-              value: `${lowLevelRatio}%`,
-              detail: "Descarga o factual",
+              label: "Media del periodo",
+              value: averageSummary.averageLabel,
+              detail:
+                averageSummary.average === null
+                  ? "Nivel promedio"
+                  : `Cercano a ${averageSummary.nearestLevelLabel}`,
               icon: BarChart3,
             },
             {
-              label: "Nivel predominante",
-              value: dominantLevelLabel,
-              detail: "Mayor volumen actual",
+              label: "Moda del periodo",
+              value: modeSummary.modeLabel,
+              detail: modeSummary.detail,
               icon: MessageSquareText,
             },
           ].map((metric) => {
@@ -168,6 +313,85 @@ export function ListeningAnalyticsView({
           })}
         </div>
 
+        <section className="mt-6 rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+          <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">
+                Comportamiento diario
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                Evolución diaria de los niveles registrados en el periodo.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                {dateRange.label}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsInfoOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                <Info className="h-3.5 w-3.5" aria-hidden="true" />
+                Información
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-5 h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={dailySummary}
+                margin={{ top: 8, right: 8, bottom: 0, left: -18 }}
+              >
+                <CartesianGrid
+                  stroke="#e2e8f0"
+                  strokeDasharray="3 3"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#64748b", fontSize: 12, fontWeight: 600 }}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#94a3b8", fontSize: 12, fontWeight: 600 }}
+                />
+                <Tooltip content={<ListeningChartTooltip />} cursor={{ fill: "#f8fafc" }} />
+                {chartSeries.map((series) => (
+                  <Bar
+                    key={series.key}
+                    dataKey={series.key}
+                    stackId="listening"
+                    fill={series.color}
+                    radius={[4, 4, 0, 0]}
+                  />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {chartSeries.map((series) => (
+              <span
+                key={series.key}
+                className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600"
+              >
+                <span
+                  className="size-2 rounded-full"
+                  style={{ backgroundColor: series.color }}
+                />
+                {series.label}
+              </span>
+            ))}
+          </div>
+        </section>
+
         <div className="mt-6 grid gap-6 xl:grid-cols-2">
           <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
             <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
@@ -181,7 +405,7 @@ export function ListeningAnalyticsView({
               </div>
               <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                 <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
-                Últimos registros
+                {dateRange.label}
               </span>
             </div>
 
@@ -253,7 +477,7 @@ export function ListeningAnalyticsView({
                         </p>
                       </div>
                       <div className="text-xs font-medium text-slate-400 sm:text-right">
-                        {new Date(event.createdAt).toLocaleString("es-HN")}
+                        {formatListeningDate(event.createdAt)}
                       </div>
                     </article>
                   );
@@ -273,28 +497,129 @@ export function ListeningAnalyticsView({
           </section>
         </div>
 
-        <section className="mt-6 rounded-[1.35rem] border border-emerald-100 bg-emerald-50 p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3">
-              <MessageSquareText className="mt-1 h-5 w-5 shrink-0 text-emerald-800" aria-hidden="true" />
+      </section>
+
+      {isSettingsOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[2px]"
+          role="presentation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default"
+            aria-label="Cerrar configuración"
+            onClick={() => setIsSettingsOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="listening-settings-title"
+            className="relative max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[1.35rem] bg-white shadow-2xl"
+          >
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(false)}
+              className="absolute right-4 top-4 z-10 inline-flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50"
+            >
+              <X className="h-5 w-5" aria-hidden="true" />
+              <span className="sr-only">Cerrar</span>
+            </button>
+            <ListeningReminderSettingsPanel
+              initialSettings={listeningSettings}
+              canManage={canManageListening}
+              titleId="listening-settings-title"
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {isInfoOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[2px]"
+          role="presentation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default"
+            aria-label="Cerrar información"
+            onClick={() => setIsInfoOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="listening-info-title"
+            className="relative w-full max-w-2xl rounded-[1.35rem] bg-white p-6 shadow-2xl"
+          >
+            <button
+              type="button"
+              onClick={() => setIsInfoOpen(false)}
+              className="absolute right-4 top-4 inline-flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50"
+            >
+              <X className="h-5 w-5" aria-hidden="true" />
+              <span className="sr-only">Cerrar</span>
+            </button>
+
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-800">
+              Información
+            </p>
+            <h2
+              id="listening-info-title"
+              className="mt-2 pr-12 text-xl font-semibold text-slate-950"
+            >
+              Cómo leer la analítica de escucha
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Esta vista resume cómo se sintió el nivel de escucha del equipo
+              dentro del periodo seleccionado.
+            </p>
+
+            <div className="mt-5 space-y-4">
               <div>
-                <p className="font-semibold text-slate-950">
-                  Próximo paso
+                <p className="text-sm font-semibold text-slate-950">
+                  Rango seleccionado
                 </p>
                 <p className="mt-1 text-sm leading-6 text-slate-600">
-                  Cuando exista la tabla de evaluaciones diarias, esta vista podrá mostrar porcentajes por día, cambios percibidos y relación con comentarios críticos.
+                  Define qué registros entran en el análisis. Si eliges un
+                  rango personalizado, todas las tarjetas y la gráfica usan solo
+                  esas fechas.
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-slate-950">
+                  Comportamiento diario
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Cada barra representa un día. Los colores muestran cuántas
+                  respuestas hubo en Descarga, Debate, Escucha empática o
+                  Diálogo generativo.
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-slate-950">
+                  Media del periodo
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Es el promedio general del periodo. Sirve para ver si el
+                  equipo, en conjunto, se acerca más a escucha inicial o a
+                  escucha más profunda.
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-slate-950">
+                  Moda del periodo
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Es el nivel que más se repitió. Ayuda a identificar cuál fue
+                  el comportamiento más común del equipo.
                 </p>
               </div>
             </div>
-            <Link
-              href="/dashboard#equipo"
-              className="inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-emerald-200 bg-white px-4 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
-            >
-              Ver equipo
-            </Link>
           </div>
-        </section>
-      </section>
+        </div>
+      ) : null}
     </main>
   );
 }

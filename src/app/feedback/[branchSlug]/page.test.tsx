@@ -12,7 +12,18 @@ vi.mock("@/domain/branches/repository", () => ({
   getActiveBranchBySlug: vi.fn(),
 }));
 
+vi.mock("@/domain/organizations/organization-settings", () => ({
+  getOrganizationSettingsById: vi.fn(),
+}));
+
+vi.mock("next/headers", () => ({
+  headers: vi.fn(async () => ({
+    get: (name: string) => (name === "host" ? "localhost:3000" : null),
+  })),
+}));
+
 import { getActiveBranchBySlug } from "@/domain/branches/repository";
+import { getOrganizationSettingsById } from "@/domain/organizations/organization-settings";
 import FeedbackPage from "./page";
 
 describe("FeedbackPage", () => {
@@ -26,9 +37,22 @@ describe("FeedbackPage", () => {
       is_active: true,
       created_at: "2026-01-01T00:00:00.000Z",
     });
+    vi.mocked(getOrganizationSettingsById).mockResolvedValue({
+      id: "org-1",
+      name: "Cafe Central",
+      slug: "cafe-central",
+      logoUrl: "https://example.com/logo.png",
+      tagline: "Cafe de especialidad",
+      description: null,
+      contactEmail: null,
+      contactPhone: null,
+      websiteUrl: null,
+      address: null,
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
   });
 
-  it("renders CSAT as the primary satisfaction question", async () => {
+  it("renders business trust header and CSAT form", async () => {
     const { render, screen } = await import("@testing-library/react");
 
     render(
@@ -37,10 +61,14 @@ describe("FeedbackPage", () => {
       }),
     );
 
+    expect(screen.getByAltText("Logo de Cafe Central")).toBeInTheDocument();
+    expect(screen.getByText("Perks")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Cafe Central" })).toBeInTheDocument();
+    expect(screen.getByText("Cafeteria Centro")).toBeInTheDocument();
+    expect(screen.getByText(/verifica que estas en el lugar correcto/i)).toBeInTheDocument();
     expect(
       screen.getByText("Que tan satisfecho quedaste con esta experiencia?"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Cafeteria Centro" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /excelente/i })).toHaveAttribute(
       "name",
       "csatScore",

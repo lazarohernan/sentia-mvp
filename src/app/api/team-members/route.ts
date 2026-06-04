@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 
 import { addTeamMember } from "@/domain/organizations/add-team-member";
 import { createTeamMemberInputSchema } from "@/domain/organizations/member-schemas";
+import {
+  getPermissionProfileById,
+  inferMemberRoleFromPermissionProfile,
+} from "@/domain/organizations/permission-profiles";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
 import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv, hasSupabaseServiceEnv } from "@/lib/supabase/config";
@@ -68,7 +72,24 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!canAssignRole(membership.role, parsed.data.role)) {
+  const serviceClient = createServiceClient();
+  const permissionProfile = parsed.data.organizationRoleId
+    ? await getPermissionProfileById(serviceClient, {
+        organizationId: membership.organizationId,
+        organizationRoleId: parsed.data.organizationRoleId,
+      })
+    : null;
+
+  if (parsed.data.organizationRoleId && !permissionProfile) {
+    return NextResponse.json(
+      { error: "El rol seleccionado no pertenece a la organizacion." },
+      { status: 400 },
+    );
+  }
+
+  const targetRole = inferMemberRoleFromPermissionProfile(permissionProfile);
+
+  if (!canAssignRole(membership.role, targetRole)) {
     return NextResponse.json(
       { error: "No puedes asignar ese rol con tu cuenta." },
       { status: 403 },
@@ -78,9 +99,12 @@ export async function POST(request: Request) {
   const siteUrl = new URL(request.url).origin;
 
   try {
-    const result = await addTeamMember(createServiceClient(), {
+    const result = await addTeamMember(serviceClient, {
       organizationId: membership.organizationId,
-      input: parsed.data,
+      input: {
+        ...parsed.data,
+        role: targetRole,
+      },
       siteUrl,
     });
 

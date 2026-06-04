@@ -67,6 +67,7 @@ describe("POST /api/feedback", () => {
   });
 
   it("accepts a valid feedback payload", async () => {
+    vi.stubEnv("HUGGINGFACE_API_TOKEN", "");
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role");
     maybeSingle.mockResolvedValueOnce({
       data: { id: "branch-1", name: "Demo Cafe", organization_id: "org-1" },
@@ -137,7 +138,7 @@ describe("POST /api/feedback", () => {
         confidence: 0.91,
         analysis: {
           sentiment: "negative",
-          urgency: "high",
+          urgency: "critical",
         },
       },
     });

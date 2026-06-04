@@ -2,16 +2,23 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Branch } from "@/domain/branches/schemas";
 import { getBranchQrScanCounts } from "@/domain/branches/qr-scans";
+import { computeFollowUpMetrics, getWorkflowStatusForRecord } from "@/domain/feedback/follow-up";
+import { getCategoryLabel } from "@/domain/feedback/sentiment-analysis";
 import {
   formatRelativeDate,
   formatTableDate,
   getAnalysis,
+  getFeedbackTypeLabel,
   getSentiment,
   getStatus,
   getTone,
   truncate,
   type FeedbackRecord,
 } from "@/domain/feedback/record-analysis";
+import {
+  isOpenWorkflowStatus,
+  workflowStatusToLabel,
+} from "@/domain/feedback/workflow-status";
 import { buildExecutiveNotificationDrafts } from "@/domain/notifications/executive-summaries";
 import {
   getNotificationsForOrganization,
@@ -142,6 +149,7 @@ function buildComments(feedback: FeedbackRecord[]): DashboardCommentRow[] {
     customer: record.contact_name || "Cliente anónimo",
     business: "Feedback",
     branch: record.branches?.name ?? "Sucursal",
+    feedbackType: getFeedbackTypeLabel(record.type),
     sentiment: getSentiment(record),
     csatScore: record.csat_score ?? record.emotion_score,
     status: getStatus(record),
@@ -174,25 +182,48 @@ function buildRecentComments(feedback: FeedbackRecord[]): DashboardRecentComment
   });
 }
 
+function mapWorkflowToAttentionStatus(
+  status: ReturnType<typeof getWorkflowStatusForRecord>,
+): DashboardAttentionItem["status"] {
+  if (status === "resuelto") {
+    return "Resuelto";
+  }
+
+  if (status === "en_revision" || status === "en_proceso" || status === "escalado") {
+    return "En revisión";
+  }
+
+  return "Pendiente";
+}
+
 function buildAttentionItems(feedback: FeedbackRecord[]): DashboardAttentionItem[] {
   return feedback
-    .filter((record) => getTone(record) === "danger")
-    .slice(0, 3)
+    .filter((record) => {
+      const workflowStatus = getWorkflowStatusForRecord(record);
+      if (!isOpenWorkflowStatus(workflowStatus)) {
+        return false;
+      }
+
+      return getTone(record) === "danger" || workflowStatus === "escalado";
+    })
+    .slice(0, 6)
     .map((record, index) => {
       const analysis = getAnalysis(record);
+      const workflowStatus = getWorkflowStatusForRecord(record);
       const priority =
-        analysis?.urgency === "critical" || index === 0
+        workflowStatus === "escalado" || analysis?.urgency === "critical" || index === 0
           ? "Prioridad alta"
           : "Prioridad media";
 
       return {
         priority,
-        title: `${record.branches?.name ?? "Sucursal"} - ${analysis?.category ?? "Caso por revisar"}`,
+        title: `${record.branches?.name ?? "Sucursal"} - ${getCategoryLabel(analysis?.category)}`,
         description: analysis?.recommended_action ?? "Revisar comentario con el equipo",
-        owner: "Operaciones",
+        owner: workflowStatusToLabel(workflowStatus),
         age: formatRelativeDate(record.created_at).replace("Hace ", ""),
-        status: "Pendiente",
+        status: mapWorkflowToAttentionStatus(workflowStatus),
         tone: priority === "Prioridad alta" ? "danger" : "warning",
+        submissionId: record.id,
       };
     });
 }
@@ -205,7 +236,7 @@ function buildInsight(feedback: FeedbackRecord[]): DashboardInsight | null {
 
   const analysis = getAnalysis(target);
   const branchName = target.branches?.name ?? "La sucursal";
-  const category = analysis?.category ?? "Experiencia del cliente";
+  const category = getCategoryLabel(analysis?.category);
   const confidence =
     typeof analysis?.confidence === "number"
       ? `${Math.round(analysis.confidence * 100)}% confianza`
@@ -245,6 +276,8 @@ async function loadDashboardNotifications(
     organizationId: string;
     dateRange: DashboardDateRange;
     feedback: FeedbackRecord[];
+    branchIds?: string[];
+    syncDrafts?: boolean;
   },
 ) {
   const drafts = buildExecutiveNotificationDrafts(params.feedback, {
@@ -252,15 +285,18 @@ async function loadDashboardNotifications(
     dateRange: params.dateRange,
   });
 
-  try {
-    await syncNotificationDrafts(client, drafts);
-  } catch {
-    // La sincronización no debe bloquear el dashboard.
+  if (params.syncDrafts !== false) {
+    try {
+      await syncNotificationDrafts(client, drafts);
+    } catch {
+      // La sincronización no debe bloquear el dashboard.
+    }
   }
 
   return getNotificationsForOrganization(client, params.organizationId, {
     startIso: params.dateRange.startIso,
     endIso: params.dateRange.endIso,
+    branchIds: params.branchIds,
     limit: 20,
   });
 }
@@ -272,6 +308,7 @@ export async function getDashboardSummaryData(
     organizationName?: string;
     branches: Branch[];
     dateRange: DashboardDateRange;
+    syncNotificationDrafts?: boolean;
   },
 ): Promise<DashboardSummaryData> {
   const branchIds = params.branches.map((branch) => branch.id);
@@ -289,6 +326,10 @@ export async function getDashboardSummaryData(
           csat_score,
           free_text,
           contact_name,
+          workflow_status,
+          assigned_user_id,
+          first_response_at,
+          resolved_at,
           created_at,
           branch_id,
           branches!inner(id, name, slug, organization_id),
@@ -312,17 +353,20 @@ export async function getDashboardSummaryData(
           organizationId: params.organizationId,
           dateRange: params.dateRange,
           feedback,
+          branchIds,
+          syncDrafts: params.syncNotificationDrafts,
         })
       : params.organizationId
         ? await getNotificationsForOrganization(client, params.organizationId, {
             startIso: params.dateRange.startIso,
             endIso: params.dateRange.endIso,
+            branchIds,
             limit: 20,
           })
         : [];
 
   const qrScanCounts = params.organizationId
-    ? await getBranchQrScanCounts(client, params.organizationId)
+    ? await getBranchQrScanCounts(client, params.organizationId, branchIds)
     : {};
 
   return {
@@ -340,6 +384,7 @@ export async function getDashboardSummaryData(
     recentComments: buildRecentComments(feedback),
     comments: buildComments(feedback),
     notifications,
+    followUpMetrics: computeFollowUpMetrics(feedback),
     qrScanCounts,
   };
 }

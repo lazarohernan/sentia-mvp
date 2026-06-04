@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, ChevronDown } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 export type DropdownOption = {
@@ -15,6 +16,9 @@ type DropdownProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   menuAlign?: "left" | "right";
+  menuWidthClassName?: string;
+  disabled?: boolean;
+  leadingIcon?: LucideIcon;
 };
 
 export function Dropdown({
@@ -24,6 +28,9 @@ export function Dropdown({
   onChange,
   placeholder = "Seleccionar",
   menuAlign = "right",
+  menuWidthClassName = "min-w-[10rem]",
+  disabled = false,
+  leadingIcon: LeadingIcon,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const listboxId = useId();
@@ -62,12 +69,15 @@ export function Dropdown({
   }, [isOpen]);
 
   function select(optionValue: string) {
+    if (disabled) return;
     onChange(optionValue);
     setIsOpen(false);
     buttonRef.current?.focus();
   }
 
   function handleButtonKeyDown(event: React.KeyboardEvent) {
+    if (disabled) return;
+
     if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       setIsOpen(true);
@@ -110,10 +120,12 @@ export function Dropdown({
         aria-expanded={isOpen}
         aria-controls={listboxId}
         aria-labelledby={`${listboxId}-label`}
+        disabled={disabled}
         onClick={() => setIsOpen((current) => !current)}
         onKeyDown={handleButtonKeyDown}
-        className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 outline-none transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100 aria-expanded:border-emerald-300 aria-expanded:bg-emerald-50 aria-expanded:text-emerald-900 aria-expanded:ring-4 aria-expanded:ring-emerald-100"
+        className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 outline-none transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 disabled:hover:border-slate-200 disabled:hover:bg-slate-50 disabled:hover:text-slate-500 aria-expanded:border-emerald-300 aria-expanded:bg-emerald-50 aria-expanded:text-emerald-900 aria-expanded:ring-4 aria-expanded:ring-emerald-100"
       >
+        {LeadingIcon ? <LeadingIcon size={16} aria-hidden="true" /> : null}
         <span>{displayLabel}</span>
         <ChevronDown
           size={15}
@@ -132,6 +144,7 @@ export function Dropdown({
           aria-label={label}
           className={[
             "absolute top-full z-50 mt-2 min-w-[10rem] overflow-hidden rounded-2xl border border-slate-200 bg-white py-1.5 shadow-[0_8px_32px_rgba(15,23,42,0.12)]",
+            menuWidthClassName,
             menuAlign === "left" ? "left-0" : "right-0",
           ].join(" ")}
         >

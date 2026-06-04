@@ -14,6 +14,7 @@ export type DashboardAttentionItem = {
   age: string;
   status: "Pendiente" | "En revisión" | "Resuelto";
   tone: "success" | "warning" | "danger";
+  submissionId?: string;
 };
 
 export type DashboardBranchHealthItem = {
@@ -37,14 +38,22 @@ export type DashboardRecentComment = {
   tone: "success" | "warning" | "danger";
 };
 
+export type DashboardFeedbackType =
+  | "Opinión"
+  | "Queja"
+  | "Observación"
+  | "Felicitación"
+  | "Recomendación";
+
 export type DashboardCommentRow = {
   id: string;
   customer: string;
   business: string;
   branch: string;
+  feedbackType: DashboardFeedbackType;
   sentiment: "Positivo" | "Neutral" | "Riesgo";
   csatScore: number;
-  status: "Nuevo" | "En revisión" | "Resuelto" | "Escalado";
+  status: "Nuevo" | "En revisión" | "En proceso" | "Resuelto" | "Escalado";
   message: string;
   receivedAt: string;
 };
@@ -74,6 +83,15 @@ export type DashboardInsight = {
   }>;
 };
 
+export type DashboardFollowUpMetrics = {
+  openCount: number;
+  escalatedCount: number;
+  inReviewCount: number;
+  resolvedCount: number;
+  avgResponseHours: number | null;
+  avgResolutionHours: number | null;
+};
+
 export type DashboardSummaryData = {
   organizationName?: string;
   scope: string;
@@ -86,5 +104,6 @@ export type DashboardSummaryData = {
   recentComments: DashboardRecentComment[];
   comments: DashboardCommentRow[];
   notifications: DashboardNotification[];
+  followUpMetrics: DashboardFollowUpMetrics;
   qrScanCounts: Record<string, number>;
 };

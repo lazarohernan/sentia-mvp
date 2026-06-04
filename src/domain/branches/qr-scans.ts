@@ -26,11 +26,18 @@ export async function recordBranchQrScan(
 export async function getBranchQrScanCounts(
   client: Client,
   organizationId: string,
+  branchIds?: string[],
 ): Promise<Record<string, number>> {
-  const { data, error } = await client
+  let query = client
     .from("branch_qr_scans")
     .select("branch_id")
     .eq("organization_id", organizationId);
+
+  if (branchIds && branchIds.length > 0) {
+    query = query.in("branch_id", branchIds);
+  }
+
+  const { data, error } = await query;
 
   if (error || !data) return {};
 

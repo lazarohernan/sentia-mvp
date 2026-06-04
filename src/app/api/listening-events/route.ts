@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { createListeningEventInputSchema } from "@/domain/listening/schemas";
 import { createListeningEvent } from "@/domain/listening/repository";
-import { getOrganizationByUser } from "@/domain/organizations/repository";
+import {
+  getOrganizationByUser,
+  getOrganizationMembershipByUser,
+} from "@/domain/organizations/repository";
 import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -27,6 +30,7 @@ async function getAuthenticatedOrganization() {
   }
 
   const organization = await getOrganizationByUser(supabase, user.id);
+  const membership = await getOrganizationMembershipByUser(supabase, user.id);
   if (!organization) {
     return {
       errorResponse: NextResponse.json(
@@ -36,7 +40,7 @@ async function getAuthenticatedOrganization() {
     };
   }
 
-  return { supabase, organization, userId: user.id };
+  return { supabase, organization, membership, userId: user.id };
 }
 
 export async function POST(request: Request) {
@@ -66,7 +70,14 @@ export async function POST(request: Request) {
     return authResult.errorResponse;
   }
 
-  const { supabase, organization, userId } = authResult;
+  const { supabase, organization, membership, userId } = authResult;
+
+  if (membership?.branchId && parsed.data.branchId !== membership.branchId) {
+    return NextResponse.json(
+      { error: "Solo puedes registrar escucha para tu sucursal asignada." },
+      { status: 403 },
+    );
+  }
 
   try {
     const event = await createListeningEvent(supabase, {

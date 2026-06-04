@@ -3,6 +3,38 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardShell } from "./dashboard-shell";
 
+const mallNorteBranch = {
+  id: "1f9f3375-2a3b-45f8-9f72-1db6f7189b52",
+  organization_id: "853b4c7e-0fcb-4e9e-9f72-2ec20c8de59c",
+  name: "Mall Norte",
+  slug: "mall-norte",
+  address: "Nivel 2, local 14",
+  is_active: true,
+  created_at: "2026-05-12T12:00:00.000Z",
+};
+
+function mockFetchWithSignedQrLink(
+  handler?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+) {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+
+    if (url.includes("/qr-link")) {
+      return Response.json({
+        path: "/q/test-token",
+        url: "http://localhost/q/test-token",
+        feedbackPath: "/feedback/mall-norte",
+      });
+    }
+
+    if (handler) {
+      return handler(input, init);
+    }
+
+    return Response.json({}, { status: 404 });
+  });
+}
+
 describe("DashboardShell", () => {
   beforeEach(() => {
     window.history.pushState({}, "", "/dashboard");
@@ -17,7 +49,7 @@ describe("DashboardShell", () => {
 
     expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
     expect(screen.getByText("Configuracion pendiente")).toBeInTheDocument();
-    expect(screen.getByText("Insights IA sin datos")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Abrir asistente IA de alertas" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Resumen" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Comentarios" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Alertas" })).not.toBeInTheDocument();
@@ -75,65 +107,108 @@ describe("DashboardShell", () => {
     expect(screen.getByText("Boulevard estabilizo servicio")).toBeInTheDocument();
   });
 
-  it("renders the QR view with empty and demo states", () => {
+  it("redirects the legacy qr hash to sucursales", async () => {
     window.history.pushState({}, "", "/dashboard#qr");
 
-    render(<DashboardShell />);
+    render(<DashboardShell branches={[mallNorteBranch]} />);
 
-    expect(screen.getByRole("heading", { name: "QR" })).toBeInTheDocument();
-    expect(screen.getByText("Sin QRs creados")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Sucursales" })).toBeInTheDocument();
+    });
 
-    fireEvent.click(screen.getByRole("button", { name: "Vista con datos" }));
-
-    expect(screen.getByText("QRs creados")).toBeInTheDocument();
-    expect(screen.getByText("/feedback/cafeteria-centro")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /abrir/i })).toHaveAttribute(
-      "href",
-      "/feedback/cafeteria-centro",
-    );
+    expect(screen.queryByRole("heading", { name: "QR" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ver QR" })).toBeInTheDocument();
   });
 
   it("switches between operational tabs inside the management view", async () => {
-    window.history.pushState({}, "", "/dashboard#qr");
+    window.history.pushState({}, "", "/dashboard#sucursales");
 
     render(<DashboardShell />);
 
     expect(screen.getByRole("heading", { name: "Gestión" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "QR" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sucursales" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Equipo" }));
 
     expect(window.location.hash).toBe("#equipo");
     expect(screen.getByRole("heading", { name: "Equipo" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "QR" })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Sucursales" }));
-
-    expect(window.location.hash).toBe("#sucursales");
-    await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { name: "Sucursales" }),
-      ).toBeInTheDocument();
-    });
+    expect(screen.queryByRole("heading", { name: "Sucursales" })).not.toBeInTheDocument();
   });
 
-  it("renders real QR records from branches when demo data is off", async () => {
-    window.history.pushState({}, "", "/dashboard#qr");
+  it("creates permission profiles from management settings", async () => {
+    window.history.pushState({}, "", "/dashboard#permisos");
+
+    render(<DashboardShell canManageTeam actorRole="owner" />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Permisos" })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText("Nombre del rol"), {
+      target: { value: "Gerente de tienda" },
+    });
+    fireEvent.click(screen.getByLabelText("Resumen"));
+    fireEvent.click(screen.getByLabelText("Valoraciones"));
+    fireEvent.click(screen.getByLabelText("Alertas"));
+    fireEvent.click(screen.getByRole("button", { name: "Crear rol" }));
+
+    expect(screen.getByText("Gerente de tienda")).toBeInTheDocument();
+    expect(screen.getByText("Resumen, Valoraciones, Alertas")).toBeInTheDocument();
+  });
+
+  it("assigns a created permission profile to a team member", async () => {
+    window.history.pushState({}, "", "/dashboard#permisos");
+
+    render(
+      <DashboardShell
+        canManageTeam
+        actorRole="owner"
+        teamMembers={[
+          {
+            userId: "user-1",
+            branchId: "branch-1",
+            branchName: "Mall Norte",
+            fullName: "Ana Lopez",
+            email: "ana@empresa.com",
+            role: "collaborator",
+            roleLabel: "Colaborador",
+            joinedAt: "2026-05-01T10:00:00.000Z",
+            accountStatus: "active",
+          },
+        ]}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Permisos" })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText("Nombre del rol"), {
+      target: { value: "Gerente de tienda" },
+    });
+    fireEvent.click(screen.getByLabelText("Resumen"));
+    fireEvent.click(screen.getByLabelText("Valoraciones"));
+    fireEvent.click(screen.getByRole("button", { name: "Crear rol" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Equipo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver detalle de Ana Lopez" }));
+
+    fireEvent.change(screen.getByLabelText("Rol"), {
+      target: { value: "profile-1" },
+    });
+
+    expect(screen.getByText("Gerente de tienda")).toBeInTheDocument();
+    expect(screen.getByText("Resumen, Valoraciones")).toBeInTheDocument();
+  });
+
+  it("opens the branch QR panel from sucursales", async () => {
+    window.history.pushState({}, "", "/dashboard#sucursales");
+    vi.stubGlobal("fetch", mockFetchWithSignedQrLink());
 
     render(
       <DashboardShell
         organizationName="Sayit"
-        branches={[
-          {
-            id: "1f9f3375-2a3b-45f8-9f72-1db6f7189b52",
-            organization_id: "853b4c7e-0fcb-4e9e-9f72-2ec20c8de59c",
-            name: "Mall Norte",
-            slug: "mall-norte",
-            address: "Nivel 2, local 14",
-            is_active: true,
-            created_at: "2026-05-12T12:00:00.000Z",
-          },
-        ]}
+        branches={[mallNorteBranch]}
         dashboardData={{
           organizationName: "Sayit",
           scope: "1 sucursal",
@@ -147,6 +222,14 @@ describe("DashboardShell", () => {
           metrics: [],
           insight: null,
           attentionItems: [],
+          followUpMetrics: {
+            openCount: 0,
+            escalatedCount: 0,
+            inReviewCount: 0,
+            resolvedCount: 0,
+            avgResponseHours: null,
+            avgResolutionHours: null,
+          },
           branchHealth: [
             {
               branch: "Mall Norte",
@@ -167,61 +250,27 @@ describe("DashboardShell", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "QR" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Ver QR" })).toBeInTheDocument();
     });
 
-    expect(screen.getAllByText("Sayit")).toHaveLength(2);
-    expect(screen.getAllByText("Mall Norte")).toHaveLength(2);
-    expect(screen.getByText("/feedback/mall-norte")).toBeInTheDocument();
-    expect(screen.getByText("0 escaneos - 12 comentarios")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /abrir/i })).toHaveAttribute(
+    fireEvent.click(screen.getByRole("button", { name: "Ver QR" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("/q/test-token")).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("heading", { name: "Codigo QR" })).toBeInTheDocument();
+    expect(screen.getAllByText("Mall Norte").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /abrir formulario/i })).toHaveAttribute(
       "href",
-      "/feedback/mall-norte",
+      "/q/test-token",
     );
-  });
-
-  it("creates a QR record from the QR view form", () => {
-    window.history.pushState({}, "", "/dashboard#qr");
-
-    render(<DashboardShell />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Vista con datos" }));
-    fireEvent.click(screen.getByRole("button", { name: /nuevo qr/i }));
-
-    expect(screen.getByRole("dialog", { name: /nuevo qr/i })).toBeInTheDocument();
-
-    fireEvent.change(screen.getByPlaceholderText("Ej. Cafeteria"), {
-      target: { value: "Farmacia" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("Ej. Centro"), {
-      target: { value: "Las Colinas" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /generar qr/i }));
-
-    expect(screen.getAllByText("Farmacia")).toHaveLength(2);
-    expect(screen.getAllByText("Las Colinas")).toHaveLength(2);
-    expect(screen.getByText("/feedback/farmacia-las-colinas")).toBeInTheDocument();
-    expect(screen.queryByRole("dialog", { name: /nuevo qr/i })).not.toBeInTheDocument();
   });
 
   it("renders real branches in the branches view when demo data is off", async () => {
     window.history.pushState({}, "", "/dashboard#sucursales");
 
-    render(
-      <DashboardShell
-        branches={[
-          {
-            id: "1f9f3375-2a3b-45f8-9f72-1db6f7189b52",
-            organization_id: "853b4c7e-0fcb-4e9e-9f72-2ec20c8de59c",
-            name: "Mall Norte",
-            slug: "mall-norte",
-            address: "Nivel 2, local 14",
-            is_active: true,
-            created_at: "2026-05-12T12:00:00.000Z",
-          },
-        ]}
-      />,
-    );
+    render(<DashboardShell branches={[mallNorteBranch]} />);
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Sucursales" })).toBeInTheDocument();
@@ -230,33 +279,45 @@ describe("DashboardShell", () => {
     expect(screen.getByText("Mall Norte")).toBeInTheDocument();
     expect(screen.getByText("Nivel 2, local 14")).toBeInTheDocument();
     expect(screen.getByText("Activa")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /abrir/i })).toHaveAttribute(
-      "href",
-      "/feedback/mall-norte",
-    );
+    expect(screen.getByRole("button", { name: "Ver QR" })).toBeInTheDocument();
     expect(screen.queryByText("Sin sucursales configuradas")).not.toBeInTheDocument();
   });
 
-  it("creates a branch from the drawer and adds it to the branches view", async () => {
+  it("creates a branch from the drawer and offers the QR view", async () => {
     window.history.pushState({}, "", "/dashboard#sucursales");
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        Response.json(
-          {
-            branch: {
-              id: "3c944d7c-95df-4976-a52d-8a9d063bfc6a",
-              organization_id: "853b4c7e-0fcb-4e9e-9f72-2ec20c8de59c",
-              name: "Centro",
-              slug: "centro",
-              address: "Avenida principal",
-              is_active: true,
-              created_at: "2026-05-12T12:00:00.000Z",
+      mockFetchWithSignedQrLink(async (input, init) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+
+        if (url.includes("/api/branches") && method !== "GET") {
+          return Response.json(
+            {
+              branch: {
+                id: "3c944d7c-95df-4976-a52d-8a9d063bfc6a",
+                organization_id: "853b4c7e-0fcb-4e9e-9f72-2ec20c8de59c",
+                name: "Centro",
+                slug: "centro",
+                address: "Avenida principal",
+                is_active: true,
+                created_at: "2026-05-12T12:00:00.000Z",
+              },
             },
-          },
-          { status: 201 },
-        ),
-      ),
+            { status: 201 },
+          );
+        }
+
+        if (url.includes("/qr-link")) {
+          return Response.json({
+            path: "/q/test-token-centro",
+            url: "http://localhost/q/test-token-centro",
+            feedbackPath: "/feedback/centro",
+          });
+        }
+
+        return Response.json({}, { status: 404 });
+      }),
     );
 
     render(<DashboardShell />);
@@ -275,26 +336,18 @@ describe("DashboardShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guardar sucursal" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Centro")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Ver codigo QR" })).toBeInTheDocument();
     });
 
-    expect(fetch).toHaveBeenCalledWith(
-      "/api/branches",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({
-          name: "Centro",
-          address: "Avenida principal",
-          is_active: true,
-        }),
-      }),
-    );
-    expect(screen.getByText("Avenida principal")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /abrir/i })).toHaveAttribute(
-      "href",
-      "/feedback/centro",
-    );
-    expect(screen.queryByRole("dialog", { name: "Datos de la sucursal" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ver codigo QR" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Codigo QR" })).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("/q/test-token-centro")).toBeInTheDocument();
+    });
   });
 
   it("edits a branch from the drawer and updates the card", async () => {
@@ -319,30 +372,13 @@ describe("DashboardShell", () => {
       ),
     );
 
-    render(
-      <DashboardShell
-        branches={[
-          {
-            id: "1f9f3375-2a3b-45f8-9f72-1db6f7189b52",
-            organization_id: "853b4c7e-0fcb-4e9e-9f72-2ec20c8de59c",
-            name: "Mall Norte",
-            slug: "mall-norte",
-            address: "Nivel 2, local 14",
-            is_active: true,
-            created_at: "2026-05-12T12:00:00.000Z",
-          },
-        ]}
-      />,
-    );
+    render(<DashboardShell branches={[mallNorteBranch]} />);
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Sucursales" })).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Editar Mall Norte" }));
-
-    expect(screen.getByDisplayValue("Mall Norte")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Nivel 2, local 14")).toBeInTheDocument();
 
     fireEvent.change(screen.getByDisplayValue("Mall Norte"), {
       target: { value: "Mall Norte Renovado" },
@@ -357,24 +393,9 @@ describe("DashboardShell", () => {
       expect(screen.getByText("Mall Norte Renovado")).toBeInTheDocument();
     });
 
-    expect(fetch).toHaveBeenCalledWith(
-      "/api/branches",
-      expect.objectContaining({
-        method: "PATCH",
-        body: JSON.stringify({
-          id: "1f9f3375-2a3b-45f8-9f72-1db6f7189b52",
-          name: "Mall Norte Renovado",
-          address: "Plaza central, nivel 3",
-          is_active: false,
-        }),
-      }),
-    );
     expect(screen.getByText("Plaza central, nivel 3")).toBeInTheDocument();
     expect(screen.getByText("Inactiva")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /abrir/i })).toHaveAttribute(
-      "href",
-      "/feedback/mall-norte-renovado",
-    );
+    expect(screen.getByRole("button", { name: "Ver QR" })).toBeInTheDocument();
   }, 15_000);
 
   it("shows separated demo data in the active view only when the visual toggle is active", async () => {

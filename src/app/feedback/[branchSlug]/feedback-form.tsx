@@ -5,7 +5,6 @@ import {
   Frown,
   Laugh,
   Meh,
-  MessageSquareText,
   Send,
   Smile,
 } from "lucide-react";
@@ -66,12 +65,11 @@ function inferFeedbackType(csatScore: number): FeedbackType {
 
 type FeedbackFormProps = {
   branchSlug: string;
-  branchName: string;
 };
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
-export function FeedbackForm({ branchSlug, branchName }: FeedbackFormProps) {
+export function FeedbackForm({ branchSlug }: FeedbackFormProps) {
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -170,17 +168,7 @@ export function FeedbackForm({ branchSlug, branchName }: FeedbackFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="rounded-lg border border-slate-200 bg-white p-5">
-      <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-950 text-white">
-          <MessageSquareText size={20} aria-hidden="true" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-slate-500">Sucursal</p>
-          <h1 className="text-xl font-semibold">{branchName}</h1>
-        </div>
-      </div>
-
-      <fieldset className="mt-6" disabled={status === "submitting"}>
+      <fieldset disabled={status === "submitting"}>
         <legend className="text-sm font-medium text-slate-700">
           Que tan satisfecho quedaste con esta experiencia?
         </legend>

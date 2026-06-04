@@ -1,9 +1,10 @@
 "use client";
 
 import { MapPin, UserRound } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { formatTableDate } from "@/domain/feedback/record-analysis";
+import type { PermissionProfile } from "@/domain/organizations/permission-profiles";
 import type { TeamMember } from "@/domain/organizations/team";
 import { DashboardDataTable } from "./dashboard-data-table";
 import type { DashboardDataTableColumn } from "./dashboard-data-table";
@@ -12,7 +13,11 @@ import { TeamMemberDetailView } from "./team-member-detail-view";
 type DashboardTeamTableProps = {
   teamMembers: TeamMember[];
   canManageTeam?: boolean;
+  actorRole?: "owner" | "manager";
+  currentUserId?: string;
+  permissionProfiles?: PermissionProfile[];
   onMemberUpdated?: (member: TeamMember) => void;
+  onMemberRemoved?: (userId: string) => void;
 };
 
 const roleStyles: Record<TeamMember["role"], string> = {
@@ -95,14 +100,21 @@ function buildColumns(): Array<DashboardDataTableColumn<TeamMember>> {
       key: "role",
       header: "Rol",
       cell: (member) => (
-        <span
-          className={[
-            "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
-            roleStyles[member.role],
-          ].join(" ")}
-        >
-          {member.roleLabel}
-        </span>
+        <div className="space-y-1">
+          <span
+            className={[
+              "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+              roleStyles[member.role],
+            ].join(" ")}
+          >
+            {member.roleLabel}
+          </span>
+          {member.permissionProfileName ? (
+            <p className="text-xs font-medium text-slate-500">
+              {member.permissionProfileName}
+            </p>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -135,42 +147,43 @@ function buildColumns(): Array<DashboardDataTableColumn<TeamMember>> {
 export function DashboardTeamTable({
   teamMembers,
   canManageTeam = false,
+  actorRole,
+  currentUserId,
+  permissionProfiles = [],
   onMemberUpdated,
+  onMemberRemoved,
 }: DashboardTeamTableProps) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
-  const [members, setMembers] = useState(teamMembers);
-
-  useEffect(() => {
-    setMembers(teamMembers);
-  }, [teamMembers]);
   const columns = useMemo(() => buildColumns(), []);
   const selectedMember =
-    members.find((member) => member.userId === selectedMemberId) ?? null;
+    teamMembers.find((member) => member.userId === selectedMemberId) ?? null;
 
   const branches = useMemo(
     () =>
       Array.from(
         new Set(
-          members
+          teamMembers
             .map((member) => formatBranchLabel(member.branchName))
             .filter((branch) => branch !== "Sin sucursal asignada"),
         ),
       ).sort((a, b) => a.localeCompare(b, "es")),
-    [members],
+    [teamMembers],
   );
   const roles = useMemo(
     () =>
-      Array.from(new Set(members.map((member) => member.roleLabel))).sort((a, b) =>
+      Array.from(new Set(teamMembers.map((member) => member.roleLabel))).sort((a, b) =>
         a.localeCompare(b, "es"),
       ),
-    [members],
+    [teamMembers],
   );
 
   function handleMemberUpdated(member: TeamMember) {
-    setMembers((current) =>
-      current.map((item) => (item.userId === member.userId ? member : item)),
-    );
     onMemberUpdated?.(member);
+  }
+
+  function handleMemberRemoved(userId: string) {
+    setSelectedMemberId(null);
+    onMemberRemoved?.(userId);
   }
 
   if (selectedMember) {
@@ -178,15 +191,19 @@ export function DashboardTeamTable({
       <TeamMemberDetailView
         member={selectedMember}
         canManageTeam={canManageTeam}
+        actorRole={actorRole}
+        currentUserId={currentUserId}
+        permissionProfiles={permissionProfiles}
         onBack={() => setSelectedMemberId(null)}
         onMemberUpdated={handleMemberUpdated}
+        onMemberRemoved={handleMemberRemoved}
       />
     );
   }
 
   return (
     <DashboardDataTable
-      data={members}
+      data={teamMembers}
       columns={columns}
       getRowKey={(member) => member.userId}
       onRowClick={(member) => setSelectedMemberId(member.userId)}
@@ -226,7 +243,7 @@ export function DashboardTeamTable({
       searchPlaceholder="Buscar colaborador"
       pageSize={10}
       emptyTitle="Sin colaboradores registrados"
-      topContent={<TeamSummary members={members} />}
+      topContent={<TeamSummary members={teamMembers} />}
     />
   );
 }

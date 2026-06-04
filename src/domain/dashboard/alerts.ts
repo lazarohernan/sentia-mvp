@@ -28,7 +28,9 @@ export function buildDashboardAlertItems(params: {
 
   const attentionAlerts: DashboardAlertItem[] = params.attentionItems.map(
     (item, index) => ({
-      id: `attention-${index}-${item.title}`,
+      id: item.submissionId
+        ? `submission-${item.submissionId}`
+        : `attention-${index}-${item.title}`,
       title: item.title,
       subtitle: `${item.owner} · hace ${item.age}`,
       detail: item.description,

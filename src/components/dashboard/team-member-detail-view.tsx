@@ -1,16 +1,26 @@
 "use client";
 
-import { ArrowLeft, Check, Copy, Loader2, Mail, MapPin, Send } from "lucide-react";
+import { ArrowLeft, Check, Copy, Loader2, Mail, MapPin, Send, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { formatTableDate } from "@/domain/feedback/record-analysis";
+import { canRemoveTeamMember } from "@/domain/organizations/remove-team-member";
+import {
+  getPermissionLabels,
+  inferMemberRoleFromPermissionProfile,
+  type PermissionProfile,
+} from "@/domain/organizations/permission-profiles";
 import type { TeamMember } from "@/domain/organizations/team";
 
 type TeamMemberDetailViewProps = {
   member: TeamMember;
   canManageTeam: boolean;
+  actorRole?: "owner" | "manager";
+  currentUserId?: string;
+  permissionProfiles?: PermissionProfile[];
   onBack: () => void;
   onMemberUpdated: (member: TeamMember) => void;
+  onMemberRemoved: (userId: string) => void;
 };
 
 const statusStyles = {
@@ -31,15 +41,34 @@ function formatCooldown(seconds: number) {
 export function TeamMemberDetailView({
   member,
   canManageTeam,
+  actorRole,
+  currentUserId,
+  permissionProfiles = [],
   onBack,
   onMemberUpdated,
+  onMemberRemoved,
 }: TeamMemberDetailViewProps) {
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [roleError, setRoleError] = useState("");
+  const [isRoleSaving, setIsRoleSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const selectedProfile =
+    permissionProfiles.find((profile) => profile.id === member.permissionProfileId) ??
+    null;
+  const assignablePermissionProfiles = permissionProfiles.filter((profile) => {
+    if (actorRole === "owner") {
+      return true;
+    }
+
+    return inferMemberRoleFromPermissionProfile(profile) === "collaborator";
+  });
 
   useEffect(() => {
     if (cooldownSeconds <= 0) {
@@ -106,11 +135,88 @@ export function TeamMemberDetailView({
     }
   }
 
+  async function handlePermissionProfileChange(profileId: string) {
+    const profile = permissionProfiles.find((item) => item.id === profileId) ?? null;
+
+    setRoleError("");
+    setIsRoleSaving(true);
+
+    try {
+      const response = await fetch(`/api/team-members/${member.userId}`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationRoleId: profile?.id ?? null,
+        }),
+      });
+      const body = (await response.json()) as {
+        permissionProfileId?: string | null;
+        permissionProfileName?: string | null;
+        role?: TeamMember["role"];
+        error?: string;
+      };
+
+      if (!response.ok || !body.role) {
+        setRoleError(body.error ?? "No se pudo actualizar el rol.");
+        return;
+      }
+
+      onMemberUpdated({
+        ...member,
+        role: body.role,
+        roleLabel:
+          body.role === "manager"
+            ? "Gerente"
+            : body.role === "collaborator"
+              ? "Colaborador"
+              : member.roleLabel,
+        permissionProfileId: body.permissionProfileId ?? null,
+        permissionProfileName: body.permissionProfileName ?? null,
+      });
+    } catch {
+      setRoleError("No se pudo conectar con el servidor.");
+    } finally {
+      setIsRoleSaving(false);
+    }
+  }
+
   const canResend =
     canManageTeam &&
     member.accountStatus === "pending_activation" &&
     cooldownSeconds === 0 &&
     !isSubmitting;
+
+  const canDelete =
+    canManageTeam &&
+    actorRole &&
+    currentUserId !== member.userId &&
+    canRemoveTeamMember(actorRole, member.role);
+
+  async function handleDeleteMember() {
+    setDeleteError("");
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(`/api/team-members/${member.userId}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+
+      const body = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        setDeleteError(body.error ?? "No se pudo eliminar al colaborador.");
+        return;
+      }
+
+      onMemberRemoved(member.userId);
+    } catch {
+      setDeleteError("No se pudo conectar con el servidor.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   return (
     <section className="rounded-[1.25rem] border border-slate-200 bg-white">
@@ -135,7 +241,9 @@ export function TeamMemberDetailView({
             <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
               Rol
             </dt>
-            <dd className="mt-2 text-sm font-semibold text-slate-900">{member.roleLabel}</dd>
+            <dd className="mt-2 text-sm font-semibold text-slate-900">
+              {member.permissionProfileName ?? member.roleLabel}
+            </dd>
           </div>
           <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] p-4">
             <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
@@ -179,6 +287,51 @@ export function TeamMemberDetailView({
             </dd>
           </div>
         </dl>
+
+        {canManageTeam ? (
+          <section className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
+            <label className="block">
+              <span className="text-sm font-semibold text-emerald-950">
+                Rol
+              </span>
+              <select
+                value={member.permissionProfileId ?? ""}
+                onChange={(event) => handlePermissionProfileChange(event.target.value)}
+                disabled={isRoleSaving}
+                aria-label="Rol"
+                className="mt-2 h-11 w-full rounded-xl border border-emerald-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              >
+                <option value="">Sin rol asignado</option>
+                {assignablePermissionProfiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {roleError ? (
+              <p className="mt-3 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-red-700">
+                {roleError}
+              </p>
+            ) : null}
+
+            {selectedProfile ? (
+              <div className="mt-3 rounded-lg border border-emerald-100 bg-white px-3 py-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">
+                  Permisos asignados
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-700">
+                  {getPermissionLabels(selectedProfile.permissions).join(", ")}
+                </p>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm leading-6 text-emerald-950/70">
+                Crea roles en Gestion &gt; Permisos para asignarlos aqui.
+              </p>
+            )}
+          </section>
+        ) : null}
 
         {member.accountStatus === "pending_activation" && canManageTeam ? (
           <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-4">
@@ -236,7 +389,100 @@ export function TeamMemberDetailView({
             </button>
           </div>
         ) : null}
+
+        {canDelete ? (
+          <div className="rounded-xl border border-red-100 bg-red-50/60 p-4">
+            <p className="text-sm font-semibold text-red-950">Zona de riesgo</p>
+            <p className="mt-1 text-sm leading-6 text-red-900/80">
+              Al eliminar a {member.fullName}, perdera acceso a la organizacion. Esta accion no se
+              puede deshacer.
+            </p>
+
+            {deleteError ? (
+              <p className="mt-3 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-red-700">
+                {deleteError}
+              </p>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteError("");
+                setShowDeleteConfirm(true);
+              }}
+              disabled={isDeleting}
+              className="mt-4 inline-flex h-11 items-center gap-2 rounded-full border border-red-200 bg-white px-5 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              Eliminar colaborador
+            </button>
+          </div>
+        ) : null}
       </div>
+
+      {showDeleteConfirm ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[2px]"
+          role="presentation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default"
+            aria-label="Cerrar advertencia"
+            onClick={() => {
+              if (!isDeleting) {
+                setShowDeleteConfirm(false);
+              }
+            }}
+          />
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-member-title"
+            aria-describedby="delete-member-description"
+            className="relative w-full max-w-md rounded-[1.25rem] border border-slate-200 bg-white p-6 shadow-2xl"
+          >
+            <p className="text-sm font-semibold text-red-700">Advertencia</p>
+            <h3 id="delete-member-title" className="mt-2 text-xl font-semibold text-slate-950">
+              ¿Eliminar a {member.fullName}?
+            </h3>
+            <p id="delete-member-description" className="mt-3 text-sm leading-6 text-slate-600">
+              Esta persona dejara de pertenecer al equipo y no podra acceder al panel. Los registros
+              historicos se conservan, pero perdera acceso inmediato.
+            </p>
+
+            {deleteError ? (
+              <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {deleteError}
+              </p>
+            ) : null}
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteMember}
+                disabled={isDeleting}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-red-700 px-5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                )}
+                Si, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

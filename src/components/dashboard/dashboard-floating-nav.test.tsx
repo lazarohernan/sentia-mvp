@@ -3,10 +3,19 @@ import { describe, expect, it, vi } from "vitest";
 
 import { DashboardFloatingNav } from "./dashboard-floating-nav";
 
+const sampleUser = {
+  fullName: "Ana Lopez",
+  email: "ana@empresa.com",
+};
+
 describe("DashboardFloatingNav", () => {
   it("renders the dashboard navigation items", () => {
     render(
-      <DashboardFloatingNav activeView="resumen" onViewChange={() => {}} />,
+      <DashboardFloatingNav
+        activeView="resumen"
+        onViewChange={() => {}}
+        currentUser={sampleUser}
+      />,
     );
 
     expect(
@@ -16,7 +25,7 @@ describe("DashboardFloatingNav", () => {
       "href",
       "/dashboard",
     );
-    expect(screen.getByRole("link", { name: /comentarios/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /valoraciones/i })).toHaveAttribute(
       "href",
       "/dashboard#comentarios",
     );
@@ -33,8 +42,19 @@ describe("DashboardFloatingNav", () => {
       screen.getByRole("button", { name: /notificaciones/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /salir/i }),
-    ).toHaveAttribute("type", "submit");
+      screen.getByRole("button", { name: /cuenta de ana lopez/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a fallback sign out control without user data", () => {
+    render(
+      <DashboardFloatingNav activeView="resumen" onViewChange={() => {}} />,
+    );
+
+    expect(screen.getByRole("button", { name: /salir/i })).toHaveAttribute(
+      "type",
+      "submit",
+    );
   });
 
   it("marks the controlled active item", () => {
@@ -42,7 +62,7 @@ describe("DashboardFloatingNav", () => {
       <DashboardFloatingNav activeView="comentarios" onViewChange={() => {}} />,
     );
 
-    expect(screen.getByRole("link", { name: /comentarios/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /valoraciones/i })).toHaveAttribute(
       "aria-current",
       "page",
     );

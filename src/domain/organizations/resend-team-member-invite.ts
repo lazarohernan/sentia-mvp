@@ -30,7 +30,12 @@ export async function resendTeamMemberInvite(
     throw new Error("Colaborador no encontrado en tu organizacion.");
   }
 
-  if (member.role === "owner") {
+  const memberRow = member as {
+    role: string;
+    profiles: { full_name: string } | null;
+  };
+
+  if (memberRow.role === "owner") {
     throw new Error("No puedes reenviar invitacion al propietario.");
   }
 
@@ -49,7 +54,7 @@ export async function resendTeamMemberInvite(
   }
 
   const fullName =
-    (member.profiles as { full_name: string } | null)?.full_name ??
+    memberRow.profiles?.full_name ??
     authData.user.user_metadata?.full_name ??
     authData.user.email.split("@")[0] ??
     "Colaborador";

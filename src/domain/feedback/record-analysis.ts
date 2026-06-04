@@ -1,3 +1,10 @@
+import {
+  inferWorkflowStatusFromSignals,
+  isWorkflowStatus,
+  workflowStatusToLabel,
+  type WorkflowStatus,
+} from "./workflow-status";
+
 export type FeedbackRecord = {
   id: string;
   type: string;
@@ -5,6 +12,10 @@ export type FeedbackRecord = {
   csat_score: number | null;
   free_text: string;
   contact_name: string | null;
+  workflow_status?: WorkflowStatus | string | null;
+  assigned_user_id?: string | null;
+  first_response_at?: string | null;
+  resolved_at?: string | null;
   created_at: string;
   branch_id: string;
   branches: {
@@ -81,13 +92,31 @@ export function getSentiment(record: FeedbackRecord): "Positivo" | "Neutral" | "
   return "Neutral";
 }
 
-export function getStatus(record: FeedbackRecord): "Nuevo" | "En revisión" | "Resuelto" | "Escalado" {
-  const analysis = getAnalysis(record);
-  if (analysis?.urgency === "critical") return "Escalado";
-  if (analysis?.urgency === "high" || getTone(record) === "danger") {
-    return "En revisión";
+export function getFeedbackTypeLabel(
+  type: string,
+): "Opinión" | "Queja" | "Observación" | "Felicitación" | "Recomendación" {
+  if (type === "complaint") return "Queja";
+  if (type === "suggestion" || type === "observation") return "Observación";
+  if (type === "compliment") return "Felicitación";
+  if (type === "recommendation") return "Recomendación";
+
+  return "Opinión";
+}
+
+export function getStatus(
+  record: FeedbackRecord,
+): "Nuevo" | "En revisión" | "En proceso" | "Resuelto" | "Escalado" {
+  if (record.workflow_status && isWorkflowStatus(record.workflow_status)) {
+    return workflowStatusToLabel(record.workflow_status);
   }
-  return "Nuevo";
+
+  const analysis = getAnalysis(record);
+  return workflowStatusToLabel(
+    inferWorkflowStatusFromSignals({
+      urgency: analysis?.urgency ?? null,
+      tone: getTone(record),
+    }),
+  );
 }
 
 export function truncate(text: string, length: number) {

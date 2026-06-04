@@ -9,6 +9,8 @@ import Link from "next/link";
 import { signInAction, signUpAction } from "@/app/auth/actions";
 import { REGISTRATION_ENABLED } from "@/domain/auth/config";
 
+import { LoginSubmitButton } from "./login-submit-button";
+
 type LoginViewProps = {
   mode?: "login" | "registro";
   redirectTo?: string;
@@ -205,12 +207,10 @@ export function LoginView({
                 </div>
               ) : null}
 
-              <button
-                className="mt-7 inline-flex h-14 w-full items-center justify-center rounded-lg bg-[#56b298] px-4 text-base font-bold text-white transition hover:bg-[#62c2a7] focus:outline-none focus:ring-2 focus:ring-emerald-200/50"
-                type="submit"
-              >
-                {isRegisterMode ? "Crear cuenta" : "Iniciar sesion"}
-              </button>
+              <LoginSubmitButton
+                label={isRegisterMode ? "Crear cuenta" : "Iniciar sesion"}
+                pendingLabel={isRegisterMode ? "Creando cuenta..." : "Ingresando..."}
+              />
 
               {!isRegisterMode ? (
                 <p className="mt-5 text-center text-sm text-white/50">

@@ -1,9 +1,7 @@
 import {
-  AlertTriangle,
   ArrowRight,
   Bell,
   Building2,
-  CheckCircle2,
   Clock3,
   Frown,
   MessageSquareText,
@@ -19,14 +17,10 @@ import type { LucideIcon } from "lucide-react";
 import type {
   DashboardAttentionItem,
   DashboardBranchHealthItem,
-  DashboardInsight,
   DashboardRecentComment,
   DashboardSummaryData,
 } from "@/domain/dashboard/schemas";
-import {
-  dashboardMockAiInsight,
-  dashboardMockSummary,
-} from "./dashboard.mock-data";
+import { dashboardMockContext, dashboardMockSummary } from "./dashboard.mock-data";
 import { DashboardSection } from "./dashboard-section";
 
 type DashboardSummaryViewProps = {
@@ -295,12 +289,12 @@ function MetricCard({
 function EmptyOperationalSummary() {
   return (
     <section
-      aria-label="Insights IA"
+      aria-label="Resumen operativo sin datos"
       className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.05)]"
     >
       <p className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
         <TrendingUp size={14} aria-hidden="true" />
-        Insights IA sin datos
+        Resumen operativo sin datos
       </p>
       <h3 className="mt-5 text-2xl font-semibold tracking-normal text-slate-950">
         Todavía no hay señales suficientes para analizar.
@@ -313,97 +307,43 @@ function EmptyOperationalSummary() {
   );
 }
 
-function PriorityInsight({ insight }: { insight: DashboardInsight }) {
+function SummaryScopeBanner({
+  scope,
+  period,
+  isBranchView,
+}: {
+  scope: string;
+  period: string;
+  isBranchView: boolean;
+}) {
   return (
-    <section className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-800 px-3 py-1.5 text-xs font-semibold text-white">
-          <TrendingUp size={14} aria-hidden="true" />
-          {insight.status}
-        </span>
-        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
-          <CheckCircle2 size={14} aria-hidden="true" />
-          {insight.confidence}
-        </span>
-      </div>
-
-      <div className="mt-4 grid flex-1 gap-4 lg:grid-cols-[1fr_230px]">
-        <div className="flex flex-col">
-          <div className="flex gap-4">
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-              <AlertTriangle size={27} aria-hidden="true" />
-              </span>
-              <div>
-                <h3 className="text-[1.35rem] font-semibold leading-tight tracking-normal text-slate-950">
-                {insight.headline}
-              </h3>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                {insight.detail}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-auto grid gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2">
-            <div className="flex gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                <Clock3 size={17} aria-hidden="true" />
-              </span>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Patrón dominante
-                </p>
-                <p className="mt-1 font-semibold text-slate-950">
-                  {insight.dominantPattern}
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  {insight.dominantPatternDetail}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                <ArrowRight size={17} aria-hidden="true" />
-              </span>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Acción sugerida
-                </p>
-                <p className="mt-1 flex items-center gap-2 font-semibold text-emerald-800">
-                  {insight.action}
-                  <ArrowRight size={16} aria-hidden="true" />
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  {insight.actionDetail}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl bg-[#f7f8f4] p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Por qué es prioridad
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            Alcance del resumen
           </p>
-          <div className="mt-3 space-y-3">
-            {insight.reasonMetrics.map(({ value, label }, index) => {
-              const Icon = [Bell, Star, Clock3][index] ?? Bell;
-
-              return (
-              <div key={`${value}-${label}`} className="flex gap-3">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-slate-500">
-                  <Icon size={16} aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-slate-950">
-                    {value}
-                  </p>
-                  <p className="mt-0.5 text-sm leading-5 text-slate-500">
-                    {label}
-                  </p>
-                </div>
-              </div>
-              );
-            })}
+          <h3 className="mt-1 text-lg font-semibold text-slate-950">
+            {isBranchView ? "Operación de punto de venta" : "Operación completa"}
+          </h3>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            {isBranchView
+              ? "Los indicadores, comentarios y alertas corresponden únicamente a la sucursal seleccionada o asignada."
+              : "Los indicadores consolidan la actividad de todas las sucursales disponibles para tu usuario."}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:min-w-72">
+          <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400">
+              Cobertura
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-950">{scope}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400">
+              Periodo
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-950">{period}</p>
           </div>
         </div>
       </div>
@@ -633,26 +573,9 @@ export function DashboardSummaryView({
   showDemoData,
   dashboardData,
 }: DashboardSummaryViewProps) {
-  const demoInsight: DashboardInsight = {
-    status: dashboardMockAiInsight.status,
-    confidence: dashboardMockAiInsight.confidence,
-    headline: "Mall Norte necesita revisión operativa hoy",
-    detail:
-      "La IA cruza comentarios, CSAT y estados abiertos. El patrón más claro apunta a espera prolongada y poca explicación al cliente durante el servicio.",
-    action: "Asignar a gerencia de turno",
-    dominantPattern: "Tiempo de espera",
-    dominantPatternDetail: "Tema repetido en comentarios recientes",
-    actionDetail: "Revisar tiempos pico y redistribuir personal",
-    reasonMetrics: [
-      { value: "42%", label: "Aumento de menciones de espera" },
-      { value: "2.8/5", label: "CSAT en Mall Norte" },
-      { value: "+12 min", label: "Tiempo promedio de espera reportado" },
-    ],
-  };
   const summary = showDemoData
     ? dashboardMockSummary
     : dashboardData?.metrics ?? emptySummary;
-  const insight = showDemoData ? demoInsight : dashboardData?.insight;
   const attentionItems = showDemoData
     ? actionQueue
     : dashboardData?.attentionItems ?? [];
@@ -662,8 +585,14 @@ export function DashboardSummaryView({
   const recentCommentItems = showDemoData
     ? recentComments
     : dashboardData?.recentComments ?? [];
+  const scope = showDemoData
+    ? dashboardMockContext.scope
+    : dashboardData?.scope ?? "Sin alcance";
+  const period = showDemoData
+    ? dashboardMockContext.period
+    : dashboardData?.period ?? "Sin periodo";
+  const isBranchView = scope === "1 sucursal";
   const hasOperationalData =
-    Boolean(insight) ||
     attentionItems.length > 0 ||
     branchHealthItems.length > 0 ||
     recentCommentItems.length > 0;
@@ -672,9 +601,14 @@ export function DashboardSummaryView({
     <DashboardSection
       id="resumen"
       title="Resumen"
-      description="Indicadores principales e insights IA para decidir dónde revisar primero."
+      description="Indicadores principales para decidir dónde revisar primero."
     >
       <div className="space-y-3.5">
+        <SummaryScopeBanner
+          scope={scope}
+          period={period}
+          isBranchView={isBranchView}
+        />
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {summary.map((item) => (
             <MetricCard
@@ -687,15 +621,12 @@ export function DashboardSummaryView({
           ))}
         </div>
 
-        {hasOperationalData && insight ? (
+        {hasOperationalData ? (
           <>
             {branchHealthItems.length > 0 ? (
               <BranchHealth items={branchHealthItems} />
             ) : null}
-            <div className="grid items-stretch gap-4 xl:grid-cols-[1fr_0.42fr]">
-              <PriorityInsight insight={insight} />
-              <AttentionQueue items={attentionItems} />
-            </div>
+            {attentionItems.length > 0 ? <AttentionQueue items={attentionItems} /> : null}
             <div className="grid gap-4">
               {recentCommentItems.length > 0 ? (
                 <RecentComments comments={recentCommentItems} />

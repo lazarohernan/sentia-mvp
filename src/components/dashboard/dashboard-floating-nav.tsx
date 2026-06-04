@@ -4,9 +4,9 @@ import {
   Bell,
   BellRing,
   ChartNoAxesCombined,
+  ChevronDown,
   Ear,
   Home,
-  LogOut,
   MessageSquareText,
   SlidersHorizontal,
 } from "lucide-react";
@@ -14,10 +14,15 @@ import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
+import { createPortal } from "react-dom";
 
 import { signOutAction } from "@/app/auth/actions";
 import type { DashboardNotification } from "@/domain/dashboard/schemas";
 import { dashboardMockNotifications } from "./dashboard.mock-data";
+import {
+  DashboardUserMenu,
+  type DashboardCurrentUser,
+} from "./dashboard-user-menu";
 
 export type DashboardNavView =
   | "resumen"
@@ -64,6 +69,12 @@ type DashboardFloatingNavProps = {
   onViewChange: (view: DashboardNavView) => void;
   notifications?: DashboardNotification[];
   useMockNotifications?: boolean;
+  currentUser?: DashboardCurrentUser;
+  listeningSubNav?: {
+    activeTab: "analytics" | "coaching";
+    analyticsHref: string;
+    coachingHref: string;
+  };
 };
 
 async function markNotificationAsRead(notificationId: string) {
@@ -87,11 +98,21 @@ export function DashboardFloatingNav({
   onViewChange,
   notifications,
   useMockNotifications = false,
+  currentUser,
+  listeningSubNav,
 }: DashboardFloatingNavProps) {
   const resolvedNotifications =
     notifications ?? (useMockNotifications ? dashboardMockNotifications : []);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isListeningMenuOpen, setIsListeningMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [listeningMenuPos, setListeningMenuPos] = useState({ top: 0, left: 0 });
   const notificationsRef = useRef<HTMLDivElement | null>(null);
+  const listeningMenuRef = useRef<HTMLDivElement | null>(null);
+  const listeningTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const closeListeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const unreadCount = resolvedNotifications.filter(
     (notification) => notification.unread,
   ).length;
@@ -104,14 +125,93 @@ export function DashboardFloatingNav({
       ) {
         setIsNotificationsOpen(false);
       }
+
+      const target = event.target as Node;
+      const clickedTrigger = listeningTriggerRef.current?.contains(target);
+      const clickedMenu = listeningMenuRef.current?.contains(target);
+
+      if (!clickedTrigger && !clickedMenu) {
+        setIsListeningMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsNotificationsOpen(false);
+        setIsListeningMenuOpen(false);
+      }
     }
 
     document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (closeListeningTimerRef.current) {
+        clearTimeout(closeListeningTimerRef.current);
+      }
+    };
+  }, []);
+
+  function cancelScheduledListeningClose() {
+    if (closeListeningTimerRef.current) {
+      clearTimeout(closeListeningTimerRef.current);
+      closeListeningTimerRef.current = null;
+    }
+  }
+
+  function openListeningMenu() {
+    cancelScheduledListeningClose();
+    setIsListeningMenuOpen(true);
+  }
+
+  function scheduleListeningClose() {
+    cancelScheduledListeningClose();
+    closeListeningTimerRef.current = setTimeout(() => {
+      setIsListeningMenuOpen(false);
+    }, 160);
+  }
+
+  useEffect(() => {
+    if (!isListeningMenuOpen) {
+      return;
+    }
+
+    function updatePosition() {
+      const trigger = listeningTriggerRef.current;
+      if (!trigger) {
+        return;
+      }
+
+      const rect = trigger.getBoundingClientRect();
+      const menuWidth = 192;
+      const left = Math.max(
+        8,
+        Math.min(rect.left, window.innerWidth - menuWidth - 8),
+      );
+
+      setListeningMenuPos({ top: rect.bottom + 8, left });
+    }
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [isListeningMenuOpen]);
 
   function handleNavClick(
     event: MouseEvent<HTMLAnchorElement>,
@@ -156,24 +256,119 @@ export function DashboardFloatingNav({
             const Icon = item.icon;
             const isActive = activeView === item.view;
 
+            if (item.view === "escucha" && listeningSubNav) {
+              const listeningOptions = [
+                {
+                  id: "analytics",
+                  label: "Analítica",
+                  href: listeningSubNav.analyticsHref,
+                },
+                {
+                  id: "coaching",
+                  label: "Coaching",
+                  href: listeningSubNav.coachingHref,
+                },
+              ] as const;
+
+              return (
+                <div
+                  key={item.label}
+                  className="relative shrink-0"
+                  onMouseEnter={openListeningMenu}
+                  onMouseLeave={scheduleListeningClose}
+                >
+                  <button
+                    type="button"
+                    ref={listeningTriggerRef}
+                    aria-label="Escucha"
+                    aria-current={isActive ? "page" : undefined}
+                    aria-expanded={isListeningMenuOpen}
+                    aria-controls="dashboard-listening-submenu"
+                    className={[
+                      "flex h-9 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-medium transition",
+                      isActive
+                        ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
+                        : "text-slate-600 hover:bg-white hover:text-emerald-900 hover:shadow-sm",
+                    ].join(" ")}
+                    onClick={() =>
+                      setIsListeningMenuOpen((current) => !current)
+                    }
+                    onFocus={openListeningMenu}
+                  >
+                    <Icon size={17} aria-hidden="true" />
+                    <span className="hidden md:inline">{item.label}</span>
+                    <ChevronDown
+                      size={14}
+                      aria-hidden="true"
+                      className={[
+                        "transition-transform",
+                        isListeningMenuOpen ? "rotate-180" : "",
+                      ].join(" ")}
+                    />
+                  </button>
+
+                  {isListeningMenuOpen && mounted
+                    ? createPortal(
+                        <div
+                          id="dashboard-listening-submenu"
+                          ref={listeningMenuRef}
+                          aria-label="Opciones de Escucha"
+                          style={{
+                            top: listeningMenuPos.top,
+                            left: listeningMenuPos.left,
+                          }}
+                          onMouseEnter={cancelScheduledListeningClose}
+                          onMouseLeave={scheduleListeningClose}
+                          className="fixed z-60 min-w-48 overflow-hidden rounded-2xl border border-slate-200 bg-white/95 p-1.5 shadow-[0_18px_50px_rgba(15,23,42,0.16)] ring-1 ring-black/5 backdrop-blur-xl"
+                        >
+                          {listeningOptions.map((subItem) => {
+                            const isSubActive =
+                              listeningSubNav.activeTab === subItem.id;
+
+                            return (
+                              <Link
+                                key={subItem.id}
+                                href={subItem.href}
+                                aria-current={isSubActive ? "page" : undefined}
+                                className={[
+                                  "flex h-10 items-center rounded-xl px-3 text-sm font-semibold transition",
+                                  isSubActive
+                                    ? "bg-emerald-800 text-white"
+                                    : "text-slate-600 hover:bg-slate-50 hover:text-emerald-900",
+                                ].join(" ")}
+                                onClick={() => setIsListeningMenuOpen(false)}
+                              >
+                                {subItem.label}
+                              </Link>
+                            );
+                          })}
+                        </div>,
+                        document.body,
+                      )
+                    : null}
+                </div>
+              );
+            }
+
             return (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={(event) =>
-                  handleNavClick(event, item.view, item.href)
-                }
-                aria-current={isActive ? "page" : undefined}
-                className={[
-                  "flex h-9 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-medium transition",
-                  isActive
-                    ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
-                    : "text-slate-600 hover:bg-white hover:text-emerald-900 hover:shadow-sm",
-                ].join(" ")}
-              >
-                <Icon size={17} aria-hidden="true" />
-                <span className="hidden md:inline">{item.label}</span>
-              </Link>
+              <div key={item.label} className="relative shrink-0">
+                <Link
+                  href={item.href}
+                  onClick={(event) =>
+                    handleNavClick(event, item.view, item.href)
+                  }
+                  aria-current={isActive ? "page" : undefined}
+                  className={[
+                    "flex h-9 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-medium transition",
+                    isActive
+                      ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
+                      : "text-slate-600 hover:bg-white hover:text-emerald-900 hover:shadow-sm",
+                  ].join(" ")}
+                >
+                  <Icon size={17} aria-hidden="true" />
+                  <span className="hidden md:inline">{item.label}</span>
+                </Link>
+              </div>
             );
           })}
         </div>
@@ -294,15 +489,19 @@ export function DashboardFloatingNav({
             ) : null}
           </div>
 
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              className="flex size-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-950"
-              aria-label="Salir"
-            >
-              <LogOut size={18} aria-hidden="true" />
-            </button>
-          </form>
+          {currentUser ? (
+            <DashboardUserMenu user={currentUser} />
+          ) : (
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="flex size-10 items-center justify-center rounded-full bg-emerald-800 text-xs font-bold text-white"
+                aria-label="Salir"
+              >
+                U
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </nav>

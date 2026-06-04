@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import type { DashboardDateRange } from "@/domain/dashboard/date-range";
 import type { Database } from "@/lib/supabase/database.types";
 import type { CreateListeningEventInput, ListeningEventRow } from "./schemas";
 import { listeningLevelLabels } from "./schemas";
@@ -61,8 +62,10 @@ export async function getListeningEventsByOrganization(
   client: Client,
   organizationId: string,
   limit = 20,
+  branchIds?: string[],
+  dateRange?: DashboardDateRange,
 ): Promise<ListeningEventRow[]> {
-  const { data, error } = await client
+  let query = client
     .from("listening_events")
     .select(
       `
@@ -77,9 +80,21 @@ export async function getListeningEventsByOrganization(
         profiles(full_name)
       `,
     )
-    .eq("organization_id", organizationId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .eq("organization_id", organizationId);
+
+  if (branchIds && branchIds.length > 0) {
+    query = query.in("branch_id", branchIds);
+  }
+
+  if (dateRange) {
+    query = query
+      .gte("created_at", dateRange.startIso)
+      .lte("created_at", dateRange.endIso);
+  }
+
+  query = query.order("created_at", { ascending: false }).limit(limit);
+
+  const { data, error } = await query;
 
   if (error || !data) return [];
 

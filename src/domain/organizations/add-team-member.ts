@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type { CreateTeamMemberInput } from "./member-schemas";
 import { createInviteActivationLink } from "./invite-link";
+import { getPermissionProfileById } from "./permission-profiles";
 import type { MemberRole } from "./schemas";
 import { type TeamMember, roleLabels } from "./team";
 
@@ -124,6 +125,17 @@ export async function addTeamMember(
     );
   }
 
+  const permissionProfile = params.input.organizationRoleId
+    ? await getPermissionProfileById(client, {
+        organizationId: params.organizationId,
+        organizationRoleId: params.input.organizationRoleId,
+      })
+    : null;
+
+  if (params.input.organizationRoleId && !permissionProfile) {
+    throw new Error("El rol seleccionado no pertenece a la organizacion.");
+  }
+
   const { userId, inviteLink } = await resolveAuthUserId(client, {
     email: params.input.email,
     fullName: params.input.fullName,
@@ -148,6 +160,7 @@ export async function addTeamMember(
     organization_id: params.organizationId,
     role: params.input.role,
     branch_id: params.input.branchId ?? null,
+    organization_role_id: permissionProfile?.id ?? null,
   } as never);
 
   if (insertError) {
@@ -156,7 +169,9 @@ export async function addTeamMember(
 
   const { data, error } = await client
     .from("organization_members")
-    .select("user_id, branch_id, role, created_at, profiles(full_name), branches(name)")
+    .select(
+      "user_id, branch_id, organization_role_id, role, created_at, profiles(full_name), branches(name), organization_roles(name)",
+    )
     .eq("organization_id", params.organizationId)
     .eq("user_id", userId)
     .single();
@@ -168,10 +183,12 @@ export async function addTeamMember(
   const row = data as {
     user_id: string;
     branch_id: string | null;
+    organization_role_id: string | null;
     role: MemberRole;
     created_at: string;
     profiles: { full_name: string } | null;
     branches: { name: string } | null;
+    organization_roles: { name: string } | null;
   };
 
   return {
@@ -183,6 +200,8 @@ export async function addTeamMember(
       email: params.input.email,
       role: row.role,
       roleLabel: roleLabels[row.role],
+      permissionProfileId: row.organization_role_id,
+      permissionProfileName: row.organization_roles?.name ?? null,
       joinedAt: row.created_at,
       accountStatus: inviteLink ? "pending_activation" : "active",
     },

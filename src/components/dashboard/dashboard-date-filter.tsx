@@ -6,7 +6,9 @@ import type { DashboardDateRange } from "@/domain/dashboard/date-range";
 type DashboardDateFilterProps = {
   dateRange: DashboardDateRange;
   selectedBranchId?: string;
+  selectedBranchIds?: string[];
   targetHash?: string;
+  basePath?: string;
 };
 
 const presets = [
@@ -19,20 +21,26 @@ function buildPresetHref(
   period: string,
   selectedBranchId?: string,
   targetHash?: string,
+  basePath = "/dashboard",
+  selectedBranchIds?: string[],
 ) {
   const params = new URLSearchParams({ period });
 
-  if (selectedBranchId) {
+  if (selectedBranchIds && selectedBranchIds.length > 0) {
+    selectedBranchIds.forEach((branchId) => params.append("branchId", branchId));
+  } else if (selectedBranchId) {
     params.set("branchId", selectedBranchId);
   }
 
-  return `/dashboard?${params.toString()}${targetHash ? `#${targetHash}` : ""}`;
+  return `${basePath}?${params.toString()}${targetHash ? `#${targetHash}` : ""}`;
 }
 
 export function DashboardDateFilter({
   dateRange,
   selectedBranchId,
+  selectedBranchIds,
   targetHash,
+  basePath = "/dashboard",
 }: DashboardDateFilterProps) {
   return (
     <details name="dashboard-header-filter" className="group relative">
@@ -49,7 +57,13 @@ export function DashboardDateFilter({
             return (
               <Link
                 key={preset.period}
-                href={buildPresetHref(preset.period, selectedBranchId, targetHash)}
+                href={buildPresetHref(
+                  preset.period,
+                  selectedBranchId,
+                  targetHash,
+                  basePath,
+                  selectedBranchIds,
+                )}
                 className={[
                   "inline-flex h-9 items-center justify-center rounded-xl text-sm font-semibold transition",
                   isActive
@@ -64,13 +78,16 @@ export function DashboardDateFilter({
         </div>
 
         <form
-          action={`/dashboard${targetHash ? `#${targetHash}` : ""}`}
+          action={`${basePath}${targetHash ? `#${targetHash}` : ""}`}
           className="mt-3 rounded-xl bg-[#f7f8f4] p-3"
         >
           <input type="hidden" name="period" value="custom" />
           {selectedBranchId ? (
             <input type="hidden" name="branchId" value={selectedBranchId} />
           ) : null}
+          {selectedBranchIds?.map((branchId) => (
+            <input key={branchId} type="hidden" name="branchId" value={branchId} />
+          ))}
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
             Rango personalizado
           </p>

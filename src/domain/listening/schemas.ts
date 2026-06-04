@@ -37,3 +37,13 @@ export const listeningLevelLabels: Record<
   empathetic_listening: "Escucha empatica",
   generative_dialogue: "Dialogo generativo",
 };
+
+export const listeningLevelDescriptions: Record<
+  z.infer<typeof listeningLevelSchema>,
+  string
+> = {
+  download: "Reaccionas desde habitos, juicio rapido o respuestas automaticas.",
+  debate: "Escuchas datos y diferencias, pero aun defiendes tu punto de vista.",
+  empathetic_listening: "Comprendes la emocion, contexto y necesidad de la otra persona.",
+  generative_dialogue: "La conversacion abre una posibilidad, decision o aprendizaje nuevo.",
+};

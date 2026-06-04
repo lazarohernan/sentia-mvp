@@ -1,4 +1,7 @@
-import type { DashboardNotification } from "@/domain/dashboard/schemas";
+import type {
+  DashboardCommentRow,
+  DashboardNotification,
+} from "@/domain/dashboard/schemas";
 
 export const dashboardMockContext = {
   company: "Operacion retail",
@@ -63,6 +66,7 @@ export const dashboardMockComments = [
     customer: "Cliente verificado",
     business: "Cafeteria",
     branch: "Centro",
+    feedbackType: "Felicitación",
     sentiment: "Positivo",
     csatScore: 5,
     status: "Nuevo",
@@ -74,9 +78,10 @@ export const dashboardMockComments = [
     customer: "Compra reciente",
     business: "Cafeteria",
     branch: "Mall Norte",
+    feedbackType: "Queja",
     sentiment: "Riesgo",
     csatScore: 2,
-    status: "En revision",
+    status: "En revisión",
     message: "El tiempo de espera fue alto y nadie explico el retraso.",
     receivedAt: "Hace 28 min",
   },
@@ -85,6 +90,7 @@ export const dashboardMockComments = [
     customer: "Visitante frecuente",
     business: "Retail",
     branch: "Boulevard",
+    feedbackType: "Observación",
     sentiment: "Neutral",
     csatScore: 3,
     status: "Nuevo",
@@ -96,9 +102,10 @@ export const dashboardMockComments = [
     customer: "Cliente digital",
     business: "Retail",
     branch: "Centro",
+    feedbackType: "Recomendación",
     sentiment: "Riesgo",
     csatScore: 2,
-    status: "Pendiente",
+    status: "Nuevo",
     message: "La promocion no estaba clara y el personal no pudo explicarla.",
     receivedAt: "Hace 2 h",
   },
@@ -107,6 +114,7 @@ export const dashboardMockComments = [
     customer: "Visita familiar",
     business: "Restaurante",
     branch: "Boulevard",
+    feedbackType: "Felicitación",
     sentiment: "Positivo",
     csatScore: 5,
     status: "Resuelto",
@@ -118,9 +126,10 @@ export const dashboardMockComments = [
     customer: "Cliente recurrente",
     business: "Restaurante",
     branch: "Mall Norte",
+    feedbackType: "Queja",
     sentiment: "Riesgo",
     csatScore: 1,
-    status: "En revision",
+    status: "En revisión",
     message: "El pedido salio incompleto y tuve que pedir ayuda dos veces.",
     receivedAt: "Hace 4 h",
   },
@@ -129,13 +138,14 @@ export const dashboardMockComments = [
     customer: "Nueva compra",
     business: "Cafeteria",
     branch: "Centro",
+    feedbackType: "Observación",
     sentiment: "Neutral",
     csatScore: 3,
     status: "Nuevo",
     message: "Buena atencion, aunque el area de espera estaba saturada.",
     receivedAt: "Hace 5 h",
   },
-];
+] satisfies DashboardCommentRow[];
 
 export const dashboardMockAlerts = [
   {

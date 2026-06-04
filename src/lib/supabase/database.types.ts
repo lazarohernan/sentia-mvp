@@ -32,17 +32,44 @@ export interface Database {
           id: string;
           name: string;
           slug: string;
+          logo_url: string | null;
+          tagline: string | null;
+          description: string | null;
+          contact_email: string | null;
+          contact_phone: string | null;
+          website_url: string | null;
+          address: string | null;
+          alert_escalation_phone: string | null;
+          alert_escalation_email: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           name: string;
           slug: string;
+          logo_url?: string | null;
+          tagline?: string | null;
+          description?: string | null;
+          contact_email?: string | null;
+          contact_phone?: string | null;
+          website_url?: string | null;
+          address?: string | null;
+          alert_escalation_phone?: string | null;
+          alert_escalation_email?: string | null;
           created_at?: string;
         };
         Update: {
           name?: string;
           slug?: string;
+          logo_url?: string | null;
+          tagline?: string | null;
+          description?: string | null;
+          contact_email?: string | null;
+          contact_phone?: string | null;
+          alert_escalation_phone?: string | null;
+          alert_escalation_email?: string | null;
+          website_url?: string | null;
+          address?: string | null;
         };
       };
       organization_members: {
@@ -50,6 +77,7 @@ export interface Database {
           user_id: string;
           organization_id: string;
           branch_id: string | null;
+          organization_role_id: string | null;
           role: "owner" | "manager" | "collaborator";
           created_at: string;
         };
@@ -57,12 +85,61 @@ export interface Database {
           user_id: string;
           organization_id: string;
           branch_id?: string | null;
+          organization_role_id?: string | null;
           role: "owner" | "manager" | "collaborator";
           created_at?: string;
         };
         Update: {
           branch_id?: string | null;
+          organization_role_id?: string | null;
           role?: "owner" | "manager" | "collaborator";
+        };
+      };
+      organization_roles: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          permissions: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          permissions: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          permissions?: string[];
+          updated_at?: string;
+        };
+      };
+      organization_listening_settings: {
+        Row: {
+          organization_id: string;
+          reminders_enabled: boolean;
+          reminder_times: string[];
+          reminder_weekdays: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          organization_id: string;
+          reminders_enabled?: boolean;
+          reminder_times?: string[];
+          reminder_weekdays?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          reminders_enabled?: boolean;
+          reminder_times?: string[];
+          reminder_weekdays?: string[];
+          updated_at?: string;
         };
       };
       branches: {
@@ -177,6 +254,15 @@ export interface Database {
           contact_phone: string | null;
           contact_email: string | null;
           consent_accepted: boolean;
+          workflow_status:
+            | "nuevo"
+            | "en_revision"
+            | "en_proceso"
+            | "resuelto"
+            | "escalado";
+          assigned_user_id: string | null;
+          first_response_at: string | null;
+          resolved_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -191,6 +277,50 @@ export interface Database {
           contact_phone?: string | null;
           contact_email?: string | null;
           consent_accepted: boolean;
+          workflow_status?:
+            | "nuevo"
+            | "en_revision"
+            | "en_proceso"
+            | "resuelto"
+            | "escalado";
+          assigned_user_id?: string | null;
+          first_response_at?: string | null;
+          resolved_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          workflow_status?:
+            | "nuevo"
+            | "en_revision"
+            | "en_proceso"
+            | "resuelto"
+            | "escalado";
+          assigned_user_id?: string | null;
+          first_response_at?: string | null;
+          resolved_at?: string | null;
+        };
+      };
+      feedback_follow_up_actions: {
+        Row: {
+          id: string;
+          submission_id: string;
+          organization_id: string;
+          actor_user_id: string;
+          action_type: "status_change" | "note" | "assignment" | "escalation";
+          previous_status: string | null;
+          new_status: string | null;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          submission_id: string;
+          organization_id: string;
+          actor_user_id: string;
+          action_type: "status_change" | "note" | "assignment" | "escalation";
+          previous_status?: string | null;
+          new_status?: string | null;
+          note?: string | null;
           created_at?: string;
         };
         Update: Record<string, never>;

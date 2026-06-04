@@ -9,11 +9,12 @@ import {
   PencilLine,
   Plus,
   QrCode,
+  Settings2,
+  ShieldCheck,
   Star,
   X,
   UsersRound,
 } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
@@ -23,19 +24,26 @@ import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
 import type { DashboardSummaryData } from "@/domain/dashboard/schemas";
 import type { ListeningEventRow } from "@/domain/listening/schemas";
+import type { OrganizationSettings } from "@/domain/organizations/organization-settings-schemas";
+import type { PermissionProfile } from "@/domain/organizations/permission-profiles";
 import type { TeamMember } from "@/domain/organizations/team";
 import { AddTeamMemberDrawer } from "./add-team-member-drawer";
+import { DashboardAiAssistant } from "./dashboard-ai-assistant";
+import { DashboardAlertsView } from "./dashboard-alerts-panel";
 import { DashboardCommentsTable } from "./dashboard-comments-table";
 import { DashboardEmptyState } from "./dashboard-empty-state";
 import { DashboardExecutiveHeader } from "./dashboard-executive-header";
 import { DashboardFloatingNav } from "./dashboard-floating-nav";
 import type { DashboardNavView } from "./dashboard-floating-nav";
-import { DashboardQrView } from "./dashboard-qr-view";
+import { DashboardBranchQrPanel } from "./dashboard-branch-qr-panel";
+import { DashboardOrganizationSettingsPanel } from "./dashboard-organization-settings-panel";
+import { DashboardPermissionProfilesPanel } from "./dashboard-permission-profiles-panel";
 import { DashboardSection } from "./dashboard-section";
 import { DashboardSummaryView } from "./dashboard-summary-view";
 import { DashboardTeamPanel } from "./dashboard-team-panel";
+import type { DashboardCurrentUser } from "./dashboard-user-menu";
 
-type OperationsTab = "qr" | "sucursales" | "equipo";
+type OperationsTab = "sucursales" | "equipo" | "permisos" | "configuracion";
 
 function getDashboardViewFromHash(): DashboardNavView {
   if (typeof window === "undefined") {
@@ -48,7 +56,13 @@ function getDashboardViewFromHash(): DashboardNavView {
     return hash;
   }
 
-  if (hash === "qr" || hash === "sucursales" || hash === "equipo") {
+  if (
+    hash === "qr" ||
+    hash === "sucursales" ||
+    hash === "equipo" ||
+    hash === "permisos" ||
+    hash === "configuracion"
+  ) {
     return "gestion";
   }
 
@@ -62,8 +76,16 @@ function getOperationsTabFromHash(): OperationsTab {
 
   const hash = window.location.hash.replace("#", "");
 
-  if (hash === "qr" || hash === "sucursales" || hash === "equipo") {
+  if (hash === "qr" || hash === "sucursales") {
+    return "sucursales";
+  }
+
+  if (hash === "permisos" || hash === "configuracion") {
     return hash;
+  }
+
+  if (hash === "equipo") {
+    return "equipo";
   }
 
   return "equipo";
@@ -71,11 +93,16 @@ function getOperationsTabFromHash(): OperationsTab {
 
 type DashboardShellProps = {
   organizationName?: string;
+  organizationSettings?: OrganizationSettings;
   branches?: Branch[];
   selectedBranchId?: string;
+  lockedBranchScope?: boolean;
   teamMembers?: TeamMember[];
+  permissionProfiles?: PermissionProfile[];
   canManageTeam?: boolean;
   actorRole?: "owner" | "manager";
+  currentUserId?: string;
+  currentUser?: DashboardCurrentUser;
   listeningEvents?: ListeningEventRow[];
   dashboardData?: DashboardSummaryData;
   dateRange?: DashboardDateRange;
@@ -86,6 +113,7 @@ type CreateBranchDrawerProps = {
   onClose: () => void;
   branch?: Branch | null;
   onSaved: (branch: Branch) => void;
+  onViewQr?: (branch: Branch) => void;
 };
 
 function getBranchStatusToneClass(tone?: string, isActive = true) {
@@ -108,10 +136,12 @@ function DashboardBranchesList({
   branches,
   dashboardData,
   onEdit,
+  onViewQr,
 }: {
   branches: Branch[];
   dashboardData?: DashboardSummaryData;
   onEdit: (branch: Branch) => void;
+  onViewQr: (branch: Branch) => void;
 }) {
   const healthByBranch = new Map(
     (dashboardData?.branchHealth ?? []).map((item) => [item.branch, item]),
@@ -187,10 +217,10 @@ function DashboardBranchesList({
             <div className="flex items-center justify-between gap-4 border-t border-slate-100 px-5 py-4">
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Ruta de captura
+                  Codigo QR
                 </p>
                 <p className="mt-1 truncate text-sm font-medium text-slate-600">
-                  /feedback/{branch.slug}
+                  Enlace firmado por sucursal
                 </p>
               </div>
 
@@ -204,13 +234,14 @@ function DashboardBranchesList({
                   <PencilLine className="h-4 w-4" aria-hidden="true" />
                   Editar
                 </button>
-                <Link
-                  href={`/feedback/${branch.slug}`}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
+                <button
+                  type="button"
+                  onClick={() => onViewQr(branch)}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100"
                 >
                   <QrCode className="h-4 w-4" aria-hidden="true" />
-                  Abrir
-                </Link>
+                  Ver QR
+                </button>
               </div>
             </div>
           </article>
@@ -228,9 +259,10 @@ function OperationsTabs({
   onTabChange: (tab: OperationsTab) => void;
 }) {
   const tabs = [
-    { id: "equipo", label: "Equipo", icon: UsersRound },
     { id: "sucursales", label: "Sucursales", icon: Building2 },
-    { id: "qr", label: "QR", icon: QrCode },
+    { id: "equipo", label: "Equipo", icon: UsersRound },
+    { id: "permisos", label: "Permisos", icon: ShieldCheck },
+    { id: "configuracion", label: "Configuracion", icon: Settings2 },
   ] satisfies Array<{
     id: OperationsTab;
     label: string;
@@ -272,6 +304,7 @@ function CreateBranchDrawer({
   onClose,
   branch,
   onSaved,
+  onViewQr,
 }: CreateBranchDrawerProps) {
   const isEditing = Boolean(branch);
   const [name, setName] = useState(branch?.name ?? "");
@@ -279,6 +312,20 @@ function CreateBranchDrawer({
   const [isActive, setIsActive] = useState(branch?.is_active ?? true);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savedBranch, setSavedBranch] = useState<Branch | null>(null);
+
+  function resetForm() {
+    setName(branch?.name ?? "");
+    setAddress(branch?.address ?? "");
+    setIsActive(branch?.is_active ?? true);
+    setError("");
+    setSavedBranch(null);
+  }
+
+  function handleClose() {
+    resetForm();
+    onClose();
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -314,10 +361,16 @@ function CreateBranchDrawer({
       }
 
       onSaved(body.branch);
-      setName("");
-      setAddress("");
-      setIsActive(true);
-      onClose();
+
+      if (isEditing) {
+        setName("");
+        setAddress("");
+        setIsActive(true);
+        handleClose();
+        return;
+      }
+
+      setSavedBranch(body.branch);
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {
@@ -344,7 +397,7 @@ function CreateBranchDrawer({
         type="button"
         className="absolute inset-0 cursor-default"
         aria-label="Cerrar drawer"
-        onClick={onClose}
+        onClick={handleClose}
       />
       <aside
         className={[
@@ -379,7 +432,7 @@ function CreateBranchDrawer({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -387,6 +440,38 @@ function CreateBranchDrawer({
           </button>
         </div>
 
+        {savedBranch ? (
+          <div className="flex flex-1 flex-col px-6 py-6">
+            <p className="text-sm leading-6 text-slate-600">
+              <span className="font-semibold text-slate-950">{savedBranch.name}</span>{" "}
+              quedo lista. Genera su codigo QR para compartirlo con clientes.
+            </p>
+            <div className="mt-5 rounded-lg border border-emerald-100 bg-emerald-50/70 p-4 text-sm leading-6 text-emerald-950">
+              Ruta firmada:{" "}
+              <span className="font-semibold">/q/...</span>
+            </div>
+            <div className="mt-auto flex flex-col gap-3 border-t border-slate-100 pt-5">
+              <button
+                type="button"
+                onClick={() => {
+                  onViewQr?.(savedBranch);
+                  handleClose();
+                }}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white"
+              >
+                <QrCode className="h-4 w-4" aria-hidden="true" />
+                Ver codigo QR
+              </button>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700"
+              >
+                Listo
+              </button>
+            </div>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col">
           <div
             className={[
@@ -449,7 +534,7 @@ function CreateBranchDrawer({
               ) : (
                 <>
                   Al guardar se crea la sucursal y queda listo su enlace de captura
-                  en formato <span className="font-semibold">/feedback/nombre</span>.
+                  en formato <span className="font-semibold">/q/...</span>.
                 </>
               )}
             </div>
@@ -469,7 +554,7 @@ function CreateBranchDrawer({
           >
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="inline-flex h-11 items-center rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               Cancelar
@@ -488,6 +573,7 @@ function CreateBranchDrawer({
             </button>
           </div>
         </form>
+        )}
       </aside>
     </div>
   );
@@ -495,12 +581,16 @@ function CreateBranchDrawer({
 
 export function DashboardShell({
   organizationName,
+  organizationSettings: initialOrganizationSettings,
   branches,
   selectedBranchId,
+  lockedBranchScope = false,
   teamMembers: initialTeamMembers = [],
+  permissionProfiles: initialPermissionProfiles = [],
   canManageTeam = false,
   actorRole,
-  listeningEvents = [],
+  currentUserId,
+  currentUser,
   dashboardData,
   dateRange = getDashboardDateRange({}),
 }: DashboardShellProps) {
@@ -513,17 +603,21 @@ export function DashboardShell({
   const [createdBranches, setCreatedBranches] = useState<Branch[]>([]);
   const [updatedBranches, setUpdatedBranches] = useState<Record<string, Branch>>({});
   const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
+  const [permissionProfiles, setPermissionProfiles] = useState(initialPermissionProfiles);
+  const [organizationSettings, setOrganizationSettings] = useState(
+    initialOrganizationSettings,
+  );
+  const [liveOrganizationName, setLiveOrganizationName] = useState(organizationName);
   const [isBranchDrawerOpen, setIsBranchDrawerOpen] = useState(false);
   const [isTeamMemberDrawerOpen, setIsTeamMemberDrawerOpen] = useState(false);
+  const [pendingCommentId, setPendingCommentId] = useState<string | null>(null);
+  const canManageFollowUp = actorRole === "owner" || actorRole === "manager";
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [qrBranchId, setQrBranchId] = useState<string | null>(null);
   const liveBranches = [
     ...createdBranches.filter((branch) => !serverBranchIds.has(branch.id)),
     ...serverBranches.map((branch) => updatedBranches[branch.id] ?? branch),
   ];
-
-  useEffect(() => {
-    setTeamMembers(initialTeamMembers);
-  }, [initialTeamMembers]);
 
   useEffect(() => {
     function updateActiveView() {
@@ -564,6 +658,14 @@ export function DashboardShell({
     window.history.pushState({}, "", `/dashboard#${tab}`);
     setActiveView("gestion");
     setActiveOperationsTab(tab);
+    setQrBranchId(null);
+  }
+
+  function openBranchQrView(branch: Branch) {
+    setActiveView("gestion");
+    setActiveOperationsTab("sucursales");
+    setQrBranchId(branch.id);
+    window.history.pushState({}, "", "/dashboard#sucursales");
   }
 
   function handleBranchSaved(branch: Branch) {
@@ -620,6 +722,9 @@ export function DashboardShell({
           attentionItems: dashboardData.attentionItems,
         });
   const useSummaryDemoData = activeView === "resumen" && showDemoData;
+  const qrBranch = qrBranchId
+    ? liveBranches.find((branch) => branch.id === qrBranchId) ?? null
+    : null;
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#f4f8f5_0%,#e9f0ed_100%)] text-slate-950">
@@ -628,6 +733,7 @@ export function DashboardShell({
         onViewChange={setActiveView}
         notifications={useSummaryDemoData ? undefined : dashboardData?.notifications}
         useMockNotifications={useSummaryDemoData}
+        currentUser={currentUser}
       />
       <section className="mx-auto w-full max-w-[92rem] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <div>
@@ -640,6 +746,7 @@ export function DashboardShell({
                 dateRange={dateRange}
                 branches={liveBranches}
                 selectedBranchId={selectedBranchId}
+                lockedBranchScope={lockedBranchScope}
               />
               <DashboardSummaryView
                 showDemoData={showDemoData}
@@ -657,6 +764,11 @@ export function DashboardShell({
               <DashboardCommentsTable
                 comments={dashboardData?.comments ?? []}
                 dateRange={dashboardData?.dateRange ?? dateRange}
+                canManageFollowUp={canManageFollowUp}
+                initialSelectedCommentId={pendingCommentId}
+                onCommentUpdated={() => {
+                  setPendingCommentId(null);
+                }}
               />
             </DashboardSection>
           ) : null}
@@ -668,7 +780,7 @@ export function DashboardShell({
                   Gestión
                 </h2>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-                  Administra QR, sucursales y equipo desde una sola vista.
+                  Administra sucursales y equipo desde una sola vista.
                 </p>
               </div>
 
@@ -677,16 +789,15 @@ export function DashboardShell({
                 onTabChange={handleOperationsTabChange}
               />
 
-              {activeOperationsTab === "qr" ? (
-                <DashboardQrView
-                  showDemoData={false}
-                  organizationName={organizationName}
-                  branches={liveBranches}
-                  dashboardData={dashboardData}
-                />
-              ) : null}
-
               {activeOperationsTab === "sucursales" ? (
+                qrBranch ? (
+                  <DashboardBranchQrPanel
+                    branch={qrBranch}
+                    organizationName={liveOrganizationName}
+                    dashboardData={dashboardData}
+                    onBack={() => setQrBranchId(null)}
+                  />
+                ) : (
                 <DashboardSection
                   id="sucursales"
                   title="Sucursales"
@@ -698,6 +809,7 @@ export function DashboardShell({
                       branches={liveBranches}
                       dashboardData={dashboardData}
                       onEdit={openEditBranchDrawer}
+                      onViewQr={openBranchQrView}
                     />
                   ) : (
                     <DashboardEmptyState
@@ -707,6 +819,7 @@ export function DashboardShell({
                     />
                   )}
                 </DashboardSection>
+                )
               ) : null}
 
               {activeOperationsTab === "equipo" ? (
@@ -719,12 +832,53 @@ export function DashboardShell({
                   <DashboardTeamPanel
                     teamMembers={teamMembers}
                     canManageTeam={canManageTeam}
+                    actorRole={actorRole}
+                    currentUserId={currentUserId}
+                    permissionProfiles={permissionProfiles}
                     onMemberUpdated={(member) => {
                       setTeamMembers((current) =>
                         current.map((item) =>
                           item.userId === member.userId ? member : item,
                         ),
                       );
+                    }}
+                    onMemberRemoved={(userId) => {
+                      setTeamMembers((current) =>
+                        current.filter((item) => item.userId !== userId),
+                      );
+                    }}
+                  />
+                </DashboardSection>
+              ) : null}
+
+              {activeOperationsTab === "permisos" ? (
+                <DashboardSection
+                  id="permisos"
+                  title="Permisos"
+                  description="Roles operativos con acceso a secciones especificas de la plataforma."
+                >
+                  <DashboardPermissionProfilesPanel
+                    profiles={permissionProfiles}
+                    canManage={canManageTeam}
+                    onProfileCreated={(profile) => {
+                      setPermissionProfiles((current) => [...current, profile]);
+                    }}
+                  />
+                </DashboardSection>
+              ) : null}
+
+              {activeOperationsTab === "configuracion" ? (
+                <DashboardSection
+                  id="configuracion"
+                  title="Configuracion"
+                  description="Datos generales del negocio, logo e informacion de contacto."
+                >
+                  <DashboardOrganizationSettingsPanel
+                    initialSettings={organizationSettings}
+                    canManage={canManageTeam}
+                    onSaved={(settings) => {
+                      setOrganizationSettings(settings);
+                      setLiveOrganizationName(settings.name);
                     }}
                   />
                 </DashboardSection>
@@ -733,54 +887,37 @@ export function DashboardShell({
           ) : null}
 
           {activeView === "alertas" ? (
-            <DashboardSection
-              id="alertas"
-              title="Alertas"
-              description="Situaciones que requieren atención o seguimiento."
-            >
-              {liveAlerts.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {liveAlerts.map((alert) => (
-                    <article
-                      key={alert.id}
-                      className="rounded-lg border border-slate-200 bg-white p-5"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h3 className="text-base font-semibold text-slate-950">
-                            {alert.title}
-                          </h3>
-                          <p className="mt-1 text-sm text-slate-500">
-                            {alert.subtitle}
-                          </p>
-                        </div>
-                        <span
-                          className={[
-                            "rounded-full px-3 py-1 text-xs font-semibold",
-                            alert.tone === "danger"
-                              ? "bg-red-50 text-red-700"
-                              : alert.tone === "warning"
-                                ? "bg-amber-50 text-amber-700"
-                                : "bg-emerald-50 text-emerald-800",
-                          ].join(" ")}
-                        >
-                          {alert.priority}
-                        </span>
-                      </div>
-                      <p className="mt-4 text-sm leading-6 text-slate-600">
-                        {alert.detail}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <DashboardEmptyState
-                  icon={Bell}
-                  title="Sin alertas abiertas"
-                  description="Las alertas se mostrarán cuando haya señales que atender."
-                />
-              )}
-            </DashboardSection>
+            <DashboardAlertsView
+              alerts={liveAlerts}
+              metrics={
+                dashboardData?.followUpMetrics ?? {
+                  openCount: 0,
+                  escalatedCount: 0,
+                  inReviewCount: 0,
+                  resolvedCount: 0,
+                  avgResponseHours: null,
+                  avgResolutionHours: null,
+                }
+              }
+              organizationSettings={organizationSettings}
+              canManageEscalation={canManageFollowUp}
+              onEscalationSettingsSaved={(settings) => {
+                setOrganizationSettings((current) =>
+                  current
+                    ? {
+                        ...current,
+                        alertEscalationPhone: settings.alertEscalationPhone,
+                        alertEscalationEmail: settings.alertEscalationEmail,
+                      }
+                    : current,
+                );
+              }}
+              onOpenSubmission={(submissionId) => {
+                setPendingCommentId(submissionId);
+                setActiveView("comentarios");
+                window.history.pushState({}, "", "/dashboard#comentarios");
+              }}
+            />
           ) : null}
         </div>
       </section>
@@ -790,6 +927,7 @@ export function DashboardShell({
         branch={selectedBranch}
         onClose={closeBranchDrawer}
         onSaved={handleBranchSaved}
+        onViewQr={openBranchQrView}
       />
       {actorRole ? (
         <AddTeamMemberDrawer
@@ -798,6 +936,7 @@ export function DashboardShell({
           onClose={() => setIsTeamMemberDrawerOpen(false)}
           branches={liveBranches.filter((branch) => branch.is_active)}
           actorRole={actorRole}
+          permissionProfiles={permissionProfiles}
           onSaved={(member) => {
             setTeamMembers((current) =>
               current.some((item) => item.userId === member.userId)
@@ -807,6 +946,11 @@ export function DashboardShell({
           }}
         />
       ) : null}
+      <DashboardAiAssistant
+        alerts={liveAlerts}
+        insight={dashboardData?.insight}
+        showDemoData={showDemoData}
+      />
     </main>
   );
 }
