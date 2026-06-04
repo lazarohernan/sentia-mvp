@@ -20,6 +20,17 @@ export function canRemoveTeamMember(
   return actorRole === "manager" && targetRole === "collaborator";
 }
 
+export function canManageTeamMemberInBranchScope(
+  actorBranchId: string | null,
+  targetBranchId: string | null,
+): boolean {
+  if (!actorBranchId) {
+    return true;
+  }
+
+  return targetBranchId === actorBranchId;
+}
+
 export async function removeTeamMember(
   client: ServiceClient,
   params: {
@@ -27,6 +38,7 @@ export async function removeTeamMember(
     targetUserId: string;
     actorUserId: string;
     actorRole: "owner" | "manager";
+    actorBranchId?: string | null;
   },
 ): Promise<void> {
   if (params.targetUserId === params.actorUserId) {
@@ -35,7 +47,7 @@ export async function removeTeamMember(
 
   const { data: member, error: memberError } = await client
     .from("organization_members")
-    .select("user_id, role")
+    .select("user_id, role, branch_id")
     .eq("organization_id", params.organizationId)
     .eq("user_id", params.targetUserId)
     .maybeSingle();
@@ -46,10 +58,15 @@ export async function removeTeamMember(
 
   const memberRow = member as {
     role: MemberRole;
+    branch_id: string | null;
   };
 
   if (!canRemoveTeamMember(params.actorRole, memberRow.role)) {
     throw new Error("No tienes permisos para eliminar a esta persona.");
+  }
+
+  if (!canManageTeamMemberInBranchScope(params.actorBranchId ?? null, memberRow.branch_id)) {
+    throw new Error("No tienes permisos para administrar esta sucursal.");
   }
 
   const { error: deleteError } = await client

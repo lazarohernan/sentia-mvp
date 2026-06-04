@@ -3,16 +3,15 @@
 import {
   Angry,
   ArrowLeft,
-  Clock3,
+  ArrowRight,
   ClipboardCheck,
   Eye,
   Frown,
   Laugh,
-  MapPin,
   Meh,
   MessageSquareText,
   Smile,
-  UserRound,
+  Sparkles,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -242,6 +241,37 @@ function FeedbackTypeBadge({ type }: { type: DashboardFeedbackType }) {
   );
 }
 
+function CommentMetaLine({
+  comment,
+  className = "",
+}: {
+  comment: DashboardComment;
+  className?: string;
+}) {
+  return (
+    <p
+      className={[
+        "flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600",
+        className,
+      ].join(" ")}
+    >
+      <span className="font-semibold text-slate-800">{comment.feedbackType}</span>
+      <span className="text-slate-300" aria-hidden="true">
+        |
+      </span>
+      <span>{comment.customer}</span>
+      <span className="text-slate-300" aria-hidden="true">
+        |
+      </span>
+      <span>{comment.branch}</span>
+      <span className="text-slate-300" aria-hidden="true">
+        |
+      </span>
+      <span className="text-slate-500">{comment.receivedAt}</span>
+    </p>
+  );
+}
+
 function CsatBadge({ score }: { score: number }) {
   const [isOpen, setIsOpen] = useState(false);
   const popoverId = useId();
@@ -361,7 +391,7 @@ function CsatScaleStrip({ score }: { score: number }) {
   const selectedStyle = csatStyles[score] ?? csatStyles[3];
 
   return (
-    <div className="mt-5 rounded-[1.25rem] border border-slate-100 bg-[#f7f8f4] p-4">
+    <div className="rounded-[1.25rem] border border-slate-100 bg-[#f7f8f4] p-4">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
@@ -393,7 +423,7 @@ function CsatScaleStrip({ score }: { score: number }) {
               aria-current={isSelected ? "true" : undefined}
             >
               <LevelIcon size={24} aria-hidden="true" />
-              <span className="mt-2 text-xs font-bold">{level.score}</span>
+              <span className="mt-1 text-xs font-bold">{level.score}</span>
               <span className="mt-0.5 max-w-full text-[0.68rem] font-semibold leading-4">
                 {level.label}
               </span>
@@ -519,7 +549,7 @@ function RatingsChartsPanel({ comments }: { comments: DashboardComment[] }) {
             </div>
           </header>
 
-          <div className="flex min-h-0 flex-1 flex-col justify-end">
+          <div className="mt-1">
             {metrics.scoredCount > 0 ? (
               <CsatHealthDistributionBar
                 zonePercents={zonePercents}
@@ -636,8 +666,15 @@ function CommentDetailView({
     comment.sentiment === "Riesgo" || comment.csatScore <= 2
       ? "Gerencia de turno"
       : "Servicio al cliente";
-  const suggestedStatus =
-    currentStatus === "Nuevo" ? "En revisión" : currentStatus;
+  const operationalSummary = comment.analysisSummary?.trim() || csatStyle.meaning;
+  const operationalAction =
+    comment.recommendedAction?.trim() || csatStyle.action;
+  const dominantPattern = comment.dominantPattern ?? "Experiencia del cliente";
+  const canEscalate =
+    currentStatus !== "Escalado" && currentStatus !== "Resuelto";
+  const analysisStatus = comment.analysisModel
+    ? "Analizado correctamente"
+    : "Lectura operativa";
 
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
@@ -651,174 +688,193 @@ function CommentDetailView({
           Volver a valoraciones
         </button>
 
-        <div className="mt-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-          <div>
+        <div className="mt-5 flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
               Detalle de valoración
             </p>
             <h3 className="mt-2 text-2xl font-semibold tracking-normal text-slate-950">
-              {comment.business} · {comment.branch}
+              {comment.business}
             </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Vista operativa para entender la señal, dar seguimiento y dejar
-              claro quién debe atenderla.
-            </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={[
-                "inline-flex rounded-full px-3 py-1.5 text-xs font-semibold",
-                sentimentStyles[comment.sentiment] ?? sentimentStyles.Neutral,
-              ].join(" ")}
-            >
-              {comment.sentiment}
-            </span>
-            <FeedbackTypeBadge type={comment.feedbackType} />
-            <StatusBadge status={currentStatus} />
-          </div>
+          <CommentMetaLine
+            comment={comment}
+            className="shrink-0 lg:max-w-md lg:justify-end lg:text-right"
+          />
         </div>
       </div>
 
-      <div className="grid gap-5 p-5 lg:grid-cols-[1.35fr_0.85fr]">
-        <div className="rounded-[1.25rem] border border-slate-100 p-5">
+      <div className="space-y-5 p-5">
+        <section className="rounded-[1.25rem] border border-slate-100 p-5">
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500">
+                <Sparkles size={18} aria-hidden="true" />
+              </span>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h4 className="text-sm font-semibold text-slate-950">
+                    Lectura operativa
+                  </h4>
+                  <span className="text-xs font-semibold text-slate-400">
+                    {analysisStatus}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Interpretación resumida para decidir qué hacer sin revisar el
+                  caso desde cero.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[420px]">
+              <div className="rounded-2xl border border-slate-100 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Responsable
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {responsibility}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Estado
+                </p>
+                <div className="mt-1">
+                  <StatusBadge status={currentStatus} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 grid items-stretch gap-3 lg:grid-cols-[1fr_auto_0.9fr]">
+            <div className="rounded-2xl border border-slate-100 bg-white p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-medium text-slate-500">
+                  {dominantPattern}
+                </p>
+                {comment.analysisConfidence ? (
+                  <span className="text-xs font-semibold text-slate-400">
+                    {comment.analysisConfidence}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-3 text-sm leading-6 text-slate-800">
+                {operationalSummary}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm">
+                <ArrowRight
+                  size={16}
+                  className="rotate-90 lg:rotate-0"
+                  aria-hidden="true"
+                />
+              </span>
+            </div>
+
+            <div className="rounded-2xl border border-slate-100 bg-[#f7f8f4] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Próxima acción
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-800">
+                {operationalAction}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-[1.25rem] border border-slate-100 p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <MessageSquareText size={17} className="text-emerald-700" />
             Valoración recibida
           </div>
-          <p className="mt-4 text-base leading-8 text-slate-700">
+
+          <div className="mt-5">
+            <CsatScaleStrip score={comment.csatScore} />
+          </div>
+
+          <p className="mt-5 text-base leading-8 text-slate-700">
             “{comment.message}”
           </p>
+        </section>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl bg-[#f7f8f4] p-4">
-              <MessageSquareText size={17} className="text-slate-400" />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Tipo
-              </p>
-              <div className="mt-2">
-                <FeedbackTypeBadge type={comment.feedbackType} />
-              </div>
-            </div>
-            <div className="rounded-2xl bg-[#f7f8f4] p-4">
-              <UserRound size={17} className="text-slate-400" />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Cliente
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-800">
-                {comment.customer}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-[#f7f8f4] p-4">
-              <MapPin size={17} className="text-slate-400" />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Punto
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-800">
-                {comment.branch}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-[#f7f8f4] p-4">
-              <Clock3 size={17} className="text-slate-400" />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Recibido
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-800">
-                {comment.receivedAt}
-              </p>
-            </div>
-          </div>
-
-          <CsatScaleStrip score={comment.csatScore} />
-        </div>
-
-        <aside className="rounded-[1.25rem] border border-slate-100 p-5">
+        <section className="rounded-[1.25rem] border border-slate-100 p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <ClipboardCheck size={17} className="text-emerald-700" />
-            Lectura operativa
+            Seguimiento
           </div>
 
-          <div className="mt-5 space-y-4">
+          <div className="mt-5 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Señal
-              </p>
-              <p className="mt-1 text-sm leading-6 text-slate-700">
-                {csatStyle.meaning}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Acción sugerida
-              </p>
-              <p className="mt-1 text-sm leading-6 text-slate-700">
-                {csatStyle.action}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Responsable sugerido
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-800">
-                {responsibility}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Estado actual
-              </p>
-              <div className="mt-2">
-                <StatusBadge status={currentStatus} />
-              </div>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                {statusDescriptions[currentStatus]}
-              </p>
-            </div>
-          </div>
-
-          {canManageFollowUp ? (
-            <>
-              <div className="mt-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Cambiar estado
-                </p>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {commentStatuses.map((status) => {
-                    const isSelected = status === currentStatus;
-
-                    return (
-                      <button
-                        key={status}
-                        type="button"
-                        disabled={isSaving}
-                        onClick={() => onStatusChange(status)}
-                        aria-pressed={isSelected}
-                        className={[
-                          "rounded-full border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60",
-                          isSelected
-                            ? "border-emerald-900 bg-emerald-900 text-white"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900",
-                        ].join(" ")}
-                      >
-                        {status}
-                      </button>
-                    );
-                  })}
+              {canManageFollowUp ? (
+                <div className="rounded-2xl border border-slate-100 p-4">
+                  <label className="block">
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Estado de seguimiento
+                    </span>
+                    <select
+                      value={currentStatus}
+                      disabled={isSaving}
+                      onChange={(event) =>
+                        onStatusChange(event.target.value as CommentStatus)
+                      }
+                      className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label="Cambiar estado de seguimiento"
+                    >
+                      {commentStatuses.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    {statusDescriptions[currentStatus]}
+                  </p>
+                  {canEscalate ? (
+                    <button
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => onStatusChange("Escalado")}
+                      className="mt-3 w-full rounded-full bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Escalar a responsable
+                    </button>
+                  ) : null}
+                  {isSaving ? (
+                    <p className="mt-2 text-xs font-semibold text-slate-500">
+                      Guardando seguimiento...
+                    </p>
+                  ) : null}
                 </div>
-              </div>
+              ) : (
+                <p className="rounded-2xl border border-slate-100 p-4 text-sm leading-6 text-slate-500">
+                  Solo gerencia puede actualizar el seguimiento de este caso.
+                </p>
+              )}
+            </div>
 
-              <div className="mt-6">
-                <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                    Registrar acción
+            {canManageFollowUp ? (
+              <div>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Acción tomada
+                  </p>
+                  <span className="text-xs font-medium text-slate-400">
+                    Opcional
                   </span>
+                </div>
+                <label className="block">
+                  <span className="sr-only">Registrar acción tomada</span>
                   <textarea
                     value={followUpNote}
                     onChange={(event) =>
                       onFollowUpNoteChange?.(event.target.value)
                     }
                     maxLength={1000}
-                    placeholder="Describe qué hizo el equipo: llamada, compensación, visita a mesa..."
+                    placeholder="Ej. Se habló con el equipo, se contactó al cliente o se ajustó el turno."
                     className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                   />
                 </label>
@@ -831,41 +887,14 @@ function CommentDetailView({
                   Guardar nota de seguimiento
                 </button>
               </div>
+            ) : null}
+          </div>
 
-              <div className="mt-6 flex flex-col gap-2">
-                <button
-                  type="button"
-                  disabled={isSaving}
-                  onClick={() => onStatusChange(suggestedStatus)}
-                  className="rounded-full bg-emerald-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSaving
-                    ? "Guardando..."
-                    : currentStatus === "Nuevo"
-                      ? "Marcar en revisión"
-                      : "Guardar estado"}
-                </button>
-                <button
-                  type="button"
-                  disabled={isSaving}
-                  onClick={() => onStatusChange("Escalado")}
-                  className="rounded-full border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Escalar seguimiento
-                </button>
-              </div>
-
-              {saveError ? (
-                <p className="mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
-                  {saveError}
-                </p>
-              ) : null}
-            </>
-          ) : (
-            <p className="mt-6 text-sm leading-6 text-slate-500">
-              Solo gerencia puede actualizar el seguimiento de este caso.
+          {saveError ? (
+            <p className="mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+              {saveError}
             </p>
-          )}
+          ) : null}
 
           {followUpActions.length > 0 ? (
             <div className="mt-6">
@@ -909,7 +938,7 @@ function CommentDetailView({
               </ul>
             </div>
           ) : null}
-        </aside>
+        </section>
       </div>
     </article>
   );

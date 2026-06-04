@@ -2,35 +2,122 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearRateLimitStore } from "@/lib/security/rate-limit";
 
-const maybeSingle = vi.fn(
+const branchRows = vi.fn(
   async (): Promise<{
-    data: { id: string; name: string; organization_id: string } | null;
+    data: Array<{ id: string; name: string; organization_id: string }>;
     error: null;
-  }> => ({ data: null, error: null }),
+  }> => ({ data: [], error: null }),
 );
+const insertFeedback = vi.fn(async () => ({ error: null }));
+const selectFeedbackId = vi.fn(async () => ({
+  data: { id: "11111111-1111-4111-8111-111111111111" },
+  error: null,
+}));
+const insertAiAnalysis = vi.fn(async () => ({ error: null }));
+const selectBranchById = vi.fn(async () => ({
+  data: {
+    id: "11111111-1111-4111-8111-111111111111",
+    name: "Demo Cafe",
+    organization_id: "22222222-2222-4222-8222-222222222222",
+    slug: "demo-cafe",
+  },
+  error: null,
+}));
 
-vi.mock("@/lib/supabase/service", () => ({
-  createServiceClient: vi.fn(() => ({
-    from: vi.fn(() => ({
+function createTableMock(table: string) {
+  if (table === "branches") {
+    return {
+      select: vi.fn((columns?: string) => {
+        if (columns === "*") {
+          return {
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: selectBranchById,
+              })),
+            })),
+          };
+        }
+
+        return {
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              limit: branchRows,
+            })),
+          })),
+        };
+      }),
+    };
+  }
+
+  if (table === "feedback_submissions") {
+    return {
+      insert: vi.fn((payload: unknown) => {
+        insertFeedback(payload);
+        return {
+          select: vi.fn(() => ({
+            single: selectFeedbackId,
+          })),
+        };
+      }),
+    };
+  }
+
+  if (table === "ai_analyses") {
+    return {
+      insert: insertAiAnalysis,
+    };
+  }
+
+  if (table === "notifications") {
+    return {
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           eq: vi.fn(() => ({
-            maybeSingle,
+            maybeSingle: vi.fn(async () => ({ data: null, error: null })),
           })),
         })),
       })),
-    })),
+      insert: vi.fn(async () => ({ error: null })),
+    };
+  }
+
+  return {};
+}
+
+vi.mock("@/lib/supabase/service", () => ({
+  createServiceClient: vi.fn(() => ({
+    from: vi.fn(createTableMock),
   })),
 }));
 
 import { POST } from "./route";
+
+function configureServiceEnv() {
+  vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://sayit.supabase.co");
+  vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role");
+}
 
 describe("POST /api/feedback", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
     clearRateLimitStore();
-    maybeSingle.mockResolvedValue({ data: null, error: null });
+    branchRows.mockResolvedValue({ data: [], error: null });
+    insertFeedback.mockClear();
+    insertAiAnalysis.mockClear();
+    selectFeedbackId.mockResolvedValue({
+      data: { id: "11111111-1111-4111-8111-111111111111" },
+      error: null,
+    });
+    selectBranchById.mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        name: "Demo Cafe",
+        organization_id: "22222222-2222-4222-8222-222222222222",
+        slug: "demo-cafe",
+      },
+      error: null,
+    });
   });
 
   it("rejects invalid feedback payloads", async () => {
@@ -51,8 +138,8 @@ describe("POST /api/feedback", () => {
   });
 
   it("returns 404 when branch is missing", async () => {
-    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role");
-    maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    configureServiceEnv();
+    branchRows.mockResolvedValueOnce({ data: [], error: null });
 
     const response = await POST(
       new Request("http://localhost/api/feedback", {
@@ -71,11 +158,105 @@ describe("POST /api/feedback", () => {
     expect(response.status).toBe(404);
   });
 
+  it("returns 409 when a public slug matches multiple active branches", async () => {
+    configureServiceEnv();
+    branchRows.mockResolvedValueOnce({
+      data: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          name: "Demo Cafe",
+          organization_id: "22222222-2222-4222-8222-222222222222",
+        },
+        {
+          id: "33333333-3333-4333-8333-333333333333",
+          name: "Demo Cafe",
+          organization_id: "44444444-4444-4444-8444-444444444444",
+        },
+      ],
+      error: null,
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/feedback", {
+        method: "POST",
+        body: JSON.stringify({
+          branchSlug: "demo-cafe",
+          type: "complaint",
+          csatScore: 2,
+          emotionScore: 2,
+          freeText: "El servicio fue lento y nadie me dio una respuesta clara.",
+          consentAccepted: true,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(409);
+    expect(insertFeedback).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 instead of accepting feedback when persistence is not configured", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/feedback", {
+        method: "POST",
+        body: JSON.stringify({
+          branchSlug: "demo-cafe",
+          type: "suggestion",
+          csatScore: 4,
+          emotionScore: 4,
+          freeText: "Seria bueno tener una fila rapida para pedidos pequenos.",
+          consentAccepted: true,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+  });
+
+  it("returns 500 when feedback persistence fails", async () => {
+    configureServiceEnv();
+    branchRows.mockResolvedValueOnce({
+      data: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          name: "Demo Cafe",
+          organization_id: "22222222-2222-4222-8222-222222222222",
+        },
+      ],
+      error: null,
+    });
+    selectFeedbackId.mockResolvedValueOnce({
+      data: null,
+      error: { message: "insert failed" },
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/feedback", {
+        method: "POST",
+        body: JSON.stringify({
+          branchSlug: "demo-cafe",
+          type: "suggestion",
+          csatScore: 4,
+          emotionScore: 4,
+          freeText: "Seria bueno tener una fila rapida para pedidos pequenos.",
+          consentAccepted: true,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+  });
+
   it("accepts a valid feedback payload", async () => {
     vi.stubEnv("HUGGINGFACE_API_TOKEN", "");
-    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role");
-    maybeSingle.mockResolvedValueOnce({
-      data: { id: "branch-1", name: "Demo Cafe", organization_id: "org-1" },
+    configureServiceEnv();
+    branchRows.mockResolvedValueOnce({
+      data: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          name: "Demo Cafe",
+          organization_id: "22222222-2222-4222-8222-222222222222",
+        },
+      ],
       error: null,
     });
 
@@ -105,9 +286,15 @@ describe("POST /api/feedback", () => {
 
   it("returns sentiment analysis when Hugging Face is configured", async () => {
     vi.stubEnv("HUGGINGFACE_API_TOKEN", "test-token");
-    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role");
-    maybeSingle.mockResolvedValueOnce({
-      data: { id: "branch-1", name: "Demo Cafe", organization_id: "org-1" },
+    configureServiceEnv();
+    branchRows.mockResolvedValueOnce({
+      data: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          name: "Demo Cafe",
+          organization_id: "22222222-2222-4222-8222-222222222222",
+        },
+      ],
       error: null,
     });
     vi.stubGlobal(
@@ -150,9 +337,15 @@ describe("POST /api/feedback", () => {
   });
 
   it("rate limits repeated feedback submissions from the same IP", async () => {
-    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role");
-    maybeSingle.mockResolvedValue({
-      data: { id: "branch-1", name: "Demo Cafe", organization_id: "org-1" },
+    configureServiceEnv();
+    branchRows.mockResolvedValue({
+      data: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          name: "Demo Cafe",
+          organization_id: "22222222-2222-4222-8222-222222222222",
+        },
+      ],
       error: null,
     });
 

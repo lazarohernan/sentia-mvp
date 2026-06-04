@@ -8,7 +8,7 @@ import {
   updatePermissionProfileInputSchema,
 } from "@/domain/organizations/permission-profiles";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv, hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -21,7 +21,7 @@ function canManageRoles(role: string) {
   return role === "owner" || role === "manager";
 }
 
-async function authorizeRoleManagement(request: Request) {
+async function authorizeRoleManagement() {
   if (!hasSupabasePublicEnv() || !hasSupabaseServiceEnv()) {
     return NextResponse.json({ error: "Supabase no esta configurado." }, { status: 503 });
   }
@@ -48,7 +48,7 @@ async function authorizeRoleManagement(request: Request) {
 }
 
 export async function GET(_request: Request, context: RouteContext) {
-  const auth = await authorizeRoleManagement(_request);
+  const auth = await authorizeRoleManagement();
   if (auth instanceof NextResponse) {
     return auth;
   }
@@ -78,7 +78,7 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:organization-roles:update",
     key: getClientIpFromHeaders(request.headers),
     limit: 40,
@@ -92,7 +92,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
-  const auth = await authorizeRoleManagement(request);
+  const auth = await authorizeRoleManagement();
   if (auth instanceof NextResponse) {
     return auth;
   }
@@ -132,7 +132,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:organization-roles:delete",
     key: getClientIpFromHeaders(request.headers),
     limit: 20,
@@ -146,7 +146,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     );
   }
 
-  const auth = await authorizeRoleManagement(request);
+  const auth = await authorizeRoleManagement();
   if (auth instanceof NextResponse) {
     return auth;
   }

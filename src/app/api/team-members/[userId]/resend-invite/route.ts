@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { resendTeamMemberInvite } from "@/domain/organizations/resend-team-member-invite";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv, hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -28,7 +28,7 @@ export async function POST(request: Request, { params }: ResendInviteRouteProps)
   const { userId: targetUserId } = await params;
   const clientIp = getClientIpFromHeaders(request.headers);
 
-  const ipRateLimit = consumeRateLimit({
+  const ipRateLimit = await consumeDistributedRateLimit({
     namespace: "api:team-members:resend:ip",
     key: clientIp,
     limit: 8,
@@ -64,7 +64,7 @@ export async function POST(request: Request, { params }: ResendInviteRouteProps)
     );
   }
 
-  const actorTargetRateLimit = consumeRateLimit({
+  const actorTargetRateLimit = await consumeDistributedRateLimit({
     namespace: "api:team-members:resend:actor-target",
     key: `${user.id}:${targetUserId}`,
     limit: 1,
@@ -78,7 +78,7 @@ export async function POST(request: Request, { params }: ResendInviteRouteProps)
     );
   }
 
-  const targetRateLimit = consumeRateLimit({
+  const targetRateLimit = await consumeDistributedRateLimit({
     namespace: "api:team-members:resend:target",
     key: targetUserId,
     limit: 3,
@@ -99,6 +99,7 @@ export async function POST(request: Request, { params }: ResendInviteRouteProps)
       organizationId: membership.organizationId,
       targetUserId,
       siteUrl,
+      actorBranchId: membership.branchId,
     });
 
     return NextResponse.json(result);
@@ -114,6 +115,10 @@ export async function POST(request: Request, { params }: ResendInviteRouteProps)
     }
 
     if (message.includes("propietario")) {
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
+
+    if (message.includes("permisos")) {
       return NextResponse.json({ error: message }, { status: 403 });
     }
 

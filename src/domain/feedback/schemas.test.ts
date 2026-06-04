@@ -15,6 +15,11 @@ describe("feedbackSubmissionSchema", () => {
       csatScore: 2,
       emotionScore: 2,
       freeText: "  La comida   llego fria y nadie resolvio el problema.  ",
+      clarification: {
+        question: "  ¿Qué fue lo principal?  ",
+        category: "product_quality",
+        detail: "  La sopa llegó fría.  ",
+      },
       contact: {
         name: " Ana   Lopez ",
         phone: "+50499999999",
@@ -25,6 +30,8 @@ describe("feedbackSubmissionSchema", () => {
     expect(result.branchSlug).toBe("cafe-centro");
     expect(result.type).toBe("complaint");
     expect(result.freeText).toBe("La comida llego fria y nadie resolvio el problema.");
+    expect(result.clarification?.category).toBe("product_quality");
+    expect(result.clarification?.detail).toBe("La sopa llegó fría.");
     expect(result.contact?.name).toBe("Ana Lopez");
   });
 
@@ -54,11 +61,15 @@ describe("aiAnalysisSchema", () => {
       entities: ["mesero", "sopa"],
       summary: "Cliente reporta mala atencion y comida fria.",
       recommendedAction: "Contactar al cliente y revisar el turno.",
+      informationQuality: "sufficient",
+      followUpQuestion: undefined,
+      followUpAnswer: "Motivo principal: product_quality.",
       keywords: ["atencion", "comida fria"],
     });
 
     expect(result.urgency).toBe("high");
     expect(result.category).toBe("customer_service");
+    expect(result.informationQuality).toBe("sufficient");
   });
 });
 

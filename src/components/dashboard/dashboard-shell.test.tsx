@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getDashboardDateRange } from "@/domain/dashboard/date-range";
@@ -49,12 +49,52 @@ function mockFetchWithSignedQrLink(
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
 
+    if (handler) {
+      const response = await handler(input, init);
+
+      if (response.status !== 404) {
+        return response;
+      }
+    }
+
     if (url.includes("/qr-link")) {
       return Response.json({
         path: "/q/test-token",
         url: "http://localhost/q/test-token",
-        feedbackPath: "/feedback/mall-norte",
+        feedbackPath: "/feedback/mall-norte?token=test-token",
       });
+    }
+
+    return Response.json({}, { status: 404 });
+  });
+}
+
+function mockFetchWithPermissionProfile(
+  handler?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+) {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+
+    if (url.includes("/api/team-members/")) {
+      return Response.json({
+        permissionProfileId: "profile-1",
+        permissionProfileName: "Gerente de tienda",
+        role: "collaborator",
+      });
+    }
+
+    if (url.includes("/api/organization/roles")) {
+      return Response.json(
+        {
+          profile: {
+            id: "profile-1",
+            name: "Gerente de tienda",
+            permissions: ["summary", "comments"],
+            memberCount: 0,
+          },
+        },
+        { status: 201 },
+      );
     }
 
     if (handler) {
@@ -78,11 +118,11 @@ describe("DashboardShell", () => {
     render(<DashboardShell />);
 
     expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
-    expect(screen.getByText("Configuracion pendiente")).toBeInTheDocument();
+    expect(screen.getByText("Resumen operativo sin datos")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Abrir asistente IA de alertas" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Resumen" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Comentarios" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Alertas" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Valoraciones" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Resolver alerta" })).not.toBeInTheDocument();
     expect(screen.queryByText("1,248")).not.toBeInTheDocument();
   });
 
@@ -92,14 +132,57 @@ describe("DashboardShell", () => {
     render(<DashboardShell />);
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Comentarios" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Valoraciones" })).toBeInTheDocument();
     });
 
     expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Configuracion pendiente")).not.toBeInTheDocument();
+    expect(screen.queryByText("Resumen operativo sin datos")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Resumen" })).not.toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Buscar comentario")).toBeInTheDocument();
-    expect(screen.getByText("Sin comentarios registrados")).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Buscar valoración")).not.toBeInTheDocument();
+    expect(screen.getByText("Sin valoraciones registradas")).toBeInTheDocument();
+  });
+
+  it("renders intelligence reports as an independent view from the hash", async () => {
+    window.history.pushState({}, "", "/dashboard#informes");
+
+    render(
+      <DashboardShell
+        dashboardData={buildShellDashboardData({
+          comments: [
+            {
+              id: "feedback-1",
+              customer: "Cliente anónimo",
+              business: "Feedback",
+              branch: "Centro",
+              feedbackType: "Observación",
+              sentiment: "Neutral",
+              csatScore: 3,
+              status: "Nuevo",
+              message: "Estuvo excelente, pero hay mucho que mejorar.",
+              receivedAt: "Hace 5 min",
+              analysisSummary:
+                "El cliente reconoce aspectos positivos pero no especifica la causa.",
+              recommendedAction:
+                "Pedir motivo principal cuando la valoración sea ambigua.",
+              dominantPattern: "Experiencia general",
+              analysisConfidence: "85% confianza",
+              analysisModel: "gpt-4.1-mini",
+            },
+          ],
+        })}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Informes" })).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Preparación del informe mensual")).toBeInTheDocument();
+    expect(screen.getByText(/listo/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Faltan/i).length).toBeGreaterThan(0);
+    expect(screen.getByText("Patrones por establecimiento")).toBeInTheDocument();
+    expect(screen.getByText("Entrega por defecto")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
   });
 
   it("changes dashboard content when a menu item is clicked", () => {
@@ -148,8 +231,10 @@ describe("DashboardShell", () => {
     expect(
       screen.getByRole("dialog", { name: "Panel de notificaciones" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Norte requiere atención")).toBeInTheDocument();
-    expect(screen.getByText("Nuevo comentario con riesgo")).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog", { name: "Panel de notificaciones" });
+
+    expect(within(dialog).getByText("Norte requiere atención")).toBeInTheDocument();
+    expect(within(dialog).getByText("Nuevo comentario con riesgo")).toBeInTheDocument();
   });
 
   it("redirects the legacy qr hash to sucursales", async () => {
@@ -182,6 +267,7 @@ describe("DashboardShell", () => {
 
   it("creates permission profiles from management settings", async () => {
     window.history.pushState({}, "", "/dashboard#permisos");
+    vi.stubGlobal("fetch", mockFetchWithPermissionProfile());
 
     render(<DashboardShell canManageTeam actorRole="owner" />);
 
@@ -197,12 +283,16 @@ describe("DashboardShell", () => {
     fireEvent.click(screen.getByLabelText("Alertas"));
     fireEvent.click(screen.getByRole("button", { name: "Crear rol" }));
 
-    expect(screen.getByText("Gerente de tienda")).toBeInTheDocument();
-    expect(screen.getByText("Resumen, Valoraciones, Alertas")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Gerente de tienda")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Resumen, Valoraciones")).toBeInTheDocument();
   });
 
   it("assigns a created permission profile to a team member", async () => {
     window.history.pushState({}, "", "/dashboard#permisos");
+    vi.stubGlobal("fetch", mockFetchWithPermissionProfile());
 
     render(
       <DashboardShell
@@ -235,15 +325,25 @@ describe("DashboardShell", () => {
     fireEvent.click(screen.getByLabelText("Valoraciones"));
     fireEvent.click(screen.getByRole("button", { name: "Crear rol" }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Equipo" }));
-    fireEvent.click(screen.getByRole("button", { name: "Ver detalle de Ana Lopez" }));
+    await waitFor(() => {
+      expect(screen.getByText("Gerente de tienda")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Equipo", pressed: false }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("Ver detalle de Ana Lopez")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Ver detalle de Ana Lopez"));
 
     fireEvent.change(screen.getByLabelText("Rol"), {
       target: { value: "profile-1" },
     });
 
-    expect(screen.getByText("Gerente de tienda")).toBeInTheDocument();
-    expect(screen.getByText("Resumen, Valoraciones")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByText("Gerente de tienda").length).toBeGreaterThan(0);
+      expect(screen.getByText("Resumen, Valoraciones")).toBeInTheDocument();
+    });
   });
 
   it("opens the branch QR panel from sucursales", async () => {
@@ -307,7 +407,7 @@ describe("DashboardShell", () => {
       expect(screen.getByText("/q/test-token")).toBeInTheDocument();
     });
 
-    expect(screen.getByRole("heading", { name: "Codigo QR" })).toBeInTheDocument();
+    expect(screen.getByText("Codigo QR")).toBeInTheDocument();
     expect(screen.getAllByText("Mall Norte").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: /abrir formulario/i })).toHaveAttribute(
       "href",
@@ -360,7 +460,7 @@ describe("DashboardShell", () => {
           return Response.json({
             path: "/q/test-token-centro",
             url: "http://localhost/q/test-token-centro",
-            feedbackPath: "/feedback/centro",
+            feedbackPath: "/feedback/centro?token=test-token-centro",
           });
         }
 
@@ -390,7 +490,7 @@ describe("DashboardShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ver codigo QR" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Codigo QR" })).toBeInTheDocument();
+      expect(screen.getByText("Codigo QR")).toBeInTheDocument();
     });
 
     await waitFor(() => {

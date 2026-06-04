@@ -34,6 +34,7 @@ import { DashboardEmptyState } from "./dashboard-empty-state";
 import { DashboardExecutiveHeader } from "./dashboard-executive-header";
 import { DashboardFloatingNav } from "./dashboard-floating-nav";
 import type { DashboardNavView } from "./dashboard-floating-nav";
+import { DashboardIntelligenceReports } from "./dashboard-intelligence-reports";
 import { DashboardBranchQrPanel } from "./dashboard-branch-qr-panel";
 import { DashboardOrganizationSettingsPanel } from "./dashboard-organization-settings-panel";
 import { DashboardPermissionProfilesPanel } from "./dashboard-permission-profiles-panel";
@@ -51,7 +52,7 @@ function getDashboardViewFromHash(): DashboardNavView {
 
   const hash = window.location.hash.replace("#", "");
 
-  if (hash === "comentarios" || hash === "alertas") {
+  if (hash === "comentarios" || hash === "alertas" || hash === "informes") {
     return hash;
   }
 
@@ -612,6 +613,7 @@ export function DashboardShell({
   const canManageFollowUp = actorRole === "owner" || actorRole === "manager";
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [qrBranchId, setQrBranchId] = useState<string | null>(null);
+  const [selectedQrBranch, setSelectedQrBranch] = useState<Branch | null>(null);
   const liveBranches = [
     ...createdBranches.filter((branch) => !serverBranchIds.has(branch.id)),
     ...serverBranches.map((branch) => updatedBranches[branch.id] ?? branch),
@@ -653,12 +655,14 @@ export function DashboardShell({
     setActiveView("gestion");
     setActiveOperationsTab(tab);
     setQrBranchId(null);
+    setSelectedQrBranch(null);
   }
 
   function openBranchQrView(branch: Branch) {
     setActiveView("gestion");
     setActiveOperationsTab("sucursales");
     setQrBranchId(branch.id);
+    setSelectedQrBranch(branch);
     window.history.pushState({}, "", "/dashboard#sucursales");
   }
 
@@ -716,7 +720,7 @@ export function DashboardShell({
           attentionItems: dashboardData.attentionItems,
         });
   const qrBranch = qrBranchId
-    ? liveBranches.find((branch) => branch.id === qrBranchId) ?? null
+    ? liveBranches.find((branch) => branch.id === qrBranchId) ?? selectedQrBranch
     : null;
 
   return (
@@ -764,6 +768,16 @@ export function DashboardShell({
             </DashboardSection>
           ) : null}
 
+          {activeView === "informes" ? (
+            <DashboardSection
+              id="informes"
+              title="Informes"
+              description="Resumen inteligente de patrones, calidad de información y acciones por establecimiento."
+            >
+              <DashboardIntelligenceReports dashboardData={dashboardData} />
+            </DashboardSection>
+          ) : null}
+
           {activeView === "gestion" ? (
             <section id="gestion" className="scroll-mt-28">
               <div className="mb-5">
@@ -786,7 +800,10 @@ export function DashboardShell({
                     branch={qrBranch}
                     organizationName={liveOrganizationName}
                     dashboardData={dashboardData}
-                    onBack={() => setQrBranchId(null)}
+                    onBack={() => {
+                      setQrBranchId(null);
+                      setSelectedQrBranch(null);
+                    }}
                   />
                 ) : (
                 <DashboardSection

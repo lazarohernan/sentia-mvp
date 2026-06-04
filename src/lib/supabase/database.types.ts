@@ -336,6 +336,9 @@ export interface Database {
           category: string | null;
           summary: string | null;
           recommended_action: string | null;
+          information_quality: "sufficient" | "partial" | "insufficient" | null;
+          follow_up_question: string | null;
+          follow_up_answer: string | null;
           keywords: string[];
           entities: string[];
           model_used: string | null;
@@ -352,6 +355,9 @@ export interface Database {
           category?: string | null;
           summary?: string | null;
           recommended_action?: string | null;
+          information_quality?: "sufficient" | "partial" | "insufficient" | null;
+          follow_up_question?: string | null;
+          follow_up_answer?: string | null;
           keywords?: string[];
           entities?: string[];
           model_used?: string | null;

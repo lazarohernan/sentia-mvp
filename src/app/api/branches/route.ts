@@ -7,7 +7,7 @@ import {
 } from "@/domain/branches/schemas";
 import { getOrganizationByUser } from "@/domain/organizations/repository";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
-import { getClientIpFromHeaders, consumeRateLimit } from "@/lib/security/rate-limit";
+import { getClientIpFromHeaders, consumeDistributedRateLimit } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 async function getAuthenticatedOrganization() {
@@ -47,7 +47,7 @@ async function getAuthenticatedOrganization() {
 
 export async function POST(request: Request) {
   const clientIp = getClientIpFromHeaders(request.headers);
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:branches:create",
     key: clientIp,
     limit: 10,
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   const clientIp = getClientIpFromHeaders(request.headers);
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:branches:update",
     key: clientIp,
     limit: 20,

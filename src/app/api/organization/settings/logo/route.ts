@@ -5,7 +5,7 @@ import {
   getOrganizationByUser,
   getOrganizationMembershipByUser,
 } from "@/domain/organizations/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,7 +15,7 @@ function canManageOrganizationSettings(role: string) {
 
 export async function POST(request: Request) {
   const clientIp = getClientIpFromHeaders(request.headers);
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeDistributedRateLimit({
     namespace: "api:organization:settings:logo",
     key: clientIp,
     limit: 10,
