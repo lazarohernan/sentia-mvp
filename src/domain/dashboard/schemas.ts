@@ -68,6 +68,9 @@ export type DashboardCommentRow = {
   analysisSummary?: string;
   recommendedAction?: string;
   dominantPattern?: string;
+  informationQuality?: "sufficient" | "partial" | "insufficient";
+  followUpQuestion?: string;
+  followUpAnswer?: string;
   analysisConfidence?: string;
   analysisModel?: string;
 };

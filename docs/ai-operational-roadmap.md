@@ -186,6 +186,34 @@ La plataforma debe distinguir entre analizar comentarios y tener suficiente base
 
 **Problema:** El equipo puede dejar valoraciones criticas sin seguimiento o responder de forma inconsistente.
 
+### Implementado: captura adaptativa de contexto
+
+Se agrego una capa de captura inteligente antes de guardar una valoracion. El objetivo no es hacer un chat, sino pedir una sola precision cuando el comentario abierto no explica bien la causa.
+
+**Como funciona:**
+
+- El formulario evalua el comentario en el momento.
+- Si el texto ya tiene motivo claro, se envia sin pasos extra.
+- Si el texto es breve o ambiguo, se muestra una pregunta corta.
+- El cliente puede elegir el motivo principal: atencion, espera, producto, limpieza, precio, ambiente, pago u otro.
+- Puede agregar un detalle opcional.
+- La API vuelve a validar la informacion y OpenAI recibe el comentario junto con esa precision.
+- El analisis guarda `information_quality`, `follow_up_question` y `follow_up_answer` en `ai_analyses`.
+
+**Ejemplo:**
+
+```text
+Comentario: "Estuvo bien, pero hay mucho que mejorar."
+Pregunta: "Que fue lo principal que podria mejorar?"
+Respuesta: "Espera. La fila se sintio lenta al pagar."
+```
+
+Con esa precision, el informe mensual ya no cuenta el comentario como una opinion vaga. Lo puede sumar como senal util de tiempo de espera para esa sucursal.
+
+**Criterio de producto:**
+
+La captura adaptativa debe aparecer solo cuando aporta valor. Una pregunta extra tiene costo para el cliente, por eso el limite inicial es una sola pregunta. Si el cliente no responde la precision, el comentario se acepta igual, pero se clasifica como informacion parcial o insuficiente para informes.
+
 **Implementacion:**
 
 - Para feedback critico, sugerir:

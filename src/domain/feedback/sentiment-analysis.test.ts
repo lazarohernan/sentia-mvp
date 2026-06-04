@@ -109,6 +109,8 @@ describe("analyzeFeedbackSentiment", () => {
               "En Mall Norte se esta repitiendo un problema de espera durante horas pico. La causa mas probable es falta de apoyo en caja.",
             recommendedAction:
               "Conviene reforzar caja entre 5pm y 8pm y revisar si los comentarios por espera bajan en los proximos 14 dias.",
+            informationQuality: "sufficient",
+            followUpQuestion: null,
             keywords: ["espera", "fila"],
             entities: ["Mall Norte"],
             confidence: 0.86,
@@ -136,6 +138,7 @@ describe("analyzeFeedbackSentiment", () => {
       sentiment: "negative",
       urgency: "critical",
       category: "wait_time",
+      informationQuality: "sufficient",
       keywords: ["espera", "fila"],
       entities: ["Mall Norte"],
     });
@@ -166,6 +169,8 @@ describe("analyzeFeedbackSentiment", () => {
               "- Problema: los clientes mencionan mesas sucias.\n- Causa probable: limpieza insuficiente entre turnos.",
             recommendedAction:
               "1. Revisar el cierre de mesas.\n2. Asignar una persona responsable durante hora pico.",
+            informationQuality: "partial",
+            followUpQuestion: "¿Qué parte de la limpieza fue el problema principal?",
             keywords: ["limpieza"],
             entities: [],
             confidence: 0.79,
@@ -188,6 +193,7 @@ describe("analyzeFeedbackSentiment", () => {
     expect(result.analysis.summary).not.toContain("\n");
     expect(result.analysis.summary).not.toContain("- ");
     expect(result.analysis.recommendedAction).not.toContain("1.");
+    expect(result.analysis.followUpQuestion).not.toContain("¿ ");
   });
 });
 

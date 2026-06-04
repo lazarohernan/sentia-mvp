@@ -1,5 +1,19 @@
+import { z } from "zod";
+
 import type { AiAnalysis, FeedbackSubmission, FeedbackType } from "./schemas";
-import { aiAnalysisSchema, feedbackCategorySchema, sentimentSchema, urgencySchema } from "./schemas";
+import {
+  aiAnalysisSchema,
+  feedbackCategorySchema,
+  informationQualitySchema,
+  sentimentSchema,
+  urgencySchema,
+} from "./schemas";
+import {
+  assessInformationQuality,
+  buildAnalysisText,
+  enrichAnalysisWithInformationQuality,
+  getClarificationAnswer,
+} from "./adaptive-follow-up";
 
 /** Modelo desplegado en HF Inference (serverless). robertuito no está disponible en ese proveedor. */
 export const defaultHuggingFaceSentimentModel =
@@ -262,11 +276,14 @@ const openAiTriageSchema = aiAnalysisSchema
     category: true,
     summary: true,
     recommendedAction: true,
+    informationQuality: true,
+    followUpQuestion: true,
     keywords: true,
     entities: true,
   })
   .extend({
     confidence: aiAnalysisSchema.shape.polarity.min(0).max(1),
+    followUpQuestion: z.string().nullable().optional(),
   });
 
 function buildOpenAIResponseSchema() {
@@ -279,6 +296,8 @@ function buildOpenAIResponseSchema() {
       "category",
       "summary",
       "recommendedAction",
+      "informationQuality",
+      "followUpQuestion",
       "keywords",
       "entities",
       "confidence",
@@ -306,6 +325,17 @@ function buildOpenAIResponseSchema() {
         description:
           "Siguiente accion concreta en español, escrita en lenguaje natural.",
       },
+      informationQuality: {
+        type: "string",
+        enum: informationQualitySchema.options,
+        description:
+          "sufficient si el texto explica motivo claro; partial si hay señal pero falta detalle; insufficient si no permite actuar.",
+      },
+      followUpQuestion: {
+        type: ["string", "null"],
+        description:
+          "Una sola pregunta breve para pedir contexto si la informacion es partial o insufficient. Null si no hace falta.",
+      },
       keywords: {
         type: "array",
         items: { type: "string" },
@@ -324,18 +354,26 @@ function buildOpenAIResponseSchema() {
 }
 
 function buildOpenAITriagePrompt(submission: FeedbackSubmission): string {
+  const initialAssessment = assessInformationQuality(submission);
+  const clarification = getClarificationAnswer(submission);
+
   return [
     "Analiza esta valoracion de cliente para una plataforma operativa multi-sucursal.",
     "Devuelve JSON estricto con la clasificacion interna.",
     "El resumen visible debe ser un parrafo natural, breve y comprensible; no uses checklist, markdown, bullets ni tono robotico.",
     "La accion recomendada debe ser concreta y ejecutable por un gerente de sucursal.",
+    "Tambien evalua si el comentario sirve para un informe semanal o mensual. En Honduras y Latinoamerica muchas respuestas son coloquiales; no castigues el tono, solo la falta de causa concreta.",
+    "Si falta contexto, propone una sola pregunta corta y amable para pedir motivo principal. No hagas interrogatorio.",
     "",
     `Sucursal: ${submission.branchSlug}`,
     `Tipo: ${submission.type}`,
     `CSAT: ${submission.csatScore ?? "no informado"}`,
     `NPS: ${submission.npsScore ?? "no informado"}`,
     `Emocion: ${submission.emotionScore}/5`,
+    `Calidad heuristica inicial: ${initialAssessment.quality}`,
+    `Motivo heuristico: ${initialAssessment.reason}`,
     `Comentario: ${submission.freeText}`,
+    clarification ? `Precision adicional: ${clarification}` : "Precision adicional: no enviada",
   ].join("\n");
 }
 
@@ -396,6 +434,9 @@ function mapOpenAITriageToAnalysis(
         : 0;
   const summary = normalizeVisibleAiLanguage(parsed.data.summary);
   const recommendedAction = normalizeVisibleAiLanguage(parsed.data.recommendedAction);
+  const followUpQuestion = parsed.data.followUpQuestion
+    ? normalizeVisibleAiLanguage(parsed.data.followUpQuestion)
+    : undefined;
   const analysis = aiAnalysisSchema.parse({
     sentiment: parsed.data.sentiment,
     polarity: Number(polarity.toFixed(3)),
@@ -404,6 +445,9 @@ function mapOpenAITriageToAnalysis(
     category: parsed.data.category,
     summary,
     recommendedAction,
+    informationQuality: parsed.data.informationQuality,
+    followUpQuestion,
+    followUpAnswer: getClarificationAnswer(submission) ?? undefined,
     keywords: parsed.data.keywords,
     entities: parsed.data.entities,
   });
@@ -526,7 +570,7 @@ export function mapLabelToAnalysis(
   const { category, keywords } = deriveOperationalSignals(submission);
   const categoryLabel = getCategoryLabel(category);
 
-  return {
+  return enrichAnalysisWithInformationQuality({
     sentiment,
     polarity: Number(polarity.toFixed(3)),
     emotionScore: submission.emotionScore,
@@ -544,7 +588,7 @@ export function mapLabelToAnalysis(
         ? "Revisar el caso con gerencia de turno y definir seguimiento."
         : "Registrar la señal y observar si se repite en la sucursal.",
     keywords,
-  };
+  }, submission);
 }
 
 async function parseHuggingFaceError(response: Response): Promise<string> {
@@ -630,7 +674,7 @@ export async function analyzeFeedbackSentiment(
     };
   }
 
-  const inputText = prepareTextForHuggingFace(submission.freeText);
+  const inputText = prepareTextForHuggingFace(buildAnalysisText(submission));
 
   if (inputText.length < 8) {
     return {

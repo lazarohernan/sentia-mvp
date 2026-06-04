@@ -120,7 +120,7 @@ async function getAnalysesForFeedback(
     const { data, error } = await queryClient
       .from("ai_analyses")
       .select(
-        "submission_id, status, sentiment, urgency, category, summary, recommended_action, model_used, confidence",
+        "submission_id, status, sentiment, urgency, category, summary, recommended_action, information_quality, follow_up_question, follow_up_answer, model_used, confidence",
       )
       .in("submission_id", chunk)
       .order("created_at", { ascending: false });
@@ -327,6 +327,9 @@ function buildComments(feedback: FeedbackRecord[]): DashboardCommentRow[] {
       dominantPattern: analysis?.category
         ? getCategoryLabel(analysis.category)
         : undefined,
+      informationQuality: analysis?.information_quality ?? undefined,
+      followUpQuestion: analysis?.follow_up_question ?? undefined,
+      followUpAnswer: analysis?.follow_up_answer ?? undefined,
       analysisConfidence: confidence,
       analysisModel: analysis?.model_used ?? undefined,
     };

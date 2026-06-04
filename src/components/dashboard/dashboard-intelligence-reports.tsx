@@ -46,6 +46,18 @@ type ReportReadiness = {
 };
 
 function classifyInformationQuality(comment: DashboardCommentRow): InformationQuality {
+  if (comment.informationQuality === "sufficient") {
+    return "suficiente";
+  }
+
+  if (comment.informationQuality === "partial") {
+    return "parcial";
+  }
+
+  if (comment.informationQuality === "insufficient") {
+    return "insuficiente";
+  }
+
   const normalizedMessage = comment.message.toLowerCase();
   const wordCount = normalizedMessage.split(/\s+/).filter(Boolean).length;
   const genericSignals = [

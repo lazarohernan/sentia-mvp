@@ -12,6 +12,7 @@ import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
+import { assessInformationQuality } from "@/domain/feedback/adaptive-follow-up";
 import type { FeedbackType } from "@/domain/feedback/schemas";
 
 const csatOptions: Array<{
@@ -69,11 +70,25 @@ type FeedbackFormProps = {
   branchToken?: string;
 };
 
-type FormStatus = "idle" | "submitting" | "success" | "error";
+type FormStatus = "idle" | "clarifying" | "submitting" | "success" | "error";
+
+const clarificationOptions = [
+  { value: "customer_service", label: "Atención" },
+  { value: "wait_time", label: "Espera" },
+  { value: "product_quality", label: "Producto" },
+  { value: "cleanliness", label: "Limpieza" },
+  { value: "price", label: "Precio" },
+  { value: "environment", label: "Ambiente" },
+  { value: "billing", label: "Pago" },
+  { value: "other", label: "Otro" },
+] as const;
+
+type ClarificationCategory = (typeof clarificationOptions)[number]["value"];
 
 export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackFormProps) {
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [clarificationQuestion, setClarificationQuestion] = useState<string | null>(null);
 
   useEffect(() => {
     void fetch("/api/feedback/scan", {
@@ -85,7 +100,6 @@ export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackForm
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus("submitting");
     setErrorMessage(null);
 
     const form = event.currentTarget;
@@ -93,6 +107,10 @@ export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackForm
     const csatScore = Number(formData.get("csatScore"));
     const freeText = String(formData.get("freeText") ?? "").trim();
     const consentAccepted = formData.get("consentAccepted") === "on";
+    const clarificationCategory = String(
+      formData.get("clarificationCategory") ?? "",
+    ).trim();
+    const clarificationDetail = String(formData.get("clarificationDetail") ?? "").trim();
 
     if (!Number.isInteger(csatScore) || csatScore < 1 || csatScore > 5) {
       setStatus("error");
@@ -112,6 +130,42 @@ export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackForm
       return;
     }
 
+    const qualityAssessment = assessInformationQuality({
+      freeText,
+      csatScore,
+      emotionScore: csatScore,
+      clarification:
+        clarificationCategory || clarificationDetail
+          ? {
+              question: clarificationQuestion ?? undefined,
+              category: clarificationCategory
+                ? (clarificationCategory as ClarificationCategory)
+                : undefined,
+              detail: clarificationDetail || undefined,
+            }
+          : undefined,
+    });
+
+    if (
+      qualityAssessment.shouldAsk &&
+      !clarificationCategory &&
+      !clarificationDetail &&
+      status !== "clarifying"
+    ) {
+      setStatus("clarifying");
+      setClarificationQuestion(
+        qualityAssessment.question ?? "¿Qué fue lo principal de tu experiencia?",
+      );
+      return;
+    }
+
+    if (status === "clarifying" && !clarificationCategory && !clarificationDetail) {
+      setErrorMessage("Selecciona un motivo o agrega un detalle corto para continuar.");
+      return;
+    }
+
+    setStatus("submitting");
+
     try {
       const response = await fetch("/api/feedback", {
         method: "POST",
@@ -124,6 +178,14 @@ export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackForm
           csatScore,
           emotionScore: csatScore,
           freeText,
+          clarification:
+            clarificationCategory || clarificationDetail
+              ? {
+                  question: clarificationQuestion ?? qualityAssessment.question,
+                  category: clarificationCategory || undefined,
+                  detail: clarificationDetail || undefined,
+                }
+              : undefined,
           consentAccepted: true,
         }),
       });
@@ -143,6 +205,7 @@ export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackForm
       }
 
       setStatus("success");
+      setClarificationQuestion(null);
       form.reset();
     } catch {
       setStatus("error");
@@ -223,6 +286,41 @@ export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackForm
         />
       </label>
 
+      {status === "clarifying" ? (
+        <div className="mt-5 rounded-lg border border-sky-100 bg-sky-50/70 p-4">
+          <p className="text-sm font-semibold text-slate-900">
+            {clarificationQuestion}
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {clarificationOptions.map((option) => (
+              <label
+                key={option.value}
+                className="flex min-h-10 cursor-pointer items-center justify-center rounded-md border border-white bg-white px-3 text-center text-sm font-semibold text-slate-600 shadow-sm transition has-checked:border-sky-400 has-checked:bg-sky-100 has-checked:text-sky-950"
+              >
+                <input
+                  className="sr-only"
+                  type="radio"
+                  name="clarificationCategory"
+                  value={option.value}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+          <label className="mt-3 block">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              Detalle opcional
+            </span>
+            <textarea
+              name="clarificationDetail"
+              maxLength={500}
+              className="mt-2 min-h-20 w-full rounded-md border border-sky-100 bg-white px-3 py-3 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-300/30 disabled:bg-slate-50"
+              placeholder="Ejemplo: la espera fue larga, el producto llegó frío o la atención fue confusa."
+            />
+          </label>
+        </div>
+      ) : null}
+
       <label className="mt-4 flex items-start gap-3 text-sm text-slate-600">
         <input
           type="checkbox"
@@ -249,7 +347,11 @@ export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackForm
         disabled={status === "submitting"}
       >
         <Send size={16} aria-hidden="true" />
-        {status === "submitting" ? "Enviando..." : "Enviar comentario"}
+        {status === "submitting"
+          ? "Enviando..."
+          : status === "clarifying"
+            ? "Enviar con ese detalle"
+            : "Enviar comentario"}
       </button>
     </form>
   );

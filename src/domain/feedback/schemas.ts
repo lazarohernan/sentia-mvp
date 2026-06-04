@@ -28,6 +28,12 @@ export const feedbackCategorySchema = z.enum([
   "other",
 ]);
 
+export const informationQualitySchema = z.enum([
+  "sufficient",
+  "partial",
+  "insufficient",
+]);
+
 export const listeningLevelSchema = z.enum([
   "download",
   "debate",
@@ -81,6 +87,24 @@ export const feedbackSubmissionSchema = z.object({
     .string()
     .transform(sanitizeTextInput)
     .pipe(z.string().min(8).max(2_000)),
+  clarification: z
+    .object({
+      question: z
+        .string()
+        .optional()
+        .transform(sanitizeOptionalTextInput)
+        .refine((value) => value === undefined || value.length <= 180),
+      category: feedbackCategorySchema.optional(),
+      detail: z
+        .string()
+        .optional()
+        .transform(sanitizeOptionalTextInput)
+        .refine((value) => value === undefined || value.length <= 500),
+    })
+    .refine((value) => value.category || value.detail, {
+      message: "Clarification requires a category or detail.",
+    })
+    .optional(),
   contact: feedbackContactSchema.optional(),
   consentAccepted: z.literal(true),
 });
@@ -103,6 +127,17 @@ export const aiAnalysisSchema = z.object({
     .string()
     .transform(sanitizeTextInput)
     .pipe(z.string().min(8).max(320)),
+  informationQuality: informationQualitySchema.default("partial"),
+  followUpQuestion: z
+    .string()
+    .optional()
+    .transform(sanitizeOptionalTextInput)
+    .refine((value) => value === undefined || value.length <= 180),
+  followUpAnswer: z
+    .string()
+    .optional()
+    .transform(sanitizeOptionalTextInput)
+    .refine((value) => value === undefined || value.length <= 700),
   keywords: z
     .array(z.string().transform(sanitizeTextInput).pipe(z.string().min(1).max(80)))
     .max(12)
@@ -129,5 +164,6 @@ export const listeningEventSchema = z.object({
 export type FeedbackType = z.infer<typeof feedbackTypeSchema>;
 export type FeedbackSubmission = z.infer<typeof feedbackSubmissionSchema>;
 export type AiAnalysis = z.infer<typeof aiAnalysisSchema>;
+export type InformationQuality = z.infer<typeof informationQualitySchema>;
 export type ListeningLevel = z.infer<typeof listeningLevelSchema>;
 export type ListeningEvent = z.infer<typeof listeningEventSchema>;
