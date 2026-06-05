@@ -14,6 +14,13 @@ export const dashboardMockComments: DashboardCommentRow[] = [
     status: "Nuevo",
     message: "La atencion fue rapida y resolvieron mi solicitud sin vueltas.",
     receivedAt: "Hace 12 min",
+    analysisSummary:
+      "El cliente destaca una atención rápida y una resolución clara; conviene identificar qué práctica del equipo permitió esa experiencia.",
+    recommendedAction:
+      "Reconocer al equipo y usar este caso como referencia para replicar el protocolo de atención.",
+    dominantPattern: "Atención al cliente",
+    analysisConfidence: "91% confianza",
+    analysisModel: "gpt-4.1-mini",
   },
   {
     id: "comentario-002",
