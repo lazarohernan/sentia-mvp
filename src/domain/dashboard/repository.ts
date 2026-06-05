@@ -178,18 +178,36 @@ function buildBranchHealth(
 }
 
 function buildComments(feedback: FeedbackRecord[]): DashboardCommentRow[] {
-  return feedback.slice(0, 50).map((record) => ({
-    id: record.id,
-    customer: record.contact_name || "Cliente anónimo",
-    business: "Feedback",
-    branch: record.branches?.name ?? "Sucursal",
-    feedbackType: getFeedbackTypeLabel(record.type),
-    sentiment: getSentiment(record),
-    csatScore: record.csat_score ?? record.emotion_score,
-    status: getStatus(record),
-    message: record.free_text,
-    receivedAt: formatRelativeDate(record.created_at),
-  }));
+  return feedback.slice(0, 50).map((record) => {
+    const analysis = getAnalysis(record);
+    const confidence =
+      typeof analysis?.confidence === "number"
+        ? `${Math.round(analysis.confidence * 100)}% confianza`
+        : undefined;
+
+    return {
+      id: record.id,
+      customer: record.contact_name || "Cliente anónimo",
+      business: "Feedback",
+      branch: record.branches?.name ?? "Sucursal",
+      feedbackType: getFeedbackTypeLabel(record.type),
+      sentiment: getSentiment(record),
+      csatScore: record.csat_score ?? record.emotion_score,
+      status: getStatus(record),
+      message: record.free_text,
+      receivedAt: formatRelativeDate(record.created_at),
+      analysisSummary: analysis?.summary ?? undefined,
+      recommendedAction: analysis?.recommended_action ?? undefined,
+      dominantPattern: analysis?.category
+        ? getCategoryLabel(analysis.category)
+        : undefined,
+      informationQuality: analysis?.information_quality ?? undefined,
+      followUpQuestion: analysis?.follow_up_question ?? undefined,
+      followUpAnswer: analysis?.follow_up_answer ?? undefined,
+      analysisConfidence: confidence,
+      analysisModel: analysis?.model_used ?? undefined,
+    };
+  });
 }
 
 function buildRecentComments(feedback: FeedbackRecord[]): DashboardRecentComment[] {
@@ -367,7 +385,7 @@ export async function getDashboardSummaryData(
           created_at,
           branch_id,
           branches!inner(id, name, slug, organization_id),
-          ai_analyses(status, sentiment, urgency, category, summary, recommended_action, confidence)
+          ai_analyses(status, sentiment, urgency, category, summary, recommended_action, information_quality, follow_up_question, follow_up_answer, model_used, confidence)
         `,
       )
       .in("branch_id", branchIds)

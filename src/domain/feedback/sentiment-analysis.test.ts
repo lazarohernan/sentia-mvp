@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { FeedbackSubmission } from "./schemas";
 import {
+  analyzeFeedbackSentiment,
   getCategoryLabel,
   mapLabelToAnalysis,
   normalizeHuggingFaceOutput,
@@ -16,6 +17,11 @@ const baseSubmission: FeedbackSubmission = {
   freeText: "El servicio fue lento y nadie me atendió bien en caja.",
   consentAccepted: true,
 };
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
 
 describe("normalizeHuggingFaceOutput", () => {
   it("parses nested beto response format", () => {
@@ -71,6 +77,123 @@ describe("mapLabelToAnalysis", () => {
 
     expect(analysis.sentiment).toBe("positive");
     expect(analysis.urgency).toBe("low");
+  });
+
+  it("derives operational category and keywords from Spanish feedback text", () => {
+    const analysis = mapLabelToAnalysis("NEG", 0.89, {
+      ...baseSubmission,
+      type: "complaint",
+      csatScore: 2,
+      freeText: "Espere 40 minutos en caja y la fila no avanzaba.",
+    });
+
+    expect(analysis.category).toBe("wait_time");
+    expect(analysis.keywords).toContain("espera");
+    expect(analysis.summary).toContain("Tiempo de espera");
+  });
+});
+
+describe("analyzeFeedbackSentiment", () => {
+  it("uses OpenAI alert triage with structured output and natural visible language when configured", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-openai-key");
+    vi.stubEnv("OPENAI_ALERTS_MODEL", "gpt-4.1-mini");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          output_text: JSON.stringify({
+            sentiment: "negative",
+            urgency: "critical",
+            category: "wait_time",
+            summary:
+              "En Mall Norte se esta repitiendo un problema de espera durante horas pico. La causa mas probable es falta de apoyo en caja.",
+            recommendedAction:
+              "Conviene reforzar caja entre 5pm y 8pm y revisar si los comentarios por espera bajan en los proximos 14 dias.",
+            informationQuality: "sufficient",
+            followUpQuestion: null,
+            keywords: ["espera", "fila"],
+            entities: ["Mall Norte"],
+            confidence: 0.86,
+          }),
+        }),
+      ),
+    );
+
+    const result = await analyzeFeedbackSentiment({
+      ...baseSubmission,
+      branchSlug: "mall-norte",
+      freeText: "Espere 40 minutos y la fila no avanzaba.",
+    });
+
+    expect(result.status).toBe("completed");
+
+    if (result.status !== "completed") {
+      throw new Error("Expected completed OpenAI triage.");
+    }
+
+    expect(result.model).toBe("gpt-4.1-mini");
+    expect(result.rawLabel).toBe("openai_triage");
+    expect(result.confidence).toBe(0.86);
+    expect(result.analysis).toMatchObject({
+      sentiment: "negative",
+      urgency: "critical",
+      category: "wait_time",
+      informationQuality: "sufficient",
+      keywords: ["espera", "fila"],
+      entities: ["Mall Norte"],
+    });
+    expect(result.analysis.summary).toContain("problema de espera");
+    expect(result.analysis.summary).not.toContain("- ");
+    expect(fetch).toHaveBeenCalledWith(
+      "https://api.openai.com/v1/responses",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer test-openai-key",
+        }),
+      }),
+    );
+  });
+
+  it("normalizes accidental checklist formatting from OpenAI before storing visible language", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-openai-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          output_text: JSON.stringify({
+            sentiment: "negative",
+            urgency: "high",
+            category: "cleanliness",
+            summary:
+              "- Problema: los clientes mencionan mesas sucias.\n- Causa probable: limpieza insuficiente entre turnos.",
+            recommendedAction:
+              "1. Revisar el cierre de mesas.\n2. Asignar una persona responsable durante hora pico.",
+            informationQuality: "partial",
+            followUpQuestion: "¿Qué parte de la limpieza fue el problema principal?",
+            keywords: ["limpieza"],
+            entities: [],
+            confidence: 0.79,
+          }),
+        }),
+      ),
+    );
+
+    const result = await analyzeFeedbackSentiment({
+      ...baseSubmission,
+      freeText: "Las mesas estaban sucias y nadie limpio antes de sentarnos.",
+    });
+
+    expect(result.status).toBe("completed");
+
+    if (result.status !== "completed") {
+      throw new Error("Expected completed OpenAI triage.");
+    }
+
+    expect(result.analysis.summary).not.toContain("\n");
+    expect(result.analysis.summary).not.toContain("- ");
+    expect(result.analysis.recommendedAction).not.toContain("1.");
+    expect(result.analysis.followUpQuestion).not.toContain("¿ ");
   });
 });
 

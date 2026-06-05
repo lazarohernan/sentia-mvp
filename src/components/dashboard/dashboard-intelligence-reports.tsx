@@ -35,6 +35,18 @@ type BranchReport = {
 };
 
 function classifyInformationQuality(comment: DashboardCommentRow): InformationQuality {
+  if (comment.informationQuality === "sufficient") {
+    return "suficiente";
+  }
+
+  if (comment.informationQuality === "partial") {
+    return "parcial";
+  }
+
+  if (comment.informationQuality === "insufficient") {
+    return "insuficiente";
+  }
+
   const normalizedMessage = comment.message.toLowerCase();
   const wordCount = normalizedMessage.split(/\s+/).filter(Boolean).length;
   const genericSignals = [
@@ -72,7 +84,7 @@ function getMostCommonPattern(comments: DashboardCommentRow[]) {
   const counts = new Map<string, number>();
 
   for (const comment of comments) {
-    const pattern = comment.feedbackType ?? "Experiencia general";
+    const pattern = comment.dominantPattern ?? comment.feedbackType ?? "Experiencia general";
     counts.set(pattern, (counts.get(pattern) ?? 0) + 1);
   }
 
