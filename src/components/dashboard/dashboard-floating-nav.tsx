@@ -7,6 +7,7 @@ import {
   ChartNoAxesCombined,
   ChevronDown,
   Ear,
+  FileText,
   Home,
   MessageSquareText,
   SlidersHorizontal,
@@ -35,6 +36,7 @@ export type DashboardNavView =
   | "resumen"
   | "comentarios"
   | "alertas"
+  | "informes"
   | "gestion"
   | "escucha";
 
@@ -57,6 +59,12 @@ const navItems = [
     href: "/dashboard#alertas",
     view: "alertas",
     icon: Bell,
+  },
+  {
+    label: "Informes",
+    href: "/dashboard#informes",
+    view: "informes",
+    icon: FileText,
   },
   {
     label: "Gestión",
