@@ -613,6 +613,7 @@ export function DashboardShell({
   const canManageFollowUp = actorRole === "owner" || actorRole === "manager";
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [qrBranchId, setQrBranchId] = useState<string | null>(null);
+  const [selectedQrBranch, setSelectedQrBranch] = useState<Branch | null>(null);
   const liveBranches = [
     ...createdBranches.filter((branch) => !serverBranchIds.has(branch.id)),
     ...serverBranches.map((branch) => updatedBranches[branch.id] ?? branch),
@@ -654,12 +655,14 @@ export function DashboardShell({
     setActiveView("gestion");
     setActiveOperationsTab(tab);
     setQrBranchId(null);
+    setSelectedQrBranch(null);
   }
 
   function openBranchQrView(branch: Branch) {
     setActiveView("gestion");
     setActiveOperationsTab("sucursales");
     setQrBranchId(branch.id);
+    setSelectedQrBranch(branch);
     window.history.pushState({}, "", "/dashboard#sucursales");
   }
 
@@ -717,7 +720,7 @@ export function DashboardShell({
           attentionItems: dashboardData.attentionItems,
         });
   const qrBranch = qrBranchId
-    ? liveBranches.find((branch) => branch.id === qrBranchId) ?? null
+    ? liveBranches.find((branch) => branch.id === qrBranchId) ?? selectedQrBranch
     : null;
 
   return (
@@ -797,7 +800,10 @@ export function DashboardShell({
                     branch={qrBranch}
                     organizationName={liveOrganizationName}
                     dashboardData={dashboardData}
-                    onBack={() => setQrBranchId(null)}
+                    onBack={() => {
+                      setQrBranchId(null);
+                      setSelectedQrBranch(null);
+                    }}
                   />
                 ) : (
                 <DashboardSection

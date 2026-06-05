@@ -7,8 +7,8 @@ import {
   ChartNoAxesCombined,
   ChevronDown,
   Ear,
-  FileText,
   Home,
+  FileText,
   MessageSquareText,
   SlidersHorizontal,
 } from "lucide-react";
@@ -43,12 +43,6 @@ export type DashboardNavView =
 const navItems = [
   { label: "Resumen", href: "/dashboard", view: "resumen", icon: Home },
   {
-    label: "Escucha",
-    href: "/dashboard/escucha",
-    view: "escucha",
-    icon: Ear,
-  },
-  {
     label: "Valoraciones",
     href: "/dashboard#comentarios",
     view: "comentarios",
@@ -65,6 +59,12 @@ const navItems = [
     href: "/dashboard#informes",
     view: "informes",
     icon: FileText,
+  },
+  {
+    label: "Escucha",
+    href: "/dashboard/escucha",
+    view: "escucha",
+    icon: Ear,
   },
   {
     label: "Gestión",
@@ -286,7 +286,7 @@ export function DashboardFloatingNav({
   return (
     <nav
       aria-label="Navegacion principal"
-      className="fixed inset-x-0 top-4 z-50 mx-auto w-[calc(100%-2rem)] max-w-5xl rounded-full border border-white/75 bg-[rgb(255_255_255/0.78)] px-2.5 py-2 shadow-float ring-1 ring-[rgb(2_44_34/0.06)] backdrop-blur-2xl"
+      className="fixed inset-x-0 top-4 z-50 mx-auto w-[calc(100%-2rem)] max-w-6xl rounded-full border border-white/75 bg-[rgb(255_255_255/0.78)] px-2.5 py-2 shadow-float ring-1 ring-[rgb(2_44_34/0.06)] backdrop-blur-2xl"
     >
       <div className="flex items-center justify-between gap-3">
         <Link

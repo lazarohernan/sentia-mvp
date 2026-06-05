@@ -30,8 +30,19 @@ type BranchReport = {
   usefulResponses: number;
   targetUsefulResponses: number;
   readinessPercent: number;
+  missingUsefulResponses: number;
   topPattern: string;
   recommendedAction: string;
+};
+
+type ReportReadiness = {
+  percent: number;
+  usefulResponses: number;
+  targetUsefulResponses: number;
+  missingUsefulResponses: number;
+  qualityPercent: number;
+  headline: string;
+  detail: string;
 };
 
 function classifyInformationQuality(comment: DashboardCommentRow): InformationQuality {
@@ -62,7 +73,7 @@ function classifyInformationQuality(comment: DashboardCommentRow): InformationQu
   const hasGenericSignal = genericSignals.some((signal) =>
     normalizedMessage.includes(signal),
   );
-  const pattern = comment.feedbackType.toLowerCase();
+  const pattern = comment.dominantPattern?.toLowerCase() ?? "";
   const genericPattern =
     pattern === "" ||
     pattern.includes("general") ||
@@ -84,7 +95,7 @@ function getMostCommonPattern(comments: DashboardCommentRow[]) {
   const counts = new Map<string, number>();
 
   for (const comment of comments) {
-    const pattern = comment.dominantPattern ?? comment.feedbackType ?? "Experiencia general";
+    const pattern = comment.dominantPattern ?? "Experiencia general";
     counts.set(pattern, (counts.get(pattern) ?? 0) + 1);
   }
 
@@ -115,19 +126,28 @@ function buildBranchReports(comments: DashboardCommentRow[]): BranchReport[] {
         (comment) => comment.sentiment === "Positivo",
       ).length;
       const neutral = branchComments.length - risk - positive;
+      const targetUsefulResponses = MONTHLY_USEFUL_RESPONSES_PER_BRANCH;
       const usefulResponses = qualityCounts.suficiente + qualityCounts.parcial * 0.5;
       const readinessPercent = Math.min(
         100,
-        Math.round((usefulResponses / MONTHLY_USEFUL_RESPONSES_PER_BRANCH) * 100),
+        Math.round((usefulResponses / targetUsefulResponses) * 100),
       );
       const missingUsefulResponses = Math.max(
         0,
-        Math.ceil(MONTHLY_USEFUL_RESPONSES_PER_BRANCH - usefulResponses),
+        Math.ceil(targetUsefulResponses - usefulResponses),
       );
+      const topPattern = getMostCommonPattern(branchComments);
       const recommendedAction =
         missingUsefulResponses > 0
-          ? `Faltan ${missingUsefulResponses} valoraciones con motivo claro para un informe mensual más sólido. Pedir motivo principal cuando la valoración sea ambigua.`
+          ? `Faltan ${missingUsefulResponses} valoraciones con motivo claro para un informe mensual más sólido.`
           : "Base suficiente para resumir patrones mensuales con mejor confianza.";
+      const captureAction =
+        qualityCounts.insuficiente + qualityCounts.parcial >
+        Math.ceil(branchComments.length / 2)
+          ? " Pedir motivo principal cuando la valoración sea ambigua."
+          : risk > positive
+            ? " Revisar casos de riesgo y documentar acciones de seguimiento."
+            : " Usar los comentarios positivos para repetir prácticas del equipo.";
 
       return {
         branch,
@@ -139,10 +159,11 @@ function buildBranchReports(comments: DashboardCommentRow[]): BranchReport[] {
         partial: qualityCounts.parcial,
         sufficient: qualityCounts.suficiente,
         usefulResponses,
-        targetUsefulResponses: MONTHLY_USEFUL_RESPONSES_PER_BRANCH,
+        targetUsefulResponses,
         readinessPercent,
-        topPattern: getMostCommonPattern(branchComments),
-        recommendedAction,
+        missingUsefulResponses,
+        topPattern,
+        recommendedAction: `${recommendedAction}${captureAction}`,
       };
     })
     .sort((left, right) => {
@@ -151,6 +172,60 @@ function buildBranchReports(comments: DashboardCommentRow[]): BranchReport[] {
       if (qualityDiff !== 0) return qualityDiff;
       return right.risk - left.risk;
     });
+}
+
+function buildReportReadiness(
+  comments: DashboardCommentRow[],
+  reports: BranchReport[],
+): ReportReadiness {
+  if (comments.length === 0 || reports.length === 0) {
+    return {
+      percent: 0,
+      usefulResponses: 0,
+      targetUsefulResponses: MIN_MONTHLY_USEFUL_RESPONSES,
+      missingUsefulResponses: MIN_MONTHLY_USEFUL_RESPONSES,
+      qualityPercent: 0,
+      headline: "Sin base suficiente para informe mensual.",
+      detail:
+        "Aún faltan valoraciones con motivo claro para explicar patrones por establecimiento.",
+    };
+  }
+
+  const usefulResponses = reports.reduce(
+    (sum, report) => sum + report.usefulResponses,
+    0,
+  );
+  const targetUsefulResponses = Math.max(
+    MIN_MONTHLY_USEFUL_RESPONSES,
+    reports.length * MONTHLY_USEFUL_RESPONSES_PER_BRANCH,
+  );
+  const clearResponses = reports.reduce((sum, report) => sum + report.sufficient, 0);
+  const qualityPercent = Math.round((clearResponses / comments.length) * 100);
+  const volumePercent = Math.min(100, (usefulResponses / targetUsefulResponses) * 100);
+  const percent = Math.min(
+    100,
+    Math.round(volumePercent * 0.7 + qualityPercent * 0.3),
+  );
+  const missingUsefulResponses = Math.max(
+    0,
+    Math.ceil(targetUsefulResponses - usefulResponses),
+  );
+
+  return {
+    percent,
+    usefulResponses,
+    targetUsefulResponses,
+    missingUsefulResponses,
+    qualityPercent,
+    headline:
+      percent >= 80
+        ? "Base mensual casi lista para un informe defendible."
+        : "Todavía falta información clara para un mejor informe mensual.",
+    detail:
+      missingUsefulResponses > 0
+        ? `Faltan ${missingUsefulResponses} valoraciones útiles: respuestas con motivo claro, categoría específica o detalle accionable.`
+        : "La base actual permite explicar patrones por sucursal con buena claridad.",
+  };
 }
 
 function MetricCard({
@@ -180,33 +255,14 @@ export function DashboardIntelligenceReports({
 }) {
   const comments = dashboardData?.comments ?? [];
   const reports = buildBranchReports(comments);
-  const usefulResponses = reports.reduce(
-    (sum, report) => sum + report.usefulResponses,
-    0,
-  );
-  const clearResponses = reports.reduce((sum, report) => sum + report.sufficient, 0);
-  const targetUsefulResponses = Math.max(
-    MIN_MONTHLY_USEFUL_RESPONSES,
-    reports.length * MONTHLY_USEFUL_RESPONSES_PER_BRANCH,
-  );
-  const qualityPercent =
-    comments.length > 0 ? Math.round((clearResponses / comments.length) * 100) : 0;
-  const volumePercent = Math.min(100, (usefulResponses / targetUsefulResponses) * 100);
-  const readinessPercent = Math.min(
-    100,
-    Math.round(volumePercent * 0.7 + qualityPercent * 0.3),
-  );
-  const missingUsefulResponses = Math.max(
-    0,
-    Math.ceil(targetUsefulResponses - usefulResponses),
-  );
+  const readiness = buildReportReadiness(comments, reports);
   const priorityBranch = reports[0];
   const weakDataCount = reports.reduce(
     (sum, report) => sum + report.partial + report.insufficient,
     0,
   );
   const riskCount = comments.filter((comment) => comment.sentiment === "Riesgo").length;
-  const analyzedCount = comments.length;
+  const analyzedCount = comments.filter((comment) => comment.analysisModel).length;
 
   return (
     <div className="space-y-5">
@@ -218,19 +274,20 @@ export function DashboardIntelligenceReports({
               Preparación del informe mensual
             </div>
             <h3 className="mt-3 text-2xl font-semibold tracking-normal text-slate-950">
-              {readinessPercent}% listo
+              {readiness.percent}% listo
             </h3>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              {missingUsefulResponses > 0
-                ? `Faltan ${missingUsefulResponses} valoraciones útiles para explicar mejor los patrones por sucursal.`
+              {readiness.missingUsefulResponses > 0
+                ? `Faltan ${readiness.missingUsefulResponses} valoraciones útiles para explicar mejor los patrones por sucursal.`
                 : "La base actual permite preparar un informe mensual con buena claridad."}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                {usefulResponses.toFixed(1)} / {targetUsefulResponses} respuestas útiles
+                {readiness.usefulResponses.toFixed(1)} /{" "}
+                {readiness.targetUsefulResponses} respuestas útiles
               </span>
               <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                {qualityPercent}% claridad
+                {readiness.qualityPercent}% claridad
               </span>
               {priorityBranch ? (
                 <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
@@ -246,7 +303,7 @@ export function DashboardIntelligenceReports({
                 Avance
               </p>
               <p className="text-sm font-semibold text-slate-700">
-                {readinessPercent}%
+                {readiness.percent}%
               </p>
             </div>
             <div
@@ -255,11 +312,11 @@ export function DashboardIntelligenceReports({
               aria-label="Preparación del informe mensual"
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-valuenow={readinessPercent}
+              aria-valuenow={readiness.percent}
             >
               <div
                 className="h-full rounded-full bg-slate-700 transition-all"
-                style={{ width: `${readinessPercent}%` }}
+                style={{ width: `${readiness.percent}%` }}
               />
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-500">
@@ -439,7 +496,7 @@ export function DashboardIntelligenceReports({
             Panel interno
           </h3>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Esta vista es la fuente principal antes de generar PDF o correos.
+            Esta vista será la fuente principal antes de generar PDF o correos.
           </p>
         </article>
         <article className="rounded-[1.15rem] border border-slate-200 bg-white p-5">
