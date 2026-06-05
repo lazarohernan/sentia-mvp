@@ -58,6 +58,22 @@ export async function getActiveBranchBySlug(
   return data as Branch;
 }
 
+export async function getActiveBranchesBySlug(
+  client: Client,
+  slug: string,
+  limit = 2,
+): Promise<Branch[]> {
+  const { data, error } = await client
+    .from("branches")
+    .select("*")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .limit(limit);
+
+  if (error || !data) return [];
+  return data as Branch[];
+}
+
 export async function getActiveBranchById(
   client: Client,
   branchId: string,

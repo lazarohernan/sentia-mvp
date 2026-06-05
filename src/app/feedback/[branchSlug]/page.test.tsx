@@ -9,7 +9,8 @@ vi.mock("@/lib/supabase/service", () => ({
 }));
 
 vi.mock("@/domain/branches/repository", () => ({
-  getActiveBranchBySlug: vi.fn(),
+  getActiveBranchById: vi.fn(),
+  getActiveBranchesBySlug: vi.fn(),
 }));
 
 vi.mock("@/domain/organizations/organization-settings", () => ({
@@ -22,21 +23,23 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-import { getActiveBranchBySlug } from "@/domain/branches/repository";
+import { getActiveBranchesBySlug } from "@/domain/branches/repository";
 import { getOrganizationSettingsById } from "@/domain/organizations/organization-settings";
 import FeedbackPage from "./page";
 
 describe("FeedbackPage", () => {
   beforeEach(() => {
-    vi.mocked(getActiveBranchBySlug).mockResolvedValue({
-      id: "branch-1",
-      organization_id: "org-1",
-      name: "Cafeteria Centro",
-      slug: "cafeteria-centro",
-      address: null,
-      is_active: true,
-      created_at: "2026-01-01T00:00:00.000Z",
-    });
+    vi.mocked(getActiveBranchesBySlug).mockResolvedValue([
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        organization_id: "org-1",
+        name: "Cafeteria Centro",
+        slug: "cafeteria-centro",
+        address: null,
+        is_active: true,
+        created_at: "2026-01-01T00:00:00.000Z",
+      },
+    ]);
     vi.mocked(getOrganizationSettingsById).mockResolvedValue({
       id: "org-1",
       name: "Cafe Central",

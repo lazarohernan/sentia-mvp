@@ -65,7 +65,9 @@ function inferFeedbackType(csatScore: number): FeedbackType {
 }
 
 type FeedbackFormProps = {
+  branchId?: string;
   branchSlug: string;
+  branchToken?: string;
 };
 
 type FormStatus = "idle" | "clarifying" | "submitting" | "success" | "error";
@@ -83,7 +85,7 @@ const clarificationOptions = [
 
 type ClarificationCategory = (typeof clarificationOptions)[number]["value"];
 
-export function FeedbackForm({ branchSlug }: FeedbackFormProps) {
+export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackFormProps) {
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [clarificationQuestion, setClarificationQuestion] = useState<string | null>(null);
@@ -170,6 +172,8 @@ export function FeedbackForm({ branchSlug }: FeedbackFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           branchSlug,
+          branchId,
+          branchToken,
           type: inferFeedbackType(csatScore),
           csatScore,
           emotionScore: csatScore,

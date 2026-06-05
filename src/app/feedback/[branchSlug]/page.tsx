@@ -1,8 +1,16 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
-import { getActiveBranchBySlug } from "@/domain/branches/repository";
+import {
+  getActiveBranchById,
+  getActiveBranchesBySlug,
+} from "@/domain/branches/repository";
+import {
+  getBranchIdFromQrToken,
+  verifyBranchQrTokenSignature,
+} from "@/domain/branches/qr-token";
 import { getOrganizationSettingsById } from "@/domain/organizations/organization-settings";
+import { hasQrSigningSecret } from "@/lib/security/qr-signing";
 import { hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -14,6 +22,9 @@ type FeedbackPageProps = {
   params: Promise<{
     branchSlug: string;
   }>;
+  searchParams?: Promise<{
+    token?: string;
+  }>;
 };
 
 async function getSiteHost() {
@@ -21,15 +32,43 @@ async function getSiteHost() {
   return headerStore.get("x-forwarded-host") ?? headerStore.get("host");
 }
 
-export default async function FeedbackPage({ params }: FeedbackPageProps) {
+export default async function FeedbackPage({ params, searchParams }: FeedbackPageProps) {
   const { branchSlug } = await params;
+  const { token } = (await searchParams) ?? {};
 
   if (!hasSupabaseServiceEnv()) {
     notFound();
   }
 
   const client = createServiceClient();
-  const branch = await getActiveBranchBySlug(client, branchSlug);
+  const branch = token
+    ? await (async () => {
+        if (!hasQrSigningSecret()) {
+          return null;
+        }
+
+        const branchId = getBranchIdFromQrToken(token);
+        if (!branchId) {
+          return null;
+        }
+
+        const tokenBranch = await getActiveBranchById(client, branchId);
+        if (!tokenBranch) {
+          return null;
+        }
+
+        const isValid = verifyBranchQrTokenSignature(token, {
+          branchId: tokenBranch.id,
+          branchSlug: tokenBranch.slug,
+          organizationId: tokenBranch.organization_id,
+        });
+
+        return isValid ? tokenBranch : null;
+      })()
+    : await (async () => {
+        const matches = await getActiveBranchesBySlug(client, branchSlug);
+        return matches.length === 1 ? matches[0] : null;
+      })();
 
   if (!branch) {
     notFound();
@@ -49,7 +88,11 @@ export default async function FeedbackPage({ params }: FeedbackPageProps) {
           siteHost={siteHost}
         />
 
-        <FeedbackForm branchSlug={branch.slug} />
+        <FeedbackForm
+          branchId={branch.id}
+          branchSlug={branch.slug}
+          branchToken={token}
+        />
 
         <FeedbackPlatformFooter />
       </section>
