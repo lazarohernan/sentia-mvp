@@ -59,7 +59,7 @@ describe("adaptive feedback follow-up", () => {
         detail: "La atención fue confusa en caja.",
       },
       consentAccepted: true,
-    })).toContain("customer_service");
+    })).toContain("Atención");
     expect(text).toContain("Precision adicional");
     expect(text).toContain("La atención fue confusa");
   });

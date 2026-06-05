@@ -91,6 +91,24 @@ describe("mapLabelToAnalysis", () => {
     expect(analysis.keywords).toContain("espera");
     expect(analysis.summary).toContain("Tiempo de espera");
   });
+
+  it("uses clarification detail to derive the operational category for ambiguous comments", () => {
+    const analysis = mapLabelToAnalysis("NEU", 0.72, {
+      ...baseSubmission,
+      type: "compliment",
+      csatScore: 4,
+      emotionScore: 4,
+      freeText: "Me gusto pero no me gusto, estuvo bien pero le falto.",
+      clarification: {
+        category: "other",
+        detail: "La espera fue larga y el lugar estaba sucio.",
+      },
+    });
+
+    expect(analysis.category).toBe("wait_time");
+    expect(analysis.keywords).toContain("espera");
+    expect(analysis.informationQuality).toBe("sufficient");
+  });
 });
 
 describe("analyzeFeedbackSentiment", () => {

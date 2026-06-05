@@ -200,7 +200,7 @@ function normalizeForKeywordMatch(text: string) {
 function deriveOperationalSignals(
   submission: FeedbackSubmission,
 ): Pick<AiAnalysis, "category" | "keywords"> {
-  const normalizedText = normalizeForKeywordMatch(submission.freeText);
+  const normalizedText = normalizeForKeywordMatch(buildAnalysisText(submission));
   const matchedRule = categoryKeywordRules.find((rule) =>
     rule.patterns.some((pattern) => pattern.test(normalizedText)),
   );

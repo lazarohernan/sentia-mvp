@@ -71,6 +71,17 @@ const questionByScore: Record<string, string> = {
   high: "¿Qué fue lo que más influyó en tu experiencia?",
 };
 
+const clarificationCategoryLabels: Record<string, string> = {
+  customer_service: "Atención",
+  wait_time: "Espera",
+  product_quality: "Producto",
+  cleanliness: "Limpieza",
+  price: "Precio",
+  environment: "Ambiente",
+  billing: "Pago",
+  other: "Otro",
+};
+
 function normalizeText(text: string) {
   return text
     .toLowerCase()
@@ -90,7 +101,9 @@ export function getClarificationAnswer(submission: FeedbackSubmission): string |
 
   const parts = [
     clarification.category
-      ? `Motivo principal: ${clarification.category}`
+      ? `Motivo principal: ${
+          clarificationCategoryLabels[clarification.category] ?? clarification.category
+        }`
       : null,
     clarification.detail ? `Detalle: ${clarification.detail}` : null,
   ].filter(Boolean);
