@@ -34,6 +34,7 @@ import { DashboardEmptyState } from "./dashboard-empty-state";
 import { DashboardExecutiveHeader } from "./dashboard-executive-header";
 import { DashboardFloatingNav } from "./dashboard-floating-nav";
 import type { DashboardNavView } from "./dashboard-floating-nav";
+import { DashboardImprovementPlans } from "./dashboard-improvement-plans";
 import { DashboardIntelligenceReports } from "./dashboard-intelligence-reports";
 import { DashboardBranchQrPanel } from "./dashboard-branch-qr-panel";
 import { DashboardOrganizationSettingsPanel } from "./dashboard-organization-settings-panel";
@@ -52,7 +53,12 @@ function getDashboardViewFromHash(): DashboardNavView {
 
   const hash = window.location.hash.replace("#", "");
 
-  if (hash === "comentarios" || hash === "alertas" || hash === "informes") {
+  if (
+    hash === "comentarios" ||
+    hash === "alertas" ||
+    hash === "informes" ||
+    hash === "mejoras"
+  ) {
     return hash;
   }
 
@@ -775,6 +781,16 @@ export function DashboardShell({
               description="Resumen inteligente de patrones, calidad de información y acciones por establecimiento."
             >
               <DashboardIntelligenceReports dashboardData={dashboardData} />
+            </DashboardSection>
+          ) : null}
+
+          {activeView === "mejoras" ? (
+            <DashboardSection
+              id="mejoras"
+              title="Mejoras"
+              description="Planes operativos sugeridos por sucursal con responsable, plazo y señal de éxito."
+            >
+              <DashboardImprovementPlans dashboardData={dashboardData} />
             </DashboardSection>
           ) : null}
 
