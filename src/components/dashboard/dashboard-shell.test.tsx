@@ -185,7 +185,7 @@ describe("DashboardShell", () => {
     expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
   });
 
-  it("renders improvement plans as an independent view from the hash", async () => {
+  it("renders improvement plans inside informes from the legacy hash", async () => {
     window.history.pushState({}, "", "/dashboard#mejoras");
 
     render(
@@ -217,9 +217,10 @@ describe("DashboardShell", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Mejoras" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Informes" })).toBeInTheDocument();
     });
 
+    expect(screen.getByRole("button", { name: "Mejoras" })).toBeInTheDocument();
     expect(screen.getByText("Plan de mejora por sucursal")).toBeInTheDocument();
     expect(
       screen.getByText("Acciones operativas sugeridas para el siguiente ciclo"),
@@ -227,6 +228,48 @@ describe("DashboardShell", () => {
     expect(screen.getAllByText("Centro").length).toBeGreaterThan(0);
     expect(screen.getByText("Responsable")).toBeInTheDocument();
     expect(screen.getByText("Señal de éxito")).toBeInTheDocument();
+  });
+
+  it("switches between informes and mejoras inside the same module", async () => {
+    window.history.pushState({}, "", "/dashboard#informes");
+
+    render(
+      <DashboardShell
+        dashboardData={buildShellDashboardData({
+          comments: [
+            {
+              id: "feedback-1",
+              customer: "Cliente anónimo",
+              business: "Feedback",
+              branch: "Centro",
+              feedbackType: "Observación",
+              sentiment: "Neutral",
+              csatScore: 3,
+              status: "Nuevo",
+              message: "Estuvo excelente, pero hay mucho que mejorar.",
+              receivedAt: "Hace 5 min",
+              analysisSummary:
+                "El cliente reconoce aspectos positivos pero no especifica la causa.",
+              recommendedAction:
+                "Pedir motivo principal cuando la valoración sea ambigua.",
+              dominantPattern: "Experiencia general",
+              analysisConfidence: "85% confianza",
+              analysisModel: "gpt-4.1-mini",
+            },
+          ],
+        })}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Preparación del informe mensual")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Mejoras" }));
+
+    expect(window.location.hash).toBe("#mejoras");
+    expect(screen.getByText("Plan de mejora por sucursal")).toBeInTheDocument();
+    expect(screen.queryByText("Preparación del informe mensual")).not.toBeInTheDocument();
   });
 
   it("changes dashboard content when a menu item is clicked", () => {

@@ -33,10 +33,6 @@ describe("DashboardFloatingNav", () => {
       "href",
       "/dashboard#informes",
     );
-    expect(screen.getByRole("link", { name: /mejoras/i })).toHaveAttribute(
-      "href",
-      "/dashboard#mejoras",
-    );
     expect(screen.getByRole("link", { name: /gestión/i })).toHaveAttribute(
       "href",
       "/dashboard#equipo",

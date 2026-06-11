@@ -45,6 +45,7 @@ import { DashboardTeamPanel } from "./dashboard-team-panel";
 import type { DashboardCurrentUser } from "./dashboard-user-menu";
 
 type OperationsTab = "sucursales" | "equipo" | "permisos" | "configuracion";
+type ReportsTab = "informes" | "mejoras";
 
 function getDashboardViewFromHash(): DashboardNavView {
   if (typeof window === "undefined") {
@@ -53,12 +54,11 @@ function getDashboardViewFromHash(): DashboardNavView {
 
   const hash = window.location.hash.replace("#", "");
 
-  if (
-    hash === "comentarios" ||
-    hash === "alertas" ||
-    hash === "informes" ||
-    hash === "mejoras"
-  ) {
+  if (hash === "mejoras") {
+    return "informes";
+  }
+
+  if (hash === "comentarios" || hash === "alertas" || hash === "informes") {
     return hash;
   }
 
@@ -95,6 +95,15 @@ function getOperationsTabFromHash(): OperationsTab {
   }
 
   return "equipo";
+}
+
+function getReportsTabFromHash(): ReportsTab {
+  if (typeof window === "undefined") {
+    return "informes";
+  }
+
+  const hash = window.location.hash.replace("#", "");
+  return hash === "mejoras" ? "mejoras" : "informes";
 }
 
 type DashboardShellProps = {
@@ -605,6 +614,7 @@ export function DashboardShell({
   const [activeView, setActiveView] = useState<DashboardNavView>("resumen");
   const [activeOperationsTab, setActiveOperationsTab] =
     useState<OperationsTab>("equipo");
+  const [activeReportsTab, setActiveReportsTab] = useState<ReportsTab>("informes");
   const [createdBranches, setCreatedBranches] = useState<Branch[]>([]);
   const [updatedBranches, setUpdatedBranches] = useState<Record<string, Branch>>({});
   const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
@@ -629,6 +639,7 @@ export function DashboardShell({
     function updateActiveView() {
       setActiveView(getDashboardViewFromHash());
       setActiveOperationsTab(getOperationsTabFromHash());
+      setActiveReportsTab(getReportsTabFromHash());
     }
 
     updateActiveView();
@@ -662,6 +673,12 @@ export function DashboardShell({
     setActiveOperationsTab(tab);
     setQrBranchId(null);
     setSelectedQrBranch(null);
+  }
+
+  function handleReportsTabChange(tab: ReportsTab) {
+    window.history.pushState({}, "", `/dashboard#${tab}`);
+    setActiveView("informes");
+    setActiveReportsTab(tab);
   }
 
   function openBranchQrView(branch: Branch) {
@@ -780,17 +797,40 @@ export function DashboardShell({
               title="Informes"
               description="Resumen inteligente de patrones, calidad de información y acciones por establecimiento."
             >
-              <DashboardIntelligenceReports dashboardData={dashboardData} />
-            </DashboardSection>
-          ) : null}
+              <div className="space-y-5">
+                <div className="inline-flex rounded-full border border-slate-200 bg-white p-1">
+                  <button
+                    type="button"
+                    onClick={() => handleReportsTabChange("informes")}
+                    className={[
+                      "rounded-full px-4 py-2 text-sm font-semibold transition",
+                      activeReportsTab === "informes"
+                        ? "bg-slate-950 text-white"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                    ].join(" ")}
+                  >
+                    Informes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleReportsTabChange("mejoras")}
+                    className={[
+                      "rounded-full px-4 py-2 text-sm font-semibold transition",
+                      activeReportsTab === "mejoras"
+                        ? "bg-slate-950 text-white"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                    ].join(" ")}
+                  >
+                    Mejoras
+                  </button>
+                </div>
 
-          {activeView === "mejoras" ? (
-            <DashboardSection
-              id="mejoras"
-              title="Mejoras"
-              description="Planes operativos sugeridos por sucursal con responsable, plazo y señal de éxito."
-            >
-              <DashboardImprovementPlans dashboardData={dashboardData} />
+                {activeReportsTab === "informes" ? (
+                  <DashboardIntelligenceReports dashboardData={dashboardData} />
+                ) : (
+                  <DashboardImprovementPlans dashboardData={dashboardData} />
+                )}
+              </div>
             </DashboardSection>
           ) : null}
 

@@ -6,7 +6,6 @@ import {
   BellRing,
   ChartNoAxesCombined,
   ChevronDown,
-  ClipboardList,
   Ear,
   Home,
   FileText,
@@ -38,7 +37,6 @@ export type DashboardNavView =
   | "comentarios"
   | "alertas"
   | "informes"
-  | "mejoras"
   | "gestion"
   | "escucha";
 
@@ -61,12 +59,6 @@ const navItems = [
     href: "/dashboard#informes",
     view: "informes",
     icon: FileText,
-  },
-  {
-    label: "Mejoras",
-    href: "/dashboard#mejoras",
-    view: "mejoras",
-    icon: ClipboardList,
   },
   {
     label: "Escucha",
