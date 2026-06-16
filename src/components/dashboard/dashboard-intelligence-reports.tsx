@@ -185,26 +185,56 @@ export function DashboardIntelligenceReports({
   }
 
   function handleExportPdf() {
-    const reportWindow = window.open("", "_blank", "noopener,noreferrer");
-    if (!reportWindow) {
+    const html = buildReportPrintHtml({
+      organizationName,
+      periodLabel: dashboardData?.period ?? "Últimos 7 días",
+      readiness,
+      priorityBranch,
+      reports,
+      comments,
+    });
+
+    // Intentar primero con window.open; algunos navegadores lo permiten desde
+    // un click directo. Si el bloqueador de popups lo cancela (retorna null),
+    // caemos al iframe oculto que no puede ser bloqueado.
+    const reportWindow = window.open("", "_blank");
+    if (reportWindow) {
+      reportWindow.document.open();
+      reportWindow.document.write(html);
+      reportWindow.document.close();
+      reportWindow.focus();
+      window.setTimeout(() => {
+        reportWindow.print();
+      }, 250);
+      persistDeliveryRecord("pdf");
       return;
     }
 
-    reportWindow.document.open();
-    reportWindow.document.write(
-      buildReportPrintHtml({
-        organizationName,
-        periodLabel: dashboardData?.period ?? "Últimos 7 días",
-        readiness,
-        priorityBranch,
-        reports,
-        comments,
-      }),
-    );
-    reportWindow.document.close();
-    reportWindow.focus();
+    // Fallback: iframe oculto — no puede ser bloqueado por el bloqueador de popups.
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText =
+      "position:fixed;width:1px;height:1px;top:-200px;left:-200px;border:0;opacity:0;";
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentDocument ?? iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+
     window.setTimeout(() => {
-      reportWindow.print();
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } finally {
+        window.setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1500);
+      }
     }, 250);
 
     persistDeliveryRecord("pdf");
