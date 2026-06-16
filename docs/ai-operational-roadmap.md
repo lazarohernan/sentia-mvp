@@ -94,6 +94,31 @@ OPENAI_GUIDANCE_MODEL=
 
 **Valor:** mayor velocidad para decidir que atender primero.
 
+### Implementado: triage operativo estructurado
+
+La plataforma ya genera una lectura estructurada por comentario con estos campos operativos:
+
+- severidad
+- categoria operativa
+- resumen natural
+- causa probable
+- accion recomendada
+- responsable sugerido
+- SLA sugerido
+- si conviene contactar al cliente
+- confianza
+
+**Donde ya se usa:**
+
+- persistencia en `ai_analyses`
+- detalle de valoracion
+- construccion de alertas y seguimiento
+- reglas de prioridad abiertas en dashboard
+
+**Criterio actual:**
+
+El triage no intenta adivinar de mas. La causa probable debe ser prudente, el responsable debe sonar como rol operativo y el SLA debe ser entendible por gerencia.
+
 ## Fase 2 - Guias de mejora por sucursal
 
 **Problema:** Los gerentes ven sintomas, pero no siempre saben que cambio operativo aplicar.
@@ -242,6 +267,30 @@ La captura adaptativa debe aparecer solo cuando aporta valor. Una pregunta extra
 
 **Valor:** alertas tempranas, menos reaccion tardia.
 
+### Implementado: deteccion inicial de anomalias en Informes
+
+La vista `Informes` ya compara dos ventanas recientes por sucursal para detectar cambios que un promedio mensual puede esconder.
+
+**Reglas actuales:**
+
+- salto de riesgo cuando una sucursal acumula al menos `3` senales de riesgo recientes y al menos duplica la ventana anterior
+- caida de CSAT cuando el promedio reciente baja `1` punto o mas frente a la ventana anterior
+- ambiguedad recurrente cuando `75%` o mas de los comentarios recientes llegan con contexto parcial o insuficiente
+
+**Como se prioriza:**
+
+- primero se ordenan las anomalias `danger`
+- luego las `warning`
+- dentro de cada grupo se muestran las mas intensas segun volumen o caida detectada
+
+**Salida visible:**
+
+- tarjeta breve por sucursal
+- titulo corto del hallazgo
+- explicacion natural de que cambio entre una ventana y otra
+
+Esto deja lista la base para que el agente no solo describa el periodo, sino que detecte desbalances operativos antes de cerrar el informe semanal o mensual.
+
 ## Fase 6 - Knowledge base operativa
 
 **Problema:** Las recomendaciones deben parecer del negocio, no genericas.
@@ -257,6 +306,131 @@ La captura adaptativa debe aparecer solo cuando aporta valor. Una pregunta extra
 - Usar esa informacion como contexto para alertas, respuestas y guias.
 
 **Valor:** recomendaciones adaptadas a cada negocio.
+
+### Implementado: knowledge operativa por tenant
+
+La configuracion del negocio ahora tambien funciona como base de contexto para el agente. No es un chat ni una memoria abierta: son campos concretos que orientan el analisis y las sugerencias.
+
+**Campos actuales:**
+
+- horarios pico
+- prioridades de servicio
+- politica de compensacion
+- tono esperado de follow-up
+- notas operativas para IA
+
+**Como se usa:**
+
+- se guarda por organizacion dentro de `organizations`
+- viaja en el `AgentContextSnapshot`
+- entra al prompt del agente antes del resumen ejecutivo
+- queda visible en configuracion como `Knowledge operativa para el agente`
+- si `horarios pico` esta vacio, el agente intenta detectarlo automaticamente a partir de volumen y friccion por dia y hora
+
+**Impacto:**
+
+- el agente ya no recomienda igual para todos los negocios
+- las sugerencias de seguimiento pueden respetar politica y tono local
+- los informes salen mas alineados con la operacion real del tenant
+
+## Estado actual del agente
+
+Ya existe un scaffold local del agente en:
+
+`agents/perks-ops-agent/`
+
+### Stack actual del agente
+
+- `@openai/agents` para razonamiento y salida ejecutiva
+- `agents` de Cloudflare para runtime durable
+- `Supabase` como fuente de contexto
+- `TypeScript` como lenguaje comun con la app principal
+
+### Capacidades ya montadas en local
+
+- cargar comentarios recientes desde Supabase
+- calcular preparacion del informe mensual con la misma logica del dashboard
+- detectar sucursal prioritaria y patrones principales
+- generar una lectura operativa en lenguaje natural con OpenAI
+- exponer una base de runtime para Cloudflare Workers
+- ejecutar un smoke local por CLI antes de desplegar
+
+### Smoke command actual
+
+```bash
+cd agents/perks-ops-agent
+npm run smoke -- --organization <uuid-organizacion> --period 30d
+```
+
+### Siguiente paso del agente
+
+1. conectar este agente al dashboard
+2. programar ejecucion semanal y mensual
+3. persistir memoria e historial del agente en base de datos
+4. mover la entrega de informes a ejecucion automatica real
+
+### Estado de producto actual
+
+La base tecnica del agente se conserva, pero su superficie principal en UI quedo pausada de forma intencional para terminar primero el roadmap operativo visible del producto.
+
+Esto significa:
+
+- el codigo del agente sigue disponible
+- el contexto, prompt y persistencia no se pierden
+- la UI prioriza `Informes`, `Mejoras`, anomalias y seguimiento operativo
+- la reactivacion del agente puede hacerse despues sin reconstruir la base
+
+## Criterio sobre si el agente era necesario
+
+El agente no era estrictamente necesario en la primera etapa del producto.
+
+La plataforma podia avanzar bastante con:
+
+- analisis por comentario
+- reglas operativas
+- resumenes programados
+- reportes normales
+
+Eso ya resolvia una parte importante del valor inicial.
+
+### Cuando deja de ser suficiente
+
+Un agente empieza a tener sentido cuando la plataforma necesita hacer estas cuatro cosas juntas:
+
+1. mantener memoria por periodo y por sucursal
+2. priorizar con contexto, no solo clasificar comentarios
+3. encadenar acciones: analizar, resumir, sugerir, entregar y seguir
+4. automatizar decisiones operativas sin dispersar logica por toda la app
+
+### Beneficios puntuales del agente
+
+- contexto acumulado por negocio y sucursal
+- lectura ejecutiva del periodo, no solo comentario aislado
+- menos logica repartida entre frontend, APIs y procesos sueltos
+- base mas clara para automatizar informes, planes de mejora y seguimiento
+- mejor escalabilidad hacia memoria, trazabilidad y workflows
+
+### Lo que el agente no resuelve por si solo
+
+- no reemplaza buen diseno de datos
+- no reemplaza reglas criticas del negocio
+- no sustituye validacion humana en decisiones sensibles
+- no mejora el producto solo por existir como capa "inteligente"
+
+### Conclusion de arquitectura
+
+- para un MVP temprano, el agente no era obligatorio
+- para la plataforma operativa que se quiere vender, si tiene sentido
+- el valor real no es "tener un agente"
+- el valor real es que el sistema pueda recordar, interpretar, priorizar y ejecutar un flujo completo
+
+La secuencia correcta fue:
+
+1. construir captura, analisis, dashboard e informes
+2. validar la logica operativa
+3. luego montar el agente
+
+Esa secuencia evita meter complejidad antes de tener claro el problema real que la IA debe resolver.
 
 ## Fase 7 - Agentes con herramientas internas
 

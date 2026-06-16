@@ -41,6 +41,11 @@ export interface Database {
           address: string | null;
           alert_escalation_phone: string | null;
           alert_escalation_email: string | null;
+          peak_hours: string | null;
+          service_priorities: string | null;
+          compensation_policy: string | null;
+          follow_up_tone: string | null;
+          agent_notes: string | null;
           created_at: string;
         };
         Insert: {
@@ -56,6 +61,11 @@ export interface Database {
           address?: string | null;
           alert_escalation_phone?: string | null;
           alert_escalation_email?: string | null;
+          peak_hours?: string | null;
+          service_priorities?: string | null;
+          compensation_policy?: string | null;
+          follow_up_tone?: string | null;
+          agent_notes?: string | null;
           created_at?: string;
         };
         Update: {
@@ -70,6 +80,11 @@ export interface Database {
           alert_escalation_email?: string | null;
           website_url?: string | null;
           address?: string | null;
+          peak_hours?: string | null;
+          service_priorities?: string | null;
+          compensation_policy?: string | null;
+          follow_up_tone?: string | null;
+          agent_notes?: string | null;
         };
       };
       organization_members: {
@@ -241,6 +256,39 @@ export interface Database {
           read_at?: string | null;
         };
       };
+      agent_reports: {
+        Row: {
+          id: string;
+          organization_id: string;
+          branch_id: string | null;
+          actor_user_id: string | null;
+          report_type: "operational_report";
+          period: "7d" | "30d";
+          headline: string;
+          summary: string;
+          next_actions: Json;
+          delivery_readiness: string;
+          context: Json;
+          generated_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          branch_id?: string | null;
+          actor_user_id?: string | null;
+          report_type?: "operational_report";
+          period: "7d" | "30d";
+          headline: string;
+          summary: string;
+          next_actions?: Json;
+          delivery_readiness: string;
+          context?: Json;
+          generated_at: string;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+      };
       feedback_submissions: {
         Row: {
           id: string;
@@ -335,7 +383,11 @@ export interface Database {
           urgency: "low" | "medium" | "high" | "critical" | null;
           category: string | null;
           summary: string | null;
+          probable_cause: string | null;
           recommended_action: string | null;
+          suggested_owner: string | null;
+          suggested_sla: string | null;
+          requires_contact: boolean | null;
           information_quality: "sufficient" | "partial" | "insufficient" | null;
           follow_up_question: string | null;
           follow_up_answer: string | null;
@@ -354,7 +406,11 @@ export interface Database {
           urgency?: "low" | "medium" | "high" | "critical" | null;
           category?: string | null;
           summary?: string | null;
+          probable_cause?: string | null;
           recommended_action?: string | null;
+          suggested_owner?: string | null;
+          suggested_sla?: string | null;
+          requires_contact?: boolean | null;
           information_quality?: "sufficient" | "partial" | "insufficient" | null;
           follow_up_question?: string | null;
           follow_up_answer?: string | null;

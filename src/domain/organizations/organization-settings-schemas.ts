@@ -49,6 +49,11 @@ export const organizationSettingsSchema = z.object({
   address: z.string().max(320).nullable(),
   alertEscalationPhone: z.string().max(40).nullable(),
   alertEscalationEmail: z.string().email().nullable(),
+  peakHours: z.string().max(400).nullable(),
+  servicePriorities: z.string().max(800).nullable(),
+  compensationPolicy: z.string().max(1000).nullable(),
+  followUpTone: z.string().max(240).nullable(),
+  agentNotes: z.string().max(1200).nullable(),
   createdAt: z.string(),
 });
 
@@ -92,6 +97,26 @@ export const updateOrganizationSettingsInputSchema = z.object({
   address: z.preprocess(
     (value) => normalizeOptionalText(value, 320),
     z.string().max(320).nullable(),
+  ),
+  peakHours: z.preprocess(
+    (value) => normalizeOptionalText(value, 400),
+    z.string().max(400).nullable(),
+  ),
+  servicePriorities: z.preprocess(
+    (value) => normalizeOptionalText(value, 800),
+    z.string().max(800).nullable(),
+  ),
+  compensationPolicy: z.preprocess(
+    (value) => normalizeOptionalText(value, 1000),
+    z.string().max(1000).nullable(),
+  ),
+  followUpTone: z.preprocess(
+    (value) => normalizeOptionalText(value, 240),
+    z.string().max(240).nullable(),
+  ),
+  agentNotes: z.preprocess(
+    (value) => normalizeOptionalText(value, 1200),
+    z.string().max(1200).nullable(),
   ),
   logoUrl: z.preprocess((value) => {
     if (value === null || value === undefined) {

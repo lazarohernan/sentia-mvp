@@ -120,7 +120,7 @@ async function getAnalysesForFeedback(
     const { data, error } = await queryClient
       .from("ai_analyses")
       .select(
-        "submission_id, status, sentiment, urgency, category, summary, recommended_action, information_quality, follow_up_question, follow_up_answer, model_used, confidence",
+        "submission_id, status, sentiment, urgency, category, summary, probable_cause, recommended_action, suggested_owner, suggested_sla, requires_contact, information_quality, follow_up_question, follow_up_answer, model_used, confidence",
       )
       .in("submission_id", chunk)
       .order("created_at", { ascending: false });
@@ -322,8 +322,13 @@ function buildComments(feedback: FeedbackRecord[]): DashboardCommentRow[] {
       status: getStatus(record),
       message: record.free_text,
       receivedAt: formatRelativeDate(record.created_at),
+      createdAtIso: record.created_at,
       analysisSummary: analysis?.summary ?? undefined,
+      probableCause: analysis?.probable_cause ?? undefined,
       recommendedAction: analysis?.recommended_action ?? undefined,
+      suggestedOwner: analysis?.suggested_owner ?? undefined,
+      suggestedSla: analysis?.suggested_sla ?? undefined,
+      requiresContact: analysis?.requires_contact ?? undefined,
       dominantPattern: analysis?.category
         ? getCategoryLabel(analysis.category)
         : undefined,
@@ -392,12 +397,21 @@ function buildAttentionItems(feedback: FeedbackRecord[]): DashboardAttentionItem
         workflowStatus === "escalado" || analysis?.urgency === "critical" || index === 0
           ? "Prioridad alta"
           : "Prioridad media";
+      const suggestedOwner = analysis?.suggested_owner?.trim();
+      const probableCause = analysis?.probable_cause?.trim();
+      const suggestedSla = analysis?.suggested_sla?.trim();
 
       return {
         priority,
         title: `${record.branches?.name ?? "Sucursal"} - ${getCategoryLabel(analysis?.category)}`,
-        description: analysis?.recommended_action ?? "Revisar comentario con el equipo",
-        owner: workflowStatusToLabel(workflowStatus),
+        description:
+          [
+            analysis?.recommended_action ?? "Revisar comentario con el equipo",
+          ].filter(Boolean).join(" "),
+        owner: suggestedOwner || workflowStatusToLabel(workflowStatus),
+        probableCause: probableCause ?? undefined,
+        suggestedSla: suggestedSla ?? undefined,
+        requiresContact: analysis?.requires_contact === true,
         age: formatRelativeDate(record.created_at).replace("Hace ", ""),
         status: mapWorkflowToAttentionStatus(workflowStatus),
         tone: priority === "Prioridad alta" ? "danger" : "warning",

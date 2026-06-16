@@ -1,0 +1,25 @@
+{
+  "name": "perks-ops-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy:dry": "wrangler deploy --dry-run",
+    "smoke": "tsx src/local-smoke.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openai/agents": "^0.11.6",
+    "@supabase/supabase-js": "^2.105.1",
+    "agents": "^0.15.0",
+    "dotenv": "^16.6.1",
+    "openai": "^6.35.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.46.0"
+  }
+}

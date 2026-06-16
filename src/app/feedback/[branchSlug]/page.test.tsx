@@ -53,6 +53,11 @@ describe("FeedbackPage", () => {
       address: null,
       alertEscalationPhone: null,
       alertEscalationEmail: null,
+      peakHours: null,
+      servicePriorities: null,
+      compensationPolicy: null,
+      followUpTone: null,
+      agentNotes: null,
       createdAt: "2026-01-01T00:00:00.000Z",
     });
   });

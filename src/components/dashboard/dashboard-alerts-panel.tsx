@@ -1,6 +1,14 @@
 "use client";
 
-import { AlertTriangle, Clock3, Settings2, ShieldAlert, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Clock3,
+  MessageSquareQuote,
+  Settings2,
+  ShieldAlert,
+  UserRound,
+  X,
+} from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 
 import type { DashboardAlertItem } from "@/domain/dashboard/alerts";
@@ -44,6 +52,30 @@ function formatHours(value: number | null) {
   }
 
   return `${value.toFixed(1)} h`;
+}
+
+function priorityToneClasses(tone: DashboardAlertItem["tone"]) {
+  if (tone === "danger") {
+    return {
+      chip: "bg-red-50 text-red-700",
+      card: "border-red-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#fff7f7_100%)]",
+      icon: "bg-red-50 text-red-700",
+    };
+  }
+
+  if (tone === "warning") {
+    return {
+      chip: "bg-amber-50 text-amber-700",
+      card: "border-amber-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#fffaf2_100%)]",
+      icon: "bg-amber-50 text-amber-700",
+    };
+  }
+
+  return {
+    chip: "bg-emerald-50 text-emerald-800",
+    card: "border-emerald-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#f5fbf8_100%)]",
+    icon: "bg-emerald-50 text-emerald-800",
+  };
 }
 
 function extractSubmissionId(alertId: string) {
@@ -178,31 +210,72 @@ export function DashboardAlertsView({
                 return (
                   <article
                     key={alert.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-5"
+                    className={`rounded-2xl border p-5 ${priorityToneClasses(alert.tone).card}`}
                   >
                     <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-base font-semibold text-slate-950">
-                          {alert.title}
-                        </h3>
-                        <p className="mt-1 text-sm text-slate-500">{alert.subtitle}</p>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${priorityToneClasses(alert.tone).icon}`}
+                          >
+                            <AlertTriangle size={16} aria-hidden="true" />
+                          </span>
+                          <div className="min-w-0">
+                            <h3 className="text-base font-semibold text-slate-950">
+                              {alert.title}
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-500">
+                              {alert.subtitle}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                       <span
                         className={[
                           "rounded-full px-3 py-1 text-xs font-semibold",
-                          alert.tone === "danger"
-                            ? "bg-red-50 text-red-700"
-                            : alert.tone === "warning"
-                              ? "bg-amber-50 text-amber-700"
-                              : "bg-emerald-50 text-emerald-800",
+                          priorityToneClasses(alert.tone).chip,
                         ].join(" ")}
                       >
                         {alert.priority}
                       </span>
                     </div>
-                    <p className="mt-4 text-sm leading-6 text-slate-600">
+
+                    <p className="mt-4 text-sm leading-6 text-slate-700">
                       {alert.detail}
                     </p>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {alert.owner ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                          <UserRound size={12} aria-hidden="true" />
+                          {alert.owner}
+                        </span>
+                      ) : null}
+                      {alert.suggestedSla ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                          <Clock3 size={12} aria-hidden="true" />
+                          {alert.suggestedSla}
+                        </span>
+                      ) : null}
+                      {alert.requiresContact ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                          <MessageSquareQuote size={12} aria-hidden="true" />
+                          Contacto sugerido
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {alert.probableCause ? (
+                      <div className="mt-4 rounded-xl border border-slate-200/80 bg-white/80 px-4 py-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                          Causa probable
+                        </p>
+                        <p className="mt-1 text-sm leading-6 text-slate-600">
+                          {alert.probableCause}
+                        </p>
+                      </div>
+                    ) : null}
+
                     {submissionId && onOpenSubmission ? (
                       <button
                         type="button"

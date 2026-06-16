@@ -31,7 +31,11 @@ export type FeedbackRecord = {
         urgency: "low" | "medium" | "high" | "critical" | null;
         category: string | null;
         summary: string | null;
+        probable_cause: string | null;
         recommended_action: string | null;
+        suggested_owner: string | null;
+        suggested_sla: string | null;
+        requires_contact: boolean | null;
         information_quality: "sufficient" | "partial" | "insufficient" | null;
         follow_up_question: string | null;
         follow_up_answer: string | null;

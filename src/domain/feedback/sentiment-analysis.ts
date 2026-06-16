@@ -275,7 +275,11 @@ const openAiTriageSchema = aiAnalysisSchema
     urgency: true,
     category: true,
     summary: true,
+    probableCause: true,
     recommendedAction: true,
+    suggestedOwner: true,
+    suggestedSla: true,
+    requiresContact: true,
     informationQuality: true,
     followUpQuestion: true,
     keywords: true,
@@ -295,7 +299,11 @@ function buildOpenAIResponseSchema() {
       "urgency",
       "category",
       "summary",
+      "probableCause",
       "recommendedAction",
+      "suggestedOwner",
+      "suggestedSla",
+      "requiresContact",
       "informationQuality",
       "followUpQuestion",
       "keywords",
@@ -320,10 +328,30 @@ function buildOpenAIResponseSchema() {
         description:
           "Parrafo natural en español con problema, causa probable y contexto. No usar bullets ni JSON visible.",
       },
+      probableCause: {
+        type: "string",
+        description:
+          "Causa probable en español, breve y prudente, basada en la evidencia disponible.",
+      },
       recommendedAction: {
         type: "string",
         description:
           "Siguiente accion concreta en español, escrita en lenguaje natural.",
+      },
+      suggestedOwner: {
+        type: "string",
+        description:
+          "Responsable sugerido para atender primero el caso. Ejemplos: Gerencia de turno, Servicio al cliente, Caja, Operaciones.",
+      },
+      suggestedSla: {
+        type: "string",
+        description:
+          "Plazo sugerido de atencion en lenguaje natural breve. Ejemplos: Hoy mismo, En menos de 4 horas, Dentro de 24 horas.",
+      },
+      requiresContact: {
+        type: "boolean",
+        description:
+          "True si conviene intentar contactar al cliente o darle respuesta activa.",
       },
       informationQuality: {
         type: "string",
@@ -362,6 +390,7 @@ function buildOpenAITriagePrompt(submission: FeedbackSubmission): string {
     "Devuelve JSON estricto con la clasificacion interna.",
     "El resumen visible debe ser un parrafo natural, breve y comprensible; no uses checklist, markdown, bullets ni tono robotico.",
     "La accion recomendada debe ser concreta y ejecutable por un gerente de sucursal.",
+    "Tambien debes proponer una causa probable prudente, un responsable sugerido, un SLA sugerido y si conviene contactar al cliente.",
     "Tambien evalua si el comentario sirve para un informe semanal o mensual. En Honduras y Latinoamerica muchas respuestas son coloquiales; no castigues el tono, solo la falta de causa concreta.",
     "Si falta contexto, propone una sola pregunta corta y amable para pedir motivo principal. No hagas interrogatorio.",
     "",
@@ -433,7 +462,10 @@ function mapOpenAITriageToAnalysis(
         ? confidence
         : 0;
   const summary = normalizeVisibleAiLanguage(parsed.data.summary);
+  const probableCause = normalizeVisibleAiLanguage(parsed.data.probableCause);
   const recommendedAction = normalizeVisibleAiLanguage(parsed.data.recommendedAction);
+  const suggestedOwner = normalizeVisibleAiLanguage(parsed.data.suggestedOwner);
+  const suggestedSla = normalizeVisibleAiLanguage(parsed.data.suggestedSla);
   const followUpQuestion = parsed.data.followUpQuestion
     ? normalizeVisibleAiLanguage(parsed.data.followUpQuestion)
     : undefined;
@@ -444,7 +476,11 @@ function mapOpenAITriageToAnalysis(
     urgency: parsed.data.urgency,
     category: parsed.data.category,
     summary,
+    probableCause,
     recommendedAction,
+    suggestedOwner,
+    suggestedSla,
+    requiresContact: parsed.data.requiresContact,
     informationQuality: parsed.data.informationQuality,
     followUpQuestion,
     followUpAnswer: getClarificationAnswer(submission) ?? undefined,
@@ -583,10 +619,35 @@ export function mapLabelToAnalysis(
         : sentiment === "positive"
           ? `${categoryLabel}: comentario con señal positiva para identificar buenas prácticas.`
           : `${categoryLabel}: comentario neutral que puede aportar contexto operativo.`,
+    probableCause:
+      sentiment === "negative"
+        ? `Posible fricción en ${categoryLabel.toLowerCase()} reportada por el cliente.`
+        : sentiment === "positive"
+          ? `Se percibe una experiencia favorable asociada a ${categoryLabel.toLowerCase()}.`
+          : `Todavía no hay una causa completamente clara en ${categoryLabel.toLowerCase()}.`,
     recommendedAction:
       urgency === "critical" || urgency === "high"
         ? "Revisar el caso con gerencia de turno y definir seguimiento."
         : "Registrar la señal y observar si se repite en la sucursal.",
+    suggestedOwner:
+      urgency === "critical" || urgency === "high"
+        ? "Gerencia de turno"
+        : category === "billing"
+          ? "Caja"
+          : category === "customer_service"
+            ? "Servicio al cliente"
+            : "Operaciones",
+    suggestedSla:
+      urgency === "critical"
+        ? "Hoy mismo"
+        : urgency === "high"
+          ? "En menos de 4 horas"
+          : urgency === "medium"
+            ? "Dentro de 24 horas"
+            : "Monitorear esta semana",
+    requiresContact:
+      urgency === "critical" ||
+      (urgency === "high" && submission.contact !== undefined),
     keywords,
   }, submission);
 }

@@ -11,6 +11,9 @@ export type DashboardAttentionItem = {
   title: string;
   description: string;
   owner: string;
+  probableCause?: string;
+  suggestedSla?: string;
+  requiresContact?: boolean;
   age: string;
   status: "Pendiente" | "En revisión" | "Resuelto";
   tone: "success" | "warning" | "danger";
@@ -65,8 +68,13 @@ export type DashboardCommentRow = {
   status: "Nuevo" | "En revisión" | "En proceso" | "Resuelto" | "Escalado";
   message: string;
   receivedAt: string;
+  createdAtIso?: string;
   analysisSummary?: string;
+  probableCause?: string;
   recommendedAction?: string;
+  suggestedOwner?: string;
+  suggestedSla?: string;
+  requiresContact?: boolean;
   dominantPattern?: string;
   informationQuality?: "sufficient" | "partial" | "insufficient";
   followUpQuestion?: string;

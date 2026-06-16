@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
+import type { AgentOperationalReport } from "@/domain/agent/context";
+import { getLatestAgentOperationalReport } from "@/domain/agent/repository";
 import type { DashboardCurrentUser } from "@/components/dashboard/dashboard-user-menu";
 import { getUserProfileById } from "@/domain/auth/profile";
 import { getBranchesByOrganization } from "@/domain/branches/repository";
@@ -80,6 +82,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const permissionProfiles = organization
     ? await getPermissionProfilesByOrganization(supabase, organization.id)
     : [];
+  const serviceClient = hasSupabaseServiceEnv() ? createServiceClient() : null;
   const listeningEvents = organization
     ? await getListeningEventsByOrganization(
         supabase,
@@ -96,6 +99,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     dateRange,
     syncNotificationDrafts: !allowedBranchId,
   });
+  const latestAgentReport: AgentOperationalReport | null =
+    organization && serviceClient
+      ? await getLatestAgentOperationalReport(serviceClient, {
+          organizationId: organization.id,
+          branchId: allowedBranchId,
+          period: params.period === "30d" ? "30d" : "7d",
+        })
+      : null;
   const profile = await getUserProfileById(supabase, user.id);
   const currentUser: DashboardCurrentUser = {
     fullName:
@@ -127,6 +138,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       currentUser={currentUser}
       listeningEvents={listeningEvents}
       dashboardData={dashboardData}
+      latestAgentReport={latestAgentReport ?? undefined}
       dateRange={dateRange}
     />
   );

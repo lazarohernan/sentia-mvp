@@ -125,8 +125,12 @@ describe("analyzeFeedbackSentiment", () => {
             category: "wait_time",
             summary:
               "En Mall Norte se esta repitiendo un problema de espera durante horas pico. La causa mas probable es falta de apoyo en caja.",
+            probableCause: "Falta de apoyo en caja durante la hora pico.",
             recommendedAction:
               "Conviene reforzar caja entre 5pm y 8pm y revisar si los comentarios por espera bajan en los proximos 14 dias.",
+            suggestedOwner: "Gerencia de turno",
+            suggestedSla: "Hoy mismo",
+            requiresContact: true,
             informationQuality: "sufficient",
             followUpQuestion: null,
             keywords: ["espera", "fila"],
@@ -185,8 +189,13 @@ describe("analyzeFeedbackSentiment", () => {
             category: "cleanliness",
             summary:
               "- Problema: los clientes mencionan mesas sucias.\n- Causa probable: limpieza insuficiente entre turnos.",
+            probableCause:
+              "- Causa probable: limpieza insuficiente entre turnos.",
             recommendedAction:
               "1. Revisar el cierre de mesas.\n2. Asignar una persona responsable durante hora pico.",
+            suggestedOwner: "Operaciones",
+            suggestedSla: "Dentro de 24 horas",
+            requiresContact: false,
             informationQuality: "partial",
             followUpQuestion: "¿Qué parte de la limpieza fue el problema principal?",
             keywords: ["limpieza"],

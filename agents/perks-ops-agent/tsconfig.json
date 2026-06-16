@@ -1,0 +1,13 @@
+{
+  "extends": "agents/tsconfig",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../../src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "../../src/domain/agent/**/*.ts"]
+}

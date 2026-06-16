@@ -123,10 +123,23 @@ export const aiAnalysisSchema = z.object({
     .string()
     .transform(sanitizeTextInput)
     .pipe(z.string().min(8).max(240)),
+  probableCause: z
+    .string()
+    .transform(sanitizeTextInput)
+    .pipe(z.string().min(8).max(240)),
   recommendedAction: z
     .string()
     .transform(sanitizeTextInput)
     .pipe(z.string().min(8).max(320)),
+  suggestedOwner: z
+    .string()
+    .transform(sanitizeTextInput)
+    .pipe(z.string().min(3).max(120)),
+  suggestedSla: z
+    .string()
+    .transform(sanitizeTextInput)
+    .pipe(z.string().min(3).max(120)),
+  requiresContact: z.boolean().default(false),
   informationQuality: informationQualitySchema.default("partial"),
   followUpQuestion: z
     .string()

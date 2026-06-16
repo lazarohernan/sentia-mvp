@@ -6,6 +6,10 @@ export type DashboardAlertItem = {
   subtitle: string;
   detail: string;
   priority: string;
+  owner?: string;
+  probableCause?: string;
+  suggestedSla?: string;
+  requiresContact?: boolean;
   tone: "success" | "warning" | "danger";
   unread: boolean;
 };
@@ -22,6 +26,10 @@ export function buildDashboardAlertItems(params: {
       subtitle: notification.time,
       detail: notification.detail,
       priority: notification.unread ? "Nueva" : "Seguimiento",
+      owner: undefined,
+      probableCause: undefined,
+      suggestedSla: undefined,
+      requiresContact: undefined,
       tone: notification.tone,
       unread: notification.unread,
     }));
@@ -35,6 +43,10 @@ export function buildDashboardAlertItems(params: {
       subtitle: `${item.owner} · hace ${item.age}`,
       detail: item.description,
       priority: item.priority,
+      owner: item.owner,
+      probableCause: item.probableCause,
+      suggestedSla: item.suggestedSla,
+      requiresContact: item.requiresContact,
       tone: item.tone,
       unread: item.status === "Pendiente",
     }),

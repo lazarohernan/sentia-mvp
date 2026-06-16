@@ -119,7 +119,6 @@ describe("DashboardShell", () => {
 
     expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
     expect(screen.getByText("Resumen operativo sin datos")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Abrir asistente IA de alertas" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Resumen" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Valoraciones" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Resolver alerta" })).not.toBeInTheDocument();
@@ -143,6 +142,158 @@ describe("DashboardShell", () => {
   });
 
   it("renders intelligence reports as an independent view from the hash", async () => {
+    window.history.pushState({}, "", "/dashboard#informes");
+
+    render(
+      <DashboardShell
+        organizationName="Perks Centro"
+        organizationSettings={{
+          id: "org-1",
+          name: "Perks Centro",
+          slug: "perks-centro",
+          logoUrl: null,
+          tagline: null,
+          description: null,
+          contactEmail: "gerencia@perks.hn",
+          contactPhone: null,
+          websiteUrl: null,
+          address: null,
+          alertEscalationPhone: null,
+          alertEscalationEmail: null,
+          peakHours: null,
+          servicePriorities: null,
+          compensationPolicy: null,
+          followUpTone: null,
+          agentNotes: null,
+          createdAt: "2026-06-01T12:00:00.000Z",
+        }}
+        currentUser={{ fullName: "Usuario Demo", email: "demo@perks.hn" }}
+        dashboardData={buildShellDashboardData({
+          comments: [
+            {
+              id: "feedback-1",
+              customer: "Cliente anónimo",
+              business: "Feedback",
+              branch: "Centro",
+              feedbackType: "Observación",
+              sentiment: "Riesgo",
+              csatScore: 2,
+              status: "Nuevo",
+              message: "Estuvo excelente, pero hay mucho que mejorar.",
+              receivedAt: "Hace 5 min",
+              analysisSummary:
+                "El cliente reconoce aspectos positivos pero no especifica la causa.",
+              recommendedAction:
+                "Pedir motivo principal cuando la valoración sea ambigua.",
+              dominantPattern: "Experiencia general",
+              analysisConfidence: "85% confianza",
+              analysisModel: "gpt-4.1-mini",
+              createdAtIso: "2026-06-10T12:00:00.000Z",
+            },
+            {
+              id: "feedback-2",
+              customer: "Cliente anónimo",
+              business: "Feedback",
+              branch: "Centro",
+              feedbackType: "Queja",
+              sentiment: "Riesgo",
+              csatScore: 1,
+              status: "Nuevo",
+              message: "La atención fue mala y la fila demasiado lenta.",
+              receivedAt: "Hace 1 día",
+              dominantPattern: "Tiempo de espera",
+              analysisModel: "gpt-4.1-mini",
+              createdAtIso: "2026-06-09T12:00:00.000Z",
+            },
+            {
+              id: "feedback-3",
+              customer: "Cliente anónimo",
+              business: "Feedback",
+              branch: "Centro",
+              feedbackType: "Queja",
+              sentiment: "Riesgo",
+              csatScore: 1,
+              status: "Nuevo",
+              message: "Hubo atraso y nadie explico lo que pasaba.",
+              receivedAt: "Hace 2 días",
+              dominantPattern: "Tiempo de espera",
+              analysisModel: "gpt-4.1-mini",
+              createdAtIso: "2026-06-08T12:00:00.000Z",
+            },
+            {
+              id: "feedback-4",
+              customer: "Cliente anónimo",
+              business: "Feedback",
+              branch: "Centro",
+              feedbackType: "Observación",
+              sentiment: "Neutral",
+              csatScore: 4,
+              status: "Nuevo",
+              message: "Todo bien.",
+              receivedAt: "Hace 10 días",
+              dominantPattern: "Experiencia general",
+              analysisModel: "gpt-4.1-mini",
+              createdAtIso: "2026-05-30T12:00:00.000Z",
+            },
+            {
+              id: "feedback-5",
+              customer: "Cliente anónimo",
+              business: "Feedback",
+              branch: "Sur",
+              feedbackType: "Felicitación",
+              sentiment: "Positivo",
+              csatScore: 5,
+              status: "Nuevo",
+              message: "Excelente servicio.",
+              receivedAt: "Hace 3 días",
+              dominantPattern: "Servicio",
+              analysisModel: "gpt-4.1-mini",
+              createdAtIso: "2026-06-07T12:00:00.000Z",
+            },
+            {
+              id: "feedback-6",
+              customer: "Cliente anónimo",
+              business: "Feedback",
+              branch: "Sur",
+              feedbackType: "Observación",
+              sentiment: "Neutral",
+              csatScore: 3,
+              status: "Nuevo",
+              message: "Normal.",
+              receivedAt: "Hace 4 días",
+              dominantPattern: "Experiencia general",
+              analysisModel: "gpt-4.1-mini",
+              createdAtIso: "2026-06-06T12:00:00.000Z",
+            },
+          ],
+        })}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Informes" })).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByText("No hay suficiente información para entregar el informe aún."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Preparación del informe mensual")).toBeInTheDocument();
+    expect(screen.getByText(/% listo/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Faltan/i).length).toBeGreaterThan(0);
+    expect(screen.getByText("Detección de anomalías")).toBeInTheDocument();
+    expect(screen.getByText("Centro muestra un salto de riesgo")).toBeInTheDocument();
+    expect(screen.getByText("Patrones por establecimiento")).toBeInTheDocument();
+    expect(screen.getByText("Entrega del informe")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Exportar PDF" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Preparar correo" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("mailto:gerencia%40perks.hn"),
+    );
+    expect(screen.getByText("Historial de entregas")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
+  });
+
+  it("allows closing the report readiness note", async () => {
     window.history.pushState({}, "", "/dashboard#informes");
 
     render(
@@ -173,16 +324,15 @@ describe("DashboardShell", () => {
       />,
     );
 
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Informes" })).toBeInTheDocument();
+    const closeButton = await screen.findByRole("button", {
+      name: "Cerrar aviso de preparación del informe",
     });
 
-    expect(screen.getByText("Preparación del informe mensual")).toBeInTheDocument();
-    expect(screen.getByText(/listo/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Faltan/i).length).toBeGreaterThan(0);
-    expect(screen.getByText("Patrones por establecimiento")).toBeInTheDocument();
-    expect(screen.getByText("Entrega por defecto")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
+    fireEvent.click(closeButton);
+
+    expect(
+      screen.queryByText("No hay suficiente información para entregar el informe aún."),
+    ).not.toBeInTheDocument();
   });
 
   it("renders improvement plans inside informes from the legacy hash", async () => {

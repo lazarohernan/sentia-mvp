@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import type { Branch } from "@/domain/branches/schemas";
+import type { AgentOperationalReport } from "@/domain/agent/context";
 import { buildDashboardAlertItems } from "@/domain/dashboard/alerts";
 import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
@@ -27,7 +28,6 @@ import type { OrganizationSettings } from "@/domain/organizations/organization-s
 import type { PermissionProfile } from "@/domain/organizations/permission-profiles";
 import type { TeamMember } from "@/domain/organizations/team";
 import { AddTeamMemberDrawer } from "./add-team-member-drawer";
-import { DashboardAiAssistant } from "./dashboard-ai-assistant";
 import { DashboardAlertsView } from "./dashboard-alerts-panel";
 import { DashboardCommentsTable } from "./dashboard-comments-table";
 import { DashboardEmptyState } from "./dashboard-empty-state";
@@ -120,6 +120,7 @@ type DashboardShellProps = {
   currentUser?: DashboardCurrentUser;
   listeningEvents?: ListeningEventRow[];
   dashboardData?: DashboardSummaryData;
+  latestAgentReport?: AgentOperationalReport;
   dateRange?: DashboardDateRange;
 };
 
@@ -607,6 +608,7 @@ export function DashboardShell({
   currentUserId,
   currentUser,
   dashboardData,
+  latestAgentReport,
   dateRange = getDashboardDateRange({}),
 }: DashboardShellProps) {
   const serverBranches = branches ?? [];
@@ -826,7 +828,13 @@ export function DashboardShell({
                 </div>
 
                 {activeReportsTab === "informes" ? (
-                  <DashboardIntelligenceReports dashboardData={dashboardData} />
+                  <DashboardIntelligenceReports
+                    dashboardData={dashboardData}
+                    organizationName={organizationName}
+                    organizationSettings={organizationSettings}
+                    currentUserEmail={currentUser?.email}
+                    initialAgentReport={latestAgentReport}
+                  />
                 ) : (
                   <DashboardImprovementPlans dashboardData={dashboardData} />
                 )}
@@ -1036,7 +1044,6 @@ export function DashboardShell({
           }}
         />
       ) : null}
-      <DashboardAiAssistant alerts={liveAlerts} insight={dashboardData?.insight} />
     </main>
   );
 }

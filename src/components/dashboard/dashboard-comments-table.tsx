@@ -663,12 +663,15 @@ function CommentDetailView({
   const csatStyle = csatStyles[comment.csatScore] ?? csatStyles[3];
   const currentStatus = normalizeCommentStatus(comment.status);
   const responsibility =
-    comment.sentiment === "Riesgo" || comment.csatScore <= 2
+    comment.suggestedOwner?.trim() ||
+    (comment.sentiment === "Riesgo" || comment.csatScore <= 2
       ? "Gerencia de turno"
-      : "Servicio al cliente";
+      : "Servicio al cliente");
   const operationalSummary = comment.analysisSummary?.trim() || csatStyle.meaning;
+  const probableCause = comment.probableCause?.trim();
   const operationalAction =
     comment.recommendedAction?.trim() || csatStyle.action;
+  const suggestedSla = comment.suggestedSla?.trim();
   const dominantPattern = comment.dominantPattern ?? "Experiencia del cliente";
   const canEscalate =
     currentStatus !== "Escalado" && currentStatus !== "Resuelto";
@@ -744,6 +747,22 @@ function CommentDetailView({
                   <StatusBadge status={currentStatus} />
                 </div>
               </div>
+              <div className="rounded-2xl border border-slate-100 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  SLA sugerido
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {suggestedSla ?? "Por definir"}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Contacto con cliente
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {comment.requiresContact ? "Sugerido" : "No necesario"}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -762,6 +781,11 @@ function CommentDetailView({
               <p className="mt-3 text-sm leading-6 text-slate-800">
                 {operationalSummary}
               </p>
+              {probableCause ? (
+                <p className="mt-3 text-sm leading-6 text-slate-500">
+                  Causa probable: {probableCause}
+                </p>
+              ) : null}
             </div>
 
             <div className="flex items-center justify-center">

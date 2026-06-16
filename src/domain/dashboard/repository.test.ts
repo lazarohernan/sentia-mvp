@@ -127,8 +127,13 @@ describe("getDashboardSummaryData", () => {
             category: "other",
             summary:
               "El cliente reconoce aspectos positivos, pero ve oportunidades de mejora.",
+            probable_cause:
+              "No especifica una causa concreta, pero deja ver una mejora pendiente.",
             recommended_action:
               "Revisar con el equipo las áreas específicas que pueden mejorar.",
+            suggested_owner: "Servicio al cliente",
+            suggested_sla: "Dentro de 24 horas",
+            requires_contact: false,
             model_used: "gpt-4.1-mini",
             confidence: 0.85,
           },
@@ -158,8 +163,13 @@ describe("getDashboardSummaryData", () => {
     expect(data.comments[0]).toMatchObject({
       analysisSummary:
         "El cliente reconoce aspectos positivos, pero ve oportunidades de mejora.",
+      probableCause:
+        "No especifica una causa concreta, pero deja ver una mejora pendiente.",
       recommendedAction:
         "Revisar con el equipo las áreas específicas que pueden mejorar.",
+      suggestedOwner: "Servicio al cliente",
+      suggestedSla: "Dentro de 24 horas",
+      requiresContact: false,
       analysisModel: "gpt-4.1-mini",
       analysisConfidence: "85% confianza",
     });

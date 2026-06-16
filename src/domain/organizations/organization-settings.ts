@@ -32,6 +32,11 @@ type OrganizationSettingsRow = {
   address: string | null;
   alert_escalation_phone: string | null;
   alert_escalation_email: string | null;
+  peak_hours: string | null;
+  service_priorities: string | null;
+  compensation_policy: string | null;
+  follow_up_tone: string | null;
+  agent_notes: string | null;
   created_at: string;
 };
 
@@ -51,6 +56,11 @@ export function mapOrganizationSettingsRow(
     address: row.address,
     alertEscalationPhone: row.alert_escalation_phone,
     alertEscalationEmail: row.alert_escalation_email,
+    peakHours: row.peak_hours,
+    servicePriorities: row.service_priorities,
+    compensationPolicy: row.compensation_policy,
+    followUpTone: row.follow_up_tone,
+    agentNotes: row.agent_notes,
     createdAt: row.created_at,
   };
 }
@@ -62,7 +72,7 @@ export async function getOrganizationSettingsById(
   const { data, error } = await client
     .from("organizations")
     .select(
-      "id, name, slug, logo_url, tagline, description, contact_email, contact_phone, website_url, address, alert_escalation_phone, alert_escalation_email, created_at",
+      "id, name, slug, logo_url, tagline, description, contact_email, contact_phone, website_url, address, alert_escalation_phone, alert_escalation_email, peak_hours, service_priorities, compensation_policy, follow_up_tone, agent_notes, created_at",
     )
     .eq("id", organizationId)
     .maybeSingle();
@@ -92,10 +102,15 @@ export async function updateOrganizationSettings(
       contact_phone: params.input.contactPhone,
       website_url: params.input.websiteUrl,
       address: params.input.address,
+      peak_hours: params.input.peakHours,
+      service_priorities: params.input.servicePriorities,
+      compensation_policy: params.input.compensationPolicy,
+      follow_up_tone: params.input.followUpTone,
+      agent_notes: params.input.agentNotes,
     } as never)
     .eq("id", params.organizationId)
     .select(
-      "id, name, slug, logo_url, tagline, description, contact_email, contact_phone, website_url, address, alert_escalation_phone, alert_escalation_email, created_at",
+      "id, name, slug, logo_url, tagline, description, contact_email, contact_phone, website_url, address, alert_escalation_phone, alert_escalation_email, peak_hours, service_priorities, compensation_policy, follow_up_tone, agent_notes, created_at",
     )
     .single();
 

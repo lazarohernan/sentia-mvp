@@ -32,6 +32,13 @@ export type ReportReadiness = {
   detail: string;
 };
 
+export type ExecutiveReportSummary = {
+  headline: string;
+  summary: string;
+  nextStep: string;
+  generatedLabel: string;
+};
+
 export function classifyInformationQuality(
   comment: DashboardCommentRow,
 ): InformationQualityLabel {
@@ -220,5 +227,62 @@ export function buildReportReadiness(
       missingUsefulResponses > 0
         ? `Faltan ${missingUsefulResponses} valoraciones útiles: respuestas con motivo claro, categoría específica o detalle accionable.`
         : "La base actual permite explicar patrones por sucursal con buena claridad.",
+  };
+}
+
+export function buildExecutiveReportSummary(params: {
+  comments: DashboardCommentRow[];
+  reports: BranchReport[];
+  readiness: ReportReadiness;
+  insight?: {
+    detail: string;
+    action: string;
+  } | null;
+}): ExecutiveReportSummary {
+  const { comments, reports, readiness, insight } = params;
+
+  if (comments.length === 0 || reports.length === 0) {
+    return {
+      headline: "Aún no hay base suficiente para un resumen ejecutivo.",
+      summary:
+        "Todavía no entran suficientes valoraciones con motivo claro para explicar patrones por sucursal.",
+      nextStep: "Primero hay que capturar más comentarios útiles antes de emitir conclusiones.",
+      generatedLabel: "Lectura automática pendiente",
+    };
+  }
+
+  const priorityBranch = reports[0];
+  const weakDataCount = reports.reduce(
+    (sum, report) => sum + report.partial + report.insufficient,
+    0,
+  );
+  const riskCount = reports.reduce((sum, report) => sum + report.risk, 0);
+
+  if (readiness.percent >= 80) {
+    return {
+      headline: "El periodo ya permite explicar patrones con buena claridad.",
+      summary:
+        riskCount > 0
+          ? `${priorityBranch.branch} sigue siendo el punto más sensible y concentra ${priorityBranch.risk} casos en riesgo dentro del periodo.`
+          : `${priorityBranch.branch} todavía concentra la mayor necesidad de contexto, pero la base general ya alcanza para explicar el comportamiento del periodo.`,
+      nextStep:
+        insight?.action ??
+        (riskCount > 0
+          ? "Conviene cerrar los casos abiertos y consolidar el resumen ejecutivo para gerencia."
+          : "Ya se puede consolidar el informe mensual y convertir los patrones positivos en práctica operativa."),
+      generatedLabel: "Lectura automática lista",
+    };
+  }
+
+  return {
+    headline: `${priorityBranch.branch} concentra la principal brecha de información.`,
+    summary:
+      weakDataCount > 0
+        ? `${weakDataCount} valoraciones todavía llegan con contexto parcial o insuficiente, por eso el informe aún no explica bien la causa operativa.`
+        : readiness.detail,
+    nextStep:
+      insight?.action ??
+      `Faltan ${readiness.missingUsefulResponses} respuestas útiles; conviene pedir el motivo principal cuando el comentario sea ambiguo.`,
+    generatedLabel: "Lectura automática en preparación",
   };
 }
