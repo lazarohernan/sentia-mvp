@@ -5,6 +5,7 @@ import { workflowStatusValues, type WorkflowStatus } from "./workflow-status";
 
 export const updateFeedbackFollowUpInputSchema = z.object({
   status: z.enum(workflowStatusValues).optional(),
+  assignedUserId: z.string().uuid().nullable().optional(),
   note: z
     .preprocess(
       (value) => {
@@ -44,6 +45,7 @@ export type FeedbackFollowUpMetrics = {
   escalatedCount: number;
   inReviewCount: number;
   resolvedCount: number;
+  slaBreachedCount: number;
   avgResponseHours: number | null;
   avgResolutionHours: number | null;
 };

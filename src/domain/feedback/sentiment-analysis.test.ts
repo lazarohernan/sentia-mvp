@@ -100,6 +100,7 @@ describe("mapLabelToAnalysis", () => {
       emotionScore: 4,
       freeText: "Me gusto pero no me gusto, estuvo bien pero le falto.",
       clarification: {
+        question: undefined,
         category: "other",
         detail: "La espera fue larga y el lugar estaba sucio.",
       },

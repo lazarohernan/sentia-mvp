@@ -6,10 +6,12 @@ import {
 } from "@/domain/feedback/follow-up";
 import { updateFeedbackFollowUpInputSchema } from "@/domain/feedback/follow-up-schemas";
 import { workflowStatusToLabel } from "@/domain/feedback/workflow-status";
+import { getAlertEscalationSettings } from "@/domain/organizations/organization-settings";
 import {
   getOrganizationByUser,
   getOrganizationMembershipByUser,
 } from "@/domain/organizations/repository";
+import { sendAlertEscalationEmail } from "@/lib/email/send-alert-escalation-email";
 import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -127,9 +129,33 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
+  let escalationEmailStatus: "sent" | "skipped" | null = null;
+
+  if (result.escalated) {
+    const escalationSettings = await getAlertEscalationSettings(
+      authResult.supabase,
+      authResult.organization.id,
+    );
+
+    if (escalationSettings?.alertEscalationEmail) {
+      try {
+        escalationEmailStatus = await sendAlertEscalationEmail({
+          to: escalationSettings.alertEscalationEmail,
+          organizationName: authResult.organization.name,
+          branchName: result.branchName,
+          summary: result.summary,
+          dashboardUrl: new URL("/dashboard#alertas", request.url).toString(),
+        });
+      } catch {
+        escalationEmailStatus = null;
+      }
+    }
+  }
+
   return NextResponse.json({
     status: workflowStatusToLabel(result.workflowStatus),
     workflowStatus: result.workflowStatus,
     actions: result.actions,
+    escalationEmailStatus,
   });
 }

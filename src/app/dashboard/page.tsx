@@ -31,6 +31,8 @@ type DashboardPageProps = {
     start?: string;
     end?: string;
     branchId?: string;
+    reportPeriod?: string;
+    openReport?: string;
   }>;
 };
 
@@ -97,6 +99,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     organizationName: organization?.name,
     branches: dashboardBranches,
     dateRange,
+    reportCadence: organizationSettings?.reportCadence,
     syncNotificationDrafts: !allowedBranchId,
   });
   const latestAgentReport: AgentOperationalReport | null =
@@ -116,6 +119,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         : user.email?.split("@")[0] ?? "Usuario"),
     email: user.email ?? null,
   };
+
+  const informesReportPeriod =
+    params.reportPeriod === "weekly" || params.reportPeriod === "monthly"
+      ? params.reportPeriod
+      : undefined;
 
   return (
     <DashboardShell
@@ -140,6 +148,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       dashboardData={dashboardData}
       latestAgentReport={latestAgentReport ?? undefined}
       dateRange={dateRange}
+      informesReportPeriod={informesReportPeriod}
+      autoOpenReport={params.openReport === "1"}
     />
   );
 }

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
+import { isSlaBreached } from "@/domain/dashboard/alert-sla";
 import type {
   FeedbackFollowUpAction,
   FeedbackFollowUpMetrics,
@@ -28,8 +29,10 @@ type FollowUpSubmissionRow = {
   first_response_at: string | null;
   resolved_at: string | null;
   created_at: string;
+  free_text: string;
   branches: {
     organization_id: string;
+    name: string;
   } | null;
 };
 
@@ -100,11 +103,13 @@ export function computeFollowUpMetrics(
   let escalatedCount = 0;
   let inReviewCount = 0;
   let resolvedCount = 0;
+  let slaBreachedCount = 0;
   const responseHours: number[] = [];
   const resolutionHours: number[] = [];
 
   for (const record of feedback) {
     const status = getWorkflowStatusForRecord(record);
+    const analysis = getAnalysis(record as FeedbackRecord);
 
     if (status === "resuelto") {
       resolvedCount += 1;
@@ -118,6 +123,17 @@ export function computeFollowUpMetrics(
 
     if (status === "en_revision" || status === "en_proceso") {
       inReviewCount += 1;
+    }
+
+    if (
+      isSlaBreached({
+        createdAtIso: record.created_at,
+        urgency: analysis?.urgency ?? null,
+        firstResponseAt: record.first_response_at,
+        workflowStatus: status,
+      })
+    ) {
+      slaBreachedCount += 1;
     }
 
     if (record.first_response_at) {
@@ -139,6 +155,7 @@ export function computeFollowUpMetrics(
     escalatedCount,
     inReviewCount,
     resolvedCount,
+    slaBreachedCount,
     avgResponseHours: average(responseHours),
     avgResolutionHours: average(resolutionHours),
   };
@@ -224,7 +241,8 @@ async function getSubmissionForFollowUp(
         first_response_at,
         resolved_at,
         created_at,
-        branches!inner(organization_id)
+        free_text,
+        branches!inner(organization_id, name)
       `,
     )
     .eq("id", submissionId)
@@ -249,8 +267,15 @@ export async function updateFeedbackFollowUp(
 ): Promise<{
   workflowStatus: WorkflowStatus;
   actions: FeedbackFollowUpAction[];
+  branchName: string;
+  summary: string;
+  escalated: boolean;
 } | null> {
-  if (!params.input.status && !params.input.note) {
+  if (
+    !params.input.status &&
+    !params.input.note &&
+    params.input.assignedUserId === undefined
+  ) {
     return null;
   }
 
@@ -272,23 +297,31 @@ export async function updateFeedbackFollowUp(
     : "nuevo";
   const nextStatus = params.input.status ?? currentStatus;
   const nowIso = new Date().toISOString();
-
   const updatePayload: Database["public"]["Tables"]["feedback_submissions"]["Update"] =
-    {
-      workflow_status: nextStatus,
-    };
-
-  if (currentStatus === "nuevo" && nextStatus !== "nuevo" && !submission.first_response_at) {
-    updatePayload.first_response_at = nowIso;
-  }
-
-  if (nextStatus === "resuelto") {
-    updatePayload.resolved_at = submission.resolved_at ?? nowIso;
-  } else if (currentStatus === "resuelto") {
-    updatePayload.resolved_at = null;
-  }
+    {};
+  let didUpdateSubmission = false;
 
   if (params.input.status) {
+    updatePayload.workflow_status = nextStatus;
+    didUpdateSubmission = true;
+
+    if (currentStatus === "nuevo" && nextStatus !== "nuevo" && !submission.first_response_at) {
+      updatePayload.first_response_at = nowIso;
+    }
+
+    if (nextStatus === "resuelto") {
+      updatePayload.resolved_at = submission.resolved_at ?? nowIso;
+    } else if (currentStatus === "resuelto") {
+      updatePayload.resolved_at = null;
+    }
+  }
+
+  if (params.input.assignedUserId !== undefined) {
+    updatePayload.assigned_user_id = params.input.assignedUserId;
+    didUpdateSubmission = true;
+  }
+
+  if (didUpdateSubmission) {
     const { error: updateError } = await client
       .from("feedback_submissions")
       .update(updatePayload as never)
@@ -297,7 +330,9 @@ export async function updateFeedbackFollowUp(
     if (updateError) {
       return null;
     }
+  }
 
+  if (params.input.status) {
     const actionType =
       nextStatus === "escalado" ? "escalation" : "status_change";
 
@@ -310,6 +345,22 @@ export async function updateFeedbackFollowUp(
         action_type: actionType,
         previous_status: currentStatus,
         new_status: nextStatus,
+        note: params.input.note ?? null,
+      } as never);
+
+    if (actionError) {
+      return null;
+    }
+  } else if (params.input.assignedUserId !== undefined) {
+    const { error: actionError } = await client
+      .from("feedback_follow_up_actions")
+      .insert({
+        submission_id: params.submissionId,
+        organization_id: params.organizationId,
+        actor_user_id: params.actorUserId,
+        action_type: "assignment",
+        previous_status: currentStatus,
+        new_status: currentStatus,
         note: params.input.note ?? null,
       } as never);
 
@@ -340,7 +391,10 @@ export async function updateFeedbackFollowUp(
   });
 
   return {
-    workflowStatus: nextStatus,
+    workflowStatus: params.input.status ? nextStatus : currentStatus,
     actions,
+    branchName: submission.branches.name,
+    summary: submission.free_text.trim().slice(0, 240) || "Caso escalado en Perks",
+    escalated: params.input.status === "escalado" && currentStatus !== "escalado",
   };
 }

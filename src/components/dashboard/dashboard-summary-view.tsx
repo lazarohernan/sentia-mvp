@@ -372,6 +372,7 @@ export function DashboardSummaryView({
     openCount: 0,
     escalatedCount: 0,
     inReviewCount: 0,
+    slaBreachedCount: 0,
     resolvedCount: 0,
     avgResponseHours: null,
     avgResolutionHours: null,

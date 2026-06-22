@@ -94,4 +94,37 @@ describe("buildExecutiveReportSummary", () => {
       "Revisar turnos de apertura y documentar el ajuste.",
     );
   });
+
+  it("separa sucursales con el mismo nombre cuando tienen branchId distinto", () => {
+    const comments = [
+      buildComment({
+        id: "comment-1",
+        branch: "Centro",
+        branchId: "branch-1",
+        sentiment: "Riesgo",
+        informationQuality: "sufficient",
+        message:
+          "La caja estuvo lenta al inicio del turno y el cliente explicó bien el retraso.",
+        dominantPattern: "Tiempo de espera",
+      }),
+      buildComment({
+        id: "comment-2",
+        branch: "Centro",
+        branchId: "branch-2",
+        sentiment: "Positivo",
+        informationQuality: "sufficient",
+        message:
+          "El equipo resolvió rápido el pedido y el cliente describió claramente la buena atención.",
+        dominantPattern: "Atención al cliente",
+      }),
+    ];
+
+    const reports = buildBranchReports(comments);
+
+    expect(reports).toHaveLength(2);
+    expect(reports.map((report) => report.branchId)).toEqual([
+      "branch-1",
+      "branch-2",
+    ]);
+  });
 });

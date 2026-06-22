@@ -3,6 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import { buildBranchReports, buildReportReadiness } from "@/domain/dashboard/report-readiness";
 import type { DashboardCommentRow } from "@/domain/dashboard/schemas";
+import { sanitizeFeedbackText } from "@/domain/feedback/record-analysis";
+import { getCategoryLabel, humanizeCategoryLabel } from "@/domain/feedback/sentiment-analysis";
 import type { Database } from "@/lib/supabase/database.types";
 import { getOrganizationSettingsById } from "@/domain/organizations/organization-settings";
 
@@ -10,6 +12,7 @@ export type AgentPeriod = "7d" | "30d";
 
 export type AgentFeedbackRecord = {
   id: string;
+  branchId: string;
   branch: string;
   type: string;
   message: string;
@@ -50,6 +53,7 @@ export type AgentContextSnapshot = {
   priorityBranch: AgentBranchSnapshot | null;
   branchReports: AgentBranchSnapshot[];
   recentComments: AgentFeedbackRecord[];
+  dashboardComments: DashboardCommentRow[];
   knowledge: AgentKnowledgeSnapshot;
 };
 
@@ -231,12 +235,14 @@ function mapCommentRow(record: AgentFeedbackRecord): DashboardCommentRow {
     customer: "Cliente anónimo",
     business: "Feedback",
     branch: record.branch,
+    branchId: record.branchId,
     feedbackType: "Observación",
     sentiment: record.sentiment,
     csatScore: record.csatScore ?? 0,
     status: "Nuevo",
     message: record.message,
     receivedAt: record.createdAt,
+    createdAtIso: record.createdAt,
     analysisSummary: record.analysisSummary ?? undefined,
     recommendedAction: record.recommendedAction ?? undefined,
     dominantPattern: record.dominantPattern,
@@ -321,13 +327,14 @@ export async function buildAgentContextSnapshot(
     const analysis = analysisMap.get(row.id);
     return {
       id: row.id,
+      branchId: row.branches?.id ?? row.branch_id,
       branch: row.branches?.name ?? "Sucursal",
       type: row.type,
-      message: row.free_text,
+      message: sanitizeFeedbackText(row.free_text),
       csatScore: row.csat_score,
       createdAt: row.created_at,
       sentiment: mapSentiment(analysis?.sentiment ?? null, row.csat_score),
-      dominantPattern: analysis?.category ?? "Experiencia general",
+      dominantPattern: humanizeCategoryLabel(analysis?.category),
       informationQuality: analysis?.information_quality ?? null,
       recommendedAction: analysis?.recommended_action ?? null,
       analysisSummary: analysis?.summary ?? null,
@@ -365,6 +372,7 @@ export async function buildAgentContextSnapshot(
       recommendedAction: report.recommendedAction,
     })),
     recentComments: comments.slice(0, 10),
+    dashboardComments,
     knowledge: {
       peakHours:
         organizationSettings?.peakHours ?? deriveAutomaticPeakHours(comments),

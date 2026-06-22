@@ -1,16 +1,21 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { DashboardUserMenu } from "./dashboard-user-menu";
 
 describe("DashboardUserMenu", () => {
-  it("opens a popover with sign out action", () => {
+  it("opens a popover with business profile and sign out actions", () => {
+    const onOpenBusinessProfile = vi.fn();
+
     render(
       <DashboardUserMenu
         user={{
           fullName: "Ana Lopez",
           email: "ana@empresa.com",
         }}
+        organizationName="Cafe Central"
+        canManageBusinessProfile
+        onOpenBusinessProfile={onOpenBusinessProfile}
       />,
     );
 
@@ -21,5 +26,7 @@ describe("DashboardUserMenu", () => {
     expect(
       screen.getByRole("button", { name: /cerrar sesion/i }),
     ).toHaveAttribute("type", "submit");
+    fireEvent.click(screen.getByRole("menuitem", { name: /perfil del negocio/i }));
+    expect(onOpenBusinessProfile).toHaveBeenCalledTimes(1);
   });
 });

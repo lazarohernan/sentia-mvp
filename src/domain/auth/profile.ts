@@ -22,6 +22,23 @@ export function getUserInitials(fullName: string): string {
   return `${parts[0][0] ?? ""}${parts[parts.length - 1][0] ?? ""}`.toUpperCase();
 }
 
+export function formatUserShortName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    return "Usuario";
+  }
+
+  if (parts.length === 1) {
+    return parts[0];
+  }
+
+  const firstName = parts[0];
+  const lastInitial = parts[parts.length - 1][0]?.toUpperCase() ?? "";
+
+  return lastInitial ? `${firstName} ${lastInitial}.` : firstName;
+}
+
 export async function getUserProfileById(
   client: Client,
   userId: string,

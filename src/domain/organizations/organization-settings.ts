@@ -4,8 +4,10 @@ import type { Database } from "@/lib/supabase/database.types";
 import type {
   AlertEscalationSettings,
   OrganizationSettings,
+  ReportCadenceSettings,
   UpdateAlertEscalationInput,
   UpdateOrganizationSettingsInput,
+  UpdateReportCadenceInput,
 } from "./organization-settings-schemas";
 
 type Client = SupabaseClient<Database>;
@@ -37,6 +39,7 @@ type OrganizationSettingsRow = {
   compensation_policy: string | null;
   follow_up_tone: string | null;
   agent_notes: string | null;
+  report_cadence: "weekly" | "monthly" | "both";
   created_at: string;
 };
 
@@ -61,6 +64,7 @@ export function mapOrganizationSettingsRow(
     compensationPolicy: row.compensation_policy,
     followUpTone: row.follow_up_tone,
     agentNotes: row.agent_notes,
+    reportCadence: row.report_cadence ?? "monthly",
     createdAt: row.created_at,
   };
 }
@@ -72,7 +76,7 @@ export async function getOrganizationSettingsById(
   const { data, error } = await client
     .from("organizations")
     .select(
-      "id, name, slug, logo_url, tagline, description, contact_email, contact_phone, website_url, address, alert_escalation_phone, alert_escalation_email, peak_hours, service_priorities, compensation_policy, follow_up_tone, agent_notes, created_at",
+      "id, name, slug, logo_url, tagline, description, contact_email, contact_phone, website_url, address, alert_escalation_phone, alert_escalation_email, peak_hours, service_priorities, compensation_policy, follow_up_tone, agent_notes, report_cadence, created_at",
     )
     .eq("id", organizationId)
     .maybeSingle();
@@ -110,7 +114,7 @@ export async function updateOrganizationSettings(
     } as never)
     .eq("id", params.organizationId)
     .select(
-      "id, name, slug, logo_url, tagline, description, contact_email, contact_phone, website_url, address, alert_escalation_phone, alert_escalation_email, peak_hours, service_priorities, compensation_policy, follow_up_tone, agent_notes, created_at",
+      "id, name, slug, logo_url, tagline, description, contact_email, contact_phone, website_url, address, alert_escalation_phone, alert_escalation_email, peak_hours, service_priorities, compensation_policy, follow_up_tone, agent_notes, report_cadence, created_at",
     )
     .single();
 
@@ -175,6 +179,54 @@ export async function updateAlertEscalation(
   return {
     alertEscalationPhone: row.alert_escalation_phone,
     alertEscalationEmail: row.alert_escalation_email,
+  };
+}
+
+export async function getReportCadenceSettings(
+  client: Client,
+  organizationId: string,
+): Promise<ReportCadenceSettings | null> {
+  const { data, error } = await client
+    .from("organizations")
+    .select("report_cadence")
+    .eq("id", organizationId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  const row = data as { report_cadence: "weekly" | "monthly" | "both" | null };
+
+  return {
+    reportCadence: row.report_cadence ?? "monthly",
+  };
+}
+
+export async function updateReportCadence(
+  client: Client,
+  params: {
+    organizationId: string;
+    input: UpdateReportCadenceInput;
+  },
+): Promise<ReportCadenceSettings> {
+  const { data, error } = await client
+    .from("organizations")
+    .update({
+      report_cadence: params.input.reportCadence,
+    } as never)
+    .eq("id", params.organizationId)
+    .select("report_cadence")
+    .single();
+
+  if (error || !data) {
+    throw new Error("No se pudo guardar la cadencia del informe.");
+  }
+
+  const row = data as { report_cadence: "weekly" | "monthly" | "both" };
+
+  return {
+    reportCadence: row.report_cadence,
   };
 }
 

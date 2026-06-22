@@ -27,6 +27,11 @@ export default async function ListeningAssessmentPage() {
 
   const organization = await getOrganizationByUser(supabase, user.id);
   const membership = await getOrganizationMembershipByUser(supabase, user.id);
+
+  if (membership?.role === "collaborator") {
+    redirect("/colaborador?view=evaluacion");
+  }
+
   const activeBranches =
     organization && !membership?.branch
       ? (await getBranchesByOrganization(supabase, organization.id)).filter(

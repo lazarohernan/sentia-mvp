@@ -72,6 +72,13 @@ export async function POST(request: Request) {
 
   const { supabase, organization, membership, userId } = authResult;
 
+  if (membership?.role === "collaborator") {
+    return NextResponse.json(
+      { error: "Usa el portal de colaborador para registrar escucha." },
+      { status: 403 },
+    );
+  }
+
   if (membership?.branchId && parsed.data.branchId !== membership.branchId) {
     return NextResponse.json(
       { error: "Solo puedes registrar escucha para tu sucursal asignada." },

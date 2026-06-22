@@ -18,9 +18,18 @@ export type DashboardAttentionItem = {
   status: "Pendiente" | "En revisión" | "Resuelto";
   tone: "success" | "warning" | "danger";
   submissionId?: string;
+  branchId?: string;
+  branchName?: string;
+  workflowStatus?: "nuevo" | "en_revision" | "en_proceso" | "resuelto" | "escalado";
+  assignedUserId?: string | null;
+  assignedUserName?: string;
+  createdAtIso?: string;
+  urgency?: "low" | "medium" | "high" | "critical" | null;
+  categoryLabel?: string;
 };
 
 export type DashboardBranchHealthItem = {
+  branchId?: string;
   branch: string;
   status: string;
   csat: string;
@@ -62,6 +71,7 @@ export type DashboardCommentRow = {
   customer: string;
   business: string;
   branch: string;
+  branchId?: string;
   feedbackType: DashboardFeedbackType;
   sentiment: "Positivo" | "Neutral" | "Riesgo";
   csatScore: number;
@@ -91,6 +101,7 @@ export type DashboardNotification = {
   href: string;
   unread: boolean;
   tone: "success" | "warning" | "danger";
+  isListeningSurvey?: boolean;
 };
 
 export type DashboardInsight = {
@@ -113,6 +124,7 @@ export type DashboardFollowUpMetrics = {
   escalatedCount: number;
   inReviewCount: number;
   resolvedCount: number;
+  slaBreachedCount: number;
   avgResponseHours: number | null;
   avgResolutionHours: number | null;
 };

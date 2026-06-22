@@ -37,6 +37,12 @@ describe("buildDashboardAlertItems", () => {
           age: "20 min",
           status: "Pendiente",
           tone: "danger",
+          submissionId: "sub-1",
+          branchId: "branch-1",
+          branchName: "Sucursal Norte",
+          workflowStatus: "en_revision",
+          createdAtIso: "2026-06-16T10:00:00.000Z",
+          urgency: "high",
         },
       ],
     });
@@ -46,6 +52,7 @@ describe("buildDashboardAlertItems", () => {
     expect(alerts[1]?.title).toBe("Sucursal Norte - Espera");
     expect(alerts[1]?.owner).toBe("Operaciones");
     expect(alerts[1]?.suggestedSla).toBe("Hoy mismo");
-    expect(alerts[1]?.requiresContact).toBe(true);
+    expect(alerts[1]?.source).toBe("ia");
+    expect(alerts[1]?.submissionId).toBe("sub-1");
   });
 });

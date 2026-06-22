@@ -1,4 +1,11 @@
 import type { DashboardCommentRow } from "./schemas";
+import {
+  getReportCadenceMeta,
+  getReportCadenceTargets,
+  resolveReportPeriod,
+  type ReportCadence,
+  type ReportPeriod,
+} from "./report-cadence";
 
 export type InformationQualityLabel = "suficiente" | "parcial" | "insuficiente";
 
@@ -6,6 +13,7 @@ export const MONTHLY_USEFUL_RESPONSES_PER_BRANCH = 8;
 export const MIN_MONTHLY_USEFUL_RESPONSES = 12;
 
 export type BranchReport = {
+  branchId: string;
   branch: string;
   total: number;
   risk: number;
@@ -100,22 +108,42 @@ export function getMostCommonPattern(comments: DashboardCommentRow[]) {
 }
 
 export function groupCommentsByBranch(comments: DashboardCommentRow[]) {
-  const commentsByBranch = new Map<string, DashboardCommentRow[]>();
+  const commentsByBranch = new Map<
+    string,
+    {
+      branchId: string;
+      branch: string;
+      comments: DashboardCommentRow[];
+    }
+  >();
 
   for (const comment of comments) {
-    const current = commentsByBranch.get(comment.branch) ?? [];
-    current.push(comment);
-    commentsByBranch.set(comment.branch, current);
+    const branchId = comment.branchId ?? `name:${comment.branch}`;
+    const current = commentsByBranch.get(branchId) ?? {
+      branchId,
+      branch: comment.branch,
+      comments: [],
+    };
+    current.comments.push(comment);
+    commentsByBranch.set(branchId, current);
   }
 
   return commentsByBranch;
 }
 
-export function buildBranchReports(comments: DashboardCommentRow[]): BranchReport[] {
+export function buildBranchReports(
+  comments: DashboardCommentRow[],
+  cadence: ReportCadence = "monthly",
+  activePeriod: ReportPeriod = "weekly",
+): BranchReport[] {
+  const period = resolveReportPeriod(cadence, activePeriod);
+  const cadenceMeta = getReportCadenceMeta(period);
+  const { perBranch: targetUsefulResponsesPerBranch } =
+    getReportCadenceTargets(period);
   const commentsByBranch = groupCommentsByBranch(comments);
 
-  return [...commentsByBranch.entries()]
-    .map(([branch, branchComments]) => {
+  return [...commentsByBranch.values()]
+    .map(({ branchId, branch, comments: branchComments }) => {
       const qualityCounts = branchComments.reduce(
         (current, comment) => {
           current[classifyInformationQuality(comment)] += 1;
@@ -128,7 +156,7 @@ export function buildBranchReports(comments: DashboardCommentRow[]): BranchRepor
         (comment) => comment.sentiment === "Positivo",
       ).length;
       const neutral = branchComments.length - risk - positive;
-      const targetUsefulResponses = MONTHLY_USEFUL_RESPONSES_PER_BRANCH;
+      const targetUsefulResponses = targetUsefulResponsesPerBranch;
       const usefulResponses = qualityCounts.suficiente + qualityCounts.parcial * 0.5;
       const readinessPercent = Math.min(
         100,
@@ -141,8 +169,8 @@ export function buildBranchReports(comments: DashboardCommentRow[]): BranchRepor
       const topPattern = getMostCommonPattern(branchComments);
       const recommendedAction =
         missingUsefulResponses > 0
-          ? `Faltan ${missingUsefulResponses} valoraciones con motivo claro para un informe mensual más sólido.`
-          : "Base suficiente para resumir patrones mensuales con mejor confianza.";
+          ? `Faltan ${missingUsefulResponses} valoraciones con motivo claro para un informe ${cadenceMeta.shortLabel} más sólido.`
+          : `Base suficiente para resumir patrones ${cadenceMeta.shortLabel}es con mejor confianza.`;
       const captureAction =
         qualityCounts.insuficiente + qualityCounts.parcial >
         Math.ceil(branchComments.length / 2)
@@ -152,6 +180,7 @@ export function buildBranchReports(comments: DashboardCommentRow[]): BranchRepor
             : " Usar los comentarios positivos para repetir prácticas del equipo.";
 
       return {
+        branchId,
         branch,
         total: branchComments.length,
         risk,
@@ -179,15 +208,21 @@ export function buildBranchReports(comments: DashboardCommentRow[]): BranchRepor
 export function buildReportReadiness(
   comments: DashboardCommentRow[],
   reports: BranchReport[],
+  cadence: ReportCadence = "monthly",
+  activePeriod: ReportPeriod = "weekly",
 ): ReportReadiness {
+  const period = resolveReportPeriod(cadence, activePeriod);
+  const cadenceMeta = getReportCadenceMeta(period);
+  const { minimum: minUsefulResponses, perBranch } = getReportCadenceTargets(period);
+
   if (comments.length === 0 || reports.length === 0) {
     return {
       percent: 0,
       usefulResponses: 0,
-      targetUsefulResponses: MIN_MONTHLY_USEFUL_RESPONSES,
-      missingUsefulResponses: MIN_MONTHLY_USEFUL_RESPONSES,
+      targetUsefulResponses: minUsefulResponses,
+      missingUsefulResponses: minUsefulResponses,
       qualityPercent: 0,
-      headline: "Sin base suficiente para informe mensual.",
+      headline: `Sin base suficiente para informe ${cadenceMeta.shortLabel}.`,
       detail:
         "Aún faltan valoraciones con motivo claro para explicar patrones por establecimiento.",
     };
@@ -198,8 +233,8 @@ export function buildReportReadiness(
     0,
   );
   const targetUsefulResponses = Math.max(
-    MIN_MONTHLY_USEFUL_RESPONSES,
-    reports.length * MONTHLY_USEFUL_RESPONSES_PER_BRANCH,
+    minUsefulResponses,
+    reports.length * perBranch,
   );
   const clearResponses = reports.reduce((sum, report) => sum + report.sufficient, 0);
   const qualityPercent = Math.round((clearResponses / comments.length) * 100);
@@ -221,8 +256,8 @@ export function buildReportReadiness(
     qualityPercent,
     headline:
       percent >= 80
-        ? "Base mensual casi lista para un informe defendible."
-        : "Todavía falta información clara para un mejor informe mensual.",
+        ? `Base ${cadenceMeta.shortLabel} casi lista para un informe defendible.`
+        : `Todavía falta información clara para un mejor informe ${cadenceMeta.shortLabel}.`,
     detail:
       missingUsefulResponses > 0
         ? `Faltan ${missingUsefulResponses} valoraciones útiles: respuestas con motivo claro, categoría específica o detalle accionable.`
@@ -234,12 +269,17 @@ export function buildExecutiveReportSummary(params: {
   comments: DashboardCommentRow[];
   reports: BranchReport[];
   readiness: ReportReadiness;
+  cadence?: ReportCadence;
+  activePeriod?: ReportPeriod;
   insight?: {
     detail: string;
     action: string;
   } | null;
 }): ExecutiveReportSummary {
   const { comments, reports, readiness, insight } = params;
+  const cadenceMeta = getReportCadenceMeta(
+    resolveReportPeriod(params.cadence ?? "monthly", params.activePeriod ?? "weekly"),
+  );
 
   if (comments.length === 0 || reports.length === 0) {
     return {
@@ -269,7 +309,7 @@ export function buildExecutiveReportSummary(params: {
         insight?.action ??
         (riskCount > 0
           ? "Conviene cerrar los casos abiertos y consolidar el resumen ejecutivo para gerencia."
-          : "Ya se puede consolidar el informe mensual y convertir los patrones positivos en práctica operativa."),
+          : "Ya se puede consolidar el informe y convertir los patrones positivos en práctica operativa."),
       generatedLabel: "Lectura automática lista",
     };
   }

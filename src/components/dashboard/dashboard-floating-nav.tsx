@@ -4,13 +4,13 @@ import {
   BarChart3,
   Bell,
   BellRing,
-  ChartNoAxesCombined,
   ChevronDown,
   Ear,
   Home,
   FileText,
   MessageSquareText,
   SlidersHorizontal,
+  Trash2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -27,6 +27,7 @@ import { createPortal } from "react-dom";
 
 import { signOutAction } from "@/app/auth/actions";
 import type { DashboardNotification } from "@/domain/dashboard/schemas";
+import { PushNotificationsToggle } from "@/components/push/push-notifications-toggle";
 import {
   DashboardUserMenu,
   type DashboardCurrentUser,
@@ -79,11 +80,17 @@ const navItems = [
   icon: LucideIcon;
 }>;
 
+const emptyNotifications: DashboardNotification[] = [];
+
 type DashboardFloatingNavProps = {
   activeView: DashboardNavView;
   onViewChange: (view: DashboardNavView) => void;
+  onNotificationNavigate?: (href: string) => void;
   notifications?: DashboardNotification[];
   currentUser?: DashboardCurrentUser;
+  organizationName?: string;
+  canManageBusinessProfile?: boolean;
+  onOpenBusinessProfile?: () => void;
   listeningSubNav?: {
     activeTab: "analytics" | "coaching";
     analyticsHref: string;
@@ -95,6 +102,16 @@ async function markNotificationAsRead(notificationId: string) {
   await fetch(`/api/notifications/${notificationId}/read`, {
     method: "PATCH",
   });
+}
+
+async function deleteNotification(notificationId: string) {
+  const response = await fetch(`/api/notifications/${notificationId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error("delete_notification_failed");
+  }
 }
 
 function shouldUseClientNavigation(event: MouseEvent<HTMLAnchorElement>) {
@@ -113,11 +130,15 @@ const SUBMENU_CLOSE_DELAY_MS = 180;
 export function DashboardFloatingNav({
   activeView,
   onViewChange,
-  notifications = [],
+  onNotificationNavigate,
+  notifications = emptyNotifications,
   currentUser,
+  organizationName,
+  canManageBusinessProfile,
+  onOpenBusinessProfile,
   listeningSubNav,
 }: DashboardFloatingNavProps) {
-  const resolvedNotifications = notifications;
+  const [visibleNotifications, setVisibleNotifications] = useState(notifications);
 
   // ── Notificaciones ────────────────────────────────────────────────────────
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -138,9 +159,27 @@ export function DashboardFloatingNav({
     () => false,
   );
 
-  const unreadCount = resolvedNotifications.filter(
+  const unreadCount = visibleNotifications.filter(
     (n) => n.unread,
   ).length;
+
+  useEffect(() => {
+    setVisibleNotifications(notifications);
+  }, [notifications]);
+
+  async function handleDeleteNotification(notificationId: string) {
+    const previousNotifications = visibleNotifications;
+
+    setVisibleNotifications((currentNotifications) =>
+      currentNotifications.filter((notification) => notification.id !== notificationId),
+    );
+
+    try {
+      await deleteNotification(notificationId);
+    } catch {
+      setVisibleNotifications(previousNotifications);
+    }
+  }
 
   // ── Helpers para abrir/cerrar el submenú ─────────────────────────────────
   const cancelClose = useCallback(() => {
@@ -292,14 +331,9 @@ export function DashboardFloatingNav({
         <Link
           href="/dashboard"
           onClick={(event) => handleNavClick(event, "resumen", "/dashboard")}
-          className="flex min-w-0 items-center gap-2 rounded-full px-2 py-1.5 text-emerald-900"
+          className="flex min-w-0 items-center rounded-full px-3 py-1.5"
         >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-white shadow-sm shadow-emerald-900/20">
-            <ChartNoAxesCombined size={18} aria-hidden="true" />
-          </span>
-          <span className="hidden text-sm font-semibold tracking-normal sm:inline">
-            Perks
-          </span>
+          <img src="/brand/perks-logo.png" alt="Perks" className="h-7 w-auto" />
         </Link>
 
         {/* ── Barra de navegación central ── */}
@@ -531,7 +565,9 @@ export function DashboardFloatingNav({
                 </div>
 
                 <div className="max-h-104 overflow-y-auto p-2">
-                  {resolvedNotifications.length === 0 ? (
+                  <PushNotificationsToggle hideWhenEnabled />
+
+                  {visibleNotifications.length === 0 ? (
                     <div className="px-3 py-8 text-center">
                       <p className="text-sm font-semibold text-slate-900">
                         Sin novedades para gerencia
@@ -541,7 +577,7 @@ export function DashboardFloatingNav({
                       </p>
                     </div>
                   ) : (
-                    resolvedNotifications.map((notification) => {
+                    visibleNotifications.map((notification) => {
                       const toneClass =
                         notification.tone === "danger"
                           ? "bg-red-500"
@@ -550,40 +586,60 @@ export function DashboardFloatingNav({
                             : "bg-emerald-500";
 
                       return (
-                        <Link
+                        <div
                           key={notification.id}
-                          href={notification.href}
-                          onClick={() => {
-                            if (notification.unread) {
-                              void markNotificationAsRead(notification.id);
-                            }
-                            setIsNotificationsOpen(false);
-                          }}
-                          className="flex gap-3 rounded-2xl px-3 py-3 transition hover:bg-slate-50"
+                          className="rounded-2xl transition hover:bg-slate-50"
                         >
-                          <span
-                            className={`mt-1 size-2.5 shrink-0 rounded-full ${toneClass}`}
-                            aria-hidden="true"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-3">
-                              <p className="text-sm font-semibold leading-5 text-slate-950">
-                                {notification.title}
+                          <Link
+                            href={notification.href}
+                            onClick={() => {
+                              if (notification.unread) {
+                                void markNotificationAsRead(notification.id);
+                              }
+                              onNotificationNavigate?.(notification.href);
+                              setIsNotificationsOpen(false);
+                            }}
+                            className="flex min-w-0 gap-3 px-3 pt-3"
+                          >
+                            <span
+                              className={`mt-1 size-2.5 shrink-0 rounded-full ${toneClass}`}
+                              aria-hidden="true"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="text-sm font-semibold leading-5 text-slate-950">
+                                  {notification.title}
+                                </p>
+                                {notification.unread ? (
+                                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-emerald-800">
+                                    Nueva
+                                  </span>
+                                ) : null}
+                              </div>
+                              <p className="mt-1 text-sm leading-5 text-slate-600">
+                                {notification.detail}
                               </p>
-                              {notification.unread ? (
-                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-emerald-800">
-                                  Nueva
-                                </span>
-                              ) : null}
                             </div>
-                            <p className="mt-1 text-sm leading-5 text-slate-600">
-                              {notification.detail}
-                            </p>
-                            <p className="mt-2 text-xs font-medium text-slate-400">
+                          </Link>
+                          <div className="ml-8 flex items-center justify-between gap-3 px-3 pb-3">
+                            <p className="text-xs font-medium text-slate-400">
                               {notification.time}
                             </p>
+                            {notification.isListeningSurvey ? null : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleDeleteNotification(notification.id)
+                                }
+                                className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                                aria-label={`Eliminar notificacion: ${notification.title}`}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                Eliminar
+                              </button>
+                            )}
                           </div>
-                        </Link>
+                        </div>
                       );
                     })
                   )}
@@ -593,7 +649,12 @@ export function DashboardFloatingNav({
           </div>
 
           {currentUser ? (
-            <DashboardUserMenu user={currentUser} />
+            <DashboardUserMenu
+              user={currentUser}
+              organizationName={organizationName}
+              canManageBusinessProfile={canManageBusinessProfile}
+              onOpenBusinessProfile={onOpenBusinessProfile}
+            />
           ) : (
             <form action={signOutAction}>
               <button

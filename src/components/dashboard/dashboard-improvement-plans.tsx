@@ -1,175 +1,168 @@
 "use client";
 
-import {
-  ArrowRight,
-  CalendarClock,
-  CheckCircle2,
-  ClipboardList,
-  LineChart,
-  ShieldAlert,
-  UserRound,
-} from "lucide-react";
-import type { ComponentType } from "react";
-import { useState } from "react";
+import { ClipboardList, ChevronLeft, ChevronRight, Loader2, Sparkles, WifiOff } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
-import {
-  buildBranchReports,
-  groupCommentsByBranch,
-} from "@/domain/dashboard/report-readiness";
-import type { DashboardCommentRow, DashboardSummaryData } from "@/domain/dashboard/schemas";
+import type { ImprovementNarrative } from "@/domain/dashboard/improvements-narrative";
+import { groupCommentsByBranch } from "@/domain/dashboard/report-readiness";
+import type { DashboardSummaryData } from "@/domain/dashboard/schemas";
 
-type ImprovementPlan = {
-  branch: string;
-  summary: string;
-  action: string;
-  owner: string;
-  metric: string;
-  timeframe: string;
-  successSignal: string;
-  evidence: string;
-};
+// ── Chip renderer ─────────────────────────────────────────────────────────────
 
-function buildImprovementPlan(
-  branch: string,
-  comments: DashboardCommentRow[],
-): ImprovementPlan {
-  const reports = buildBranchReports(comments);
-  const report = reports.find((item) => item.branch === branch);
-  const branchComments = comments.filter((comment) => comment.branch === branch);
-  const latestComment = branchComments.find(
-    (comment) => Boolean(comment.analysisSummary?.trim()),
+function NarrativeText({ text }: { text: string }) {
+  const parts = text.split(/(\[\[.*?\]\])/g);
+  return (
+    <p className="text-sm leading-[2.15] text-slate-700">
+      {parts.map((part, i) => {
+        const match = part.match(/^\[\[(.*?)\]\]$/);
+        if (match) {
+          return (
+            <span
+              key={i}
+              className="mx-0.5 my-1 inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-1 text-[0.78rem] font-semibold leading-none text-slate-800 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+            >
+              {match[1]}
+            </span>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </p>
   );
-  const topPattern = report?.topPattern ?? "Experiencia del cliente";
-  const dominantRisk = report?.risk ?? 0;
-  const missingContext = (report?.insufficient ?? 0) + (report?.partial ?? 0);
-  const summary =
-    latestComment?.analysisSummary?.trim() ??
-    (dominantRisk > 0
-      ? `${branch} está acumulando señales que conviene ordenar y atender con seguimiento consistente.`
-      : `${branch} ya tiene base suficiente para convertir comentarios en mejoras puntuales.`);
-
-  let owner = "Líder de sucursal";
-  let metric = "CSAT de la sucursal y comentarios del patrón principal";
-  let timeframe = "Revisar durante los próximos 14 días";
-  let successSignal =
-    "Menos comentarios repetidos sobre el mismo motivo y una lectura más clara en las nuevas valoraciones.";
-  let action =
-    report?.recommendedAction ??
-    "Consolidar el patrón principal y definir una acción concreta con responsable.";
-
-  if (missingContext > Math.ceil(branchComments.length / 2)) {
-    owner = "Servicio al cliente";
-    metric = "Porcentaje de valoraciones útiles y claridad del motivo";
-    timeframe = "Corregir captura esta semana y revisar el siguiente corte";
-    successSignal =
-      "Sube la proporción de comentarios con motivo claro y baja el volumen de respuestas ambiguas.";
-    action =
-      "Pedir el motivo principal cuando la respuesta sea ambigua y registrar un detalle corto que explique la causa.";
-  } else if (dominantRisk > 0) {
-    owner = "Gerencia de turno";
-    metric = `Comentarios de riesgo sobre ${topPattern.toLowerCase()} y tiempo de resolución`;
-    timeframe = "Aplicar ajuste esta semana y medir en 7 a 14 días";
-    successSignal =
-      "Disminuyen las señales de riesgo, el patrón se repite menos y el seguimiento se cierra más rápido.";
-    action =
-      latestComment?.recommendedAction?.trim() ??
-      `Atender primero el patrón de ${topPattern.toLowerCase()} y documentar la acción correctiva en la misma sucursal.`;
-  } else if ((report?.positive ?? 0) >= (report?.risk ?? 0)) {
-    owner = "Jefatura de experiencia";
-    metric = `CSAT alto y repetición de buenas prácticas en ${topPattern.toLowerCase()}`;
-    timeframe = "Replicar durante el próximo ciclo semanal";
-    successSignal =
-      "Se mantiene el volumen positivo y aparecen más comentarios que describen qué funcionó bien.";
-    action =
-      latestComment?.recommendedAction?.trim() ??
-      `Tomar la práctica que ya funciona en ${topPattern.toLowerCase()} y replicarla en el resto del equipo.`;
-  }
-
-  return {
-    branch,
-    summary,
-    action,
-    owner,
-    metric,
-    timeframe,
-    successSignal,
-    evidence:
-      latestComment?.message ??
-      `${branchComments.length} valoraciones en el periodo, ${report?.risk ?? 0} de riesgo y patrón dominante ${topPattern.toLowerCase()}.`,
-  };
 }
 
-function PlanCard({
-  plan,
-  isSelected,
-  onSelect,
+// ── Urgency badge ─────────────────────────────────────────────────────────────
+
+const urgencyStyles: Record<ImprovementNarrative["urgency"], string> = {
+  urgente: "bg-red-50 text-red-700 border-red-200",
+  "esta semana": "bg-emerald-50 text-emerald-800 border-emerald-200",
+  "próximo ciclo": "bg-slate-100 text-slate-600 border-slate-200",
+};
+
+function UrgencyBadge({ urgency }: { urgency: ImprovementNarrative["urgency"] }) {
+  return (
+    <span
+      className={`shrink-0 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.72rem] font-semibold capitalize ${urgencyStyles[urgency]}`}
+    >
+      {urgency}
+    </span>
+  );
+}
+
+// ── Branch card (small, green when active) ────────────────────────────────────
+
+function BranchCard({
+  name,
+  active,
+  onClick,
 }: {
-  plan: ImprovementPlan;
-  isSelected: boolean;
-  onSelect: () => void;
+  name: string;
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
     <button
       type="button"
-      onClick={onSelect}
+      onClick={onClick}
       className={[
-        "rounded-[1.15rem] border p-4 text-left transition",
-        isSelected
-          ? "border-slate-950 bg-slate-950 text-white shadow-[0_20px_45px_rgba(15,23,42,0.18)]"
-          : "border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50",
+        "shrink-0 rounded-xl px-3.5 py-2 text-sm font-semibold transition whitespace-nowrap",
+        active
+          ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
+          : "border border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800",
       ].join(" ")}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p
-            className={[
-              "text-xs font-semibold uppercase tracking-[0.12em]",
-              isSelected ? "text-slate-300" : "text-slate-400",
-            ].join(" ")}
-          >
-            Sucursal
-          </p>
-          <h3 className="mt-1 text-base font-semibold">{plan.branch}</h3>
-        </div>
-        <ArrowRight
-          className={isSelected ? "text-white" : "text-slate-400"}
-          size={16}
-          aria-hidden="true"
-        />
-      </div>
-      <p
-        className={[
-          "mt-3 text-sm leading-6",
-          isSelected ? "text-slate-200" : "text-slate-600",
-        ].join(" ")}
-      >
-        {plan.summary}
-      </p>
+      {name}
     </button>
   );
 }
 
-function DetailRow({
-  icon,
-  label,
-  value,
+// ── Branch carousel ───────────────────────────────────────────────────────────
+
+function BranchCarousel({
+  narratives,
+  activeBranchId,
+  onSelect,
 }: {
-  icon: ComponentType<{ className?: string; size?: number; "aria-hidden"?: boolean }>;
-  label: string;
-  value: string;
+  narratives: ImprovementNarrative[];
+  activeBranchId: string;
+  onSelect: (branchId: string) => void;
 }) {
-  const Icon = icon;
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  function scroll(dir: "left" | "right") {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === "left" ? -160 : 160, behavior: "smooth" });
+  }
+
+  const showArrows = narratives.length > 4;
 
   return (
-    <div className="rounded-[1rem] border border-slate-100 bg-white p-4">
-      <div className="flex items-center gap-2 text-slate-500">
-        <Icon className="h-4 w-4" size={16} aria-hidden />
-        <p className="text-xs font-semibold uppercase tracking-[0.12em]">{label}</p>
+    <div className="flex items-center gap-2">
+      {showArrows && (
+        <button
+          type="button"
+          onClick={() => scroll("left")}
+          className="shrink-0 rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 transition hover:bg-slate-50"
+          aria-label="Anterior"
+        >
+          <ChevronLeft size={15} />
+        </button>
+      )}
+
+      <div
+        ref={scrollRef}
+        className="flex gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {narratives.map((n) => (
+          <BranchCard
+            key={n.branchId}
+            name={n.branch}
+            active={n.branchId === activeBranchId}
+            onClick={() => onSelect(n.branchId)}
+          />
+        ))}
       </div>
-      <p className="mt-2 text-sm leading-6 text-slate-800">{value}</p>
+
+      {showArrows && (
+        <button
+          type="button"
+          onClick={() => scroll("right")}
+          className="shrink-0 rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 transition hover:bg-slate-50"
+          aria-label="Siguiente"
+        >
+          <ChevronRight size={15} />
+        </button>
+      )}
     </div>
   );
 }
+
+// ── Narrative card ────────────────────────────────────────────────────────────
+
+function NarrativeCard({ narrative }: { narrative: ImprovementNarrative }) {
+  return (
+    <div className="rounded-[1.15rem] border border-slate-200 bg-white p-5">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <h4 className="text-base font-semibold leading-snug text-slate-950">
+          {narrative.title}
+        </h4>
+        <UrgencyBadge urgency={narrative.urgency} />
+      </div>
+      <NarrativeText text={narrative.narrative} />
+    </div>
+  );
+}
+
+// ── Generate state ────────────────────────────────────────────────────────────
+
+type GenerateState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "done"; narratives: ImprovementNarrative[] }
+  | { status: "error"; message: string };
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export function DashboardImprovementPlans({
   dashboardData,
@@ -177,116 +170,155 @@ export function DashboardImprovementPlans({
   dashboardData?: DashboardSummaryData;
 }) {
   const comments = dashboardData?.comments ?? [];
-  const commentsByBranch = groupCommentsByBranch(comments);
-  const branchNames = [...commentsByBranch.keys()];
-  const [selectedBranch, setSelectedBranch] = useState<string>(branchNames[0] ?? "");
+  const branchNames = [...groupCommentsByBranch(comments).keys()];
 
-  const plans = branchNames.map((branch) =>
-    buildImprovementPlan(branch, commentsByBranch.get(branch) ?? []),
-  );
-  const activePlan = plans.find((plan) => plan.branch === selectedBranch) ?? plans[0] ?? null;
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [state, setState] = useState<GenerateState>({ status: "idle" });
+  const [isHydrating, setIsHydrating] = useState(true);
 
-  if (!activePlan) {
+  const period = dashboardData?.period?.includes("mes") ? "30d" : "7d";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSavedNarratives() {
+      setIsHydrating(true);
+      try {
+        const res = await fetch(`/api/improvements?period=${period}`);
+        if (!res.ok || cancelled) {
+          return;
+        }
+
+        const body = (await res.json()) as { narratives: ImprovementNarrative[] };
+        if (!cancelled && body.narratives.length > 0) {
+          setState({ status: "done", narratives: body.narratives });
+          setSelectedBranchId(body.narratives[0]?.branchId ?? "");
+        }
+      } catch {
+        // Si falla la carga, el usuario puede generar manualmente.
+      } finally {
+        if (!cancelled) {
+          setIsHydrating(false);
+        }
+      }
+    }
+
+    void loadSavedNarratives();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [period]);
+
+  if (branchNames.length === 0) {
     return (
       <div className="rounded-[1.35rem] border border-dashed border-slate-200 bg-white p-6 text-sm leading-6 text-slate-500">
-        Aún no hay suficiente base para sugerir un plan de mejora por sucursal.
+        Aún no hay suficiente base para generar un plan de mejora por sucursal.
       </div>
     );
   }
 
+  async function handleGenerate() {
+    setState({ status: "loading" });
+    try {
+      const res = await fetch("/api/improvements/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ period }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setState({ status: "error", message: body.error ?? "Error al generar mejoras." });
+        return;
+      }
+      const body = (await res.json()) as { narratives: ImprovementNarrative[] };
+      setState({ status: "done", narratives: body.narratives });
+      if (body.narratives.length > 0 && body.narratives[0]) {
+        setSelectedBranchId(body.narratives[0].branchId);
+      }
+    } catch {
+      setState({ status: "error", message: "No se pudo conectar con el servidor." });
+    }
+  }
+
+  const narratives = state.status === "done" ? state.narratives : [];
+  const activeNarrative =
+    narratives.find((n) => n.branchId === selectedBranchId) ?? narratives[0] ?? null;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      {/* Header */}
       <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5">
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-          <div className="max-w-3xl">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+          <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-              <ClipboardList className="h-4 w-4 text-slate-500" aria-hidden="true" />
+              <ClipboardList className="h-4 w-4 text-slate-400" aria-hidden />
               Plan de mejora por sucursal
             </div>
-            <h3 className="mt-3 text-2xl font-semibold tracking-normal text-slate-950">
-              Acciones operativas sugeridas para el siguiente ciclo
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Esta vista toma los comentarios ya analizados y los convierte en una
-              propuesta concreta de acción, responsable, plazo y métrica para cada
-              establecimiento.
+            <p className="mt-1.5 text-sm leading-6 text-slate-500">
+              Síntesis en lenguaje natural de lo que ocurrió y qué atender primero,
+              generada desde los comentarios del periodo.
             </p>
           </div>
-          <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-            Base: {dashboardData?.period ?? "Últimos 7 días"}
-          </div>
+
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={state.status === "loading" || isHydrating}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900 disabled:opacity-60"
+          >
+            {state.status === "loading" ? (
+              <>
+                <Loader2 size={15} className="animate-spin" aria-hidden />
+                Analizando…
+              </>
+            ) : isHydrating ? (
+              <>
+                <Loader2 size={15} className="animate-spin" aria-hidden />
+                Cargando…
+              </>
+            ) : (
+              <>
+                <Sparkles size={15} aria-hidden />
+                {state.status === "done" ? "Regenerar mejoras" : "Generar mejoras con IA"}
+              </>
+            )}
+          </button>
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[22rem_minmax(0,1fr)]">
-        <div className="space-y-3">
-          {plans.map((plan) => (
-            <PlanCard
-              key={plan.branch}
-              plan={plan}
-              isSelected={plan.branch === activePlan.branch}
-              onSelect={() => setSelectedBranch(plan.branch)}
-            />
-          ))}
+      {/* Error */}
+      {state.status === "error" && (
+        <div className="flex items-center gap-3 rounded-[1.15rem] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <WifiOff size={15} aria-hidden className="shrink-0" />
+          {state.message}
         </div>
+      )}
 
-        <article className="rounded-[1.35rem] border border-slate-200 bg-[#f7f8f4] p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Lectura del patrón
-              </p>
-              <h3 className="mt-1 text-xl font-semibold text-slate-950">
-                {activePlan.branch}
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-slate-700">
-                {activePlan.summary}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Acción prioritaria
-              </p>
-              <p className="mt-2 max-w-sm text-sm leading-6 text-slate-800">
-                {activePlan.action}
-              </p>
-            </div>
-          </div>
+      {/* Idle hint */}
+      {!isHydrating && state.status === "idle" && (
+        <div className="rounded-[1.35rem] border border-dashed border-slate-200 bg-white p-8 text-center text-sm leading-7 text-slate-400">
+          Pulsa{" "}
+          <span className="font-semibold text-slate-700">"Generar mejoras con IA"</span>{" "}
+          para que el asistente analice los comentarios de cada sucursal y te dé una síntesis
+          clara de qué atender primero.
+        </div>
+      )}
 
-          <div className="mt-5 grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
-            <DetailRow icon={UserRound} label="Responsable" value={activePlan.owner} />
-            <DetailRow icon={LineChart} label="Métrica a observar" value={activePlan.metric} />
-            <DetailRow icon={CalendarClock} label="Plazo de revisión" value={activePlan.timeframe} />
-            <DetailRow
-              icon={CheckCircle2}
-              label="Señal de éxito"
-              value={activePlan.successSignal}
-            />
-          </div>
+      {/* Results */}
+      {state.status === "done" && narratives.length > 0 && activeNarrative && (
+        <section className="space-y-3">
+          {/* Branch carousel */}
+          <BranchCarousel
+            narratives={narratives}
+            activeBranchId={activeNarrative.branchId}
+            onSelect={setSelectedBranchId}
+          />
 
-          <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <div className="rounded-[1.15rem] border border-slate-200 bg-white p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-                <ShieldAlert className="h-4 w-4 text-slate-500" aria-hidden="true" />
-                Evidencia base
-              </div>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                {activePlan.evidence}
-              </p>
-            </div>
-
-            <div className="rounded-[1.15rem] border border-slate-200 bg-white p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Uso sugerido
-              </p>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                Este plan sirve como guía operativa. El siguiente paso natural es
-                conectarlo a seguimiento para registrar qué acción sí ejecutó el equipo.
-              </p>
-            </div>
-          </div>
-        </article>
-      </section>
+          {/* Narrative */}
+          <NarrativeCard narrative={activeNarrative} />
+        </section>
+      )}
     </div>
   );
 }

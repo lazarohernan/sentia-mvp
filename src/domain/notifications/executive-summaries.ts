@@ -40,7 +40,8 @@ export function buildExecutiveNotificationDrafts(
 
   for (const record of risky) {
     const branch = record.branches?.name ?? "Sucursal";
-    const current = branchRiskMap.get(branch);
+    const branchKey = record.branches?.id ?? `name:${branch}`;
+    const current = branchRiskMap.get(branchKey);
     const nextLatestAt =
       !current || new Date(record.created_at) > new Date(current.latestAt)
         ? record.created_at
@@ -50,7 +51,7 @@ export function buildExecutiveNotificationDrafts(
         ? getAnalysis(record)?.category ?? null
         : current.latestCategory;
 
-    branchRiskMap.set(branch, {
+    branchRiskMap.set(branchKey, {
       branch,
       branchId: record.branches?.id ?? null,
       count: (current?.count ?? 0) + 1,
@@ -123,10 +124,11 @@ export function buildExecutiveNotificationDrafts(
 
   for (const record of positive) {
     const branch = record.branches?.name ?? "Sucursal";
-    const current = positiveBranchScores.get(branch);
+    const branchKey = record.branches?.id ?? `name:${branch}`;
+    const current = positiveBranchScores.get(branchKey);
     const score = record.csat_score ?? 0;
 
-    positiveBranchScores.set(branch, {
+    positiveBranchScores.set(branchKey, {
       branch,
       branchId: record.branches?.id ?? null,
       total: (current?.total ?? 0) + score,

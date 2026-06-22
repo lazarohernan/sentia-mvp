@@ -95,6 +95,19 @@ export function getCategoryLabel(category: string | null | undefined): string {
   return categoryLabels[category as AiAnalysis["category"]] ?? "Experiencia del cliente";
 }
 
+export function humanizeCategoryLabel(category: string | null | undefined): string {
+  const trimmed = category?.trim();
+  if (!trimmed) {
+    return "Experiencia general";
+  }
+
+  if (/^[a-z]+(_[a-z]+)*$/.test(trimmed)) {
+    return getCategoryLabel(trimmed);
+  }
+
+  return trimmed;
+}
+
 export function prepareTextForHuggingFace(text: string): string {
   const trimmed = text.trim();
   if (trimmed.length <= maxInputCharacters) {

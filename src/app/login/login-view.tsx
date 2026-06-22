@@ -1,6 +1,5 @@
 import {
   Building2,
-  KeyRound,
   Mail,
   UserRound,
 } from "lucide-react";
@@ -10,6 +9,7 @@ import { signInAction, signUpAction } from "@/app/auth/actions";
 import { REGISTRATION_ENABLED } from "@/domain/auth/config";
 
 import { LoginSubmitButton } from "./login-submit-button";
+import { LoginPasswordField } from "./login-password-field";
 
 type LoginViewProps = {
   mode?: "login" | "registro";
@@ -157,33 +157,14 @@ export function LoginView({
                   </div>
                 </label>
 
-                <label className="block">
-                  <span className="text-sm font-semibold text-white/75">
-                    Contrasena
-                  </span>
-                  <div className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-white/8 bg-[#34413b] px-4 text-white transition focus-within:border-emerald-300/70 focus-within:ring-2 focus-within:ring-emerald-300/20">
-                    <KeyRound
-                      size={21}
-                      className="shrink-0 text-white/55"
-                      aria-hidden="true"
-                    />
-                    <input
-                      className="h-full w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
-                      name="password"
-                      type="password"
-                      autoComplete={
-                        isRegisterMode ? "new-password" : "current-password"
-                      }
-                      placeholder={
-                        isRegisterMode
-                          ? "Minimo 8 caracteres"
-                          : "Tu contrasena"
-                      }
-                      minLength={8}
-                      required
-                    />
-                  </div>
-                </label>
+                <LoginPasswordField
+                  autoComplete={
+                    isRegisterMode ? "new-password" : "current-password"
+                  }
+                  placeholder={
+                    isRegisterMode ? "Minimo 8 caracteres" : "Tu contrasena"
+                  }
+                />
               </div>
 
               {!isRegisterMode ? (

@@ -46,6 +46,7 @@ export interface Database {
           compensation_policy: string | null;
           follow_up_tone: string | null;
           agent_notes: string | null;
+          report_cadence: "weekly" | "monthly" | "both";
           created_at: string;
         };
         Insert: {
@@ -66,6 +67,7 @@ export interface Database {
           compensation_policy?: string | null;
           follow_up_tone?: string | null;
           agent_notes?: string | null;
+          report_cadence?: "weekly" | "monthly" | "both";
           created_at?: string;
         };
         Update: {
@@ -85,6 +87,7 @@ export interface Database {
           compensation_policy?: string | null;
           follow_up_tone?: string | null;
           agent_notes?: string | null;
+          report_cadence?: "weekly" | "monthly" | "both";
         };
       };
       organization_members: {
@@ -254,6 +257,145 @@ export interface Database {
           source_id?: string | null;
           is_read?: boolean;
           read_at?: string | null;
+        };
+      };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          organization_id: string;
+          user_id: string;
+          endpoint: string;
+          subscription: Json;
+          user_agent: string | null;
+          device_label: string | null;
+          last_seen_at: string;
+          last_success_at: string | null;
+          last_error_at: string | null;
+          disabled_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          user_id: string;
+          endpoint: string;
+          subscription: Json;
+          user_agent?: string | null;
+          device_label?: string | null;
+          last_seen_at?: string;
+          last_success_at?: string | null;
+          last_error_at?: string | null;
+          disabled_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          organization_id?: string;
+          user_id?: string;
+          endpoint?: string;
+          subscription?: Json;
+          user_agent?: string | null;
+          device_label?: string | null;
+          last_seen_at?: string;
+          last_success_at?: string | null;
+          last_error_at?: string | null;
+          disabled_at?: string | null;
+          updated_at?: string;
+        };
+      };
+      improvement_narratives: {
+        Row: {
+          id: string;
+          organization_id: string;
+          branch_id: string;
+          branch_name: string;
+          period: "7d" | "30d";
+          title: string;
+          narrative: string;
+          urgency: "urgente" | "esta semana" | "próximo ciclo";
+          generated_by_llm: boolean;
+          actor_user_id: string | null;
+          generated_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          branch_id: string;
+          branch_name: string;
+          period: "7d" | "30d";
+          title: string;
+          narrative: string;
+          urgency: "urgente" | "esta semana" | "próximo ciclo";
+          generated_by_llm?: boolean;
+          actor_user_id?: string | null;
+          generated_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          branch_name?: string;
+          title?: string;
+          narrative?: string;
+          urgency?: "urgente" | "esta semana" | "próximo ciclo";
+          generated_by_llm?: boolean;
+          actor_user_id?: string | null;
+          generated_at?: string;
+          updated_at?: string;
+        };
+      };
+      improvement_weekly_digests: {
+        Row: {
+          id: string;
+          organization_id: string;
+          branch_id: string;
+          branch_name: string;
+          window_key: string;
+          window_label: string;
+          period_start: string;
+          period_end: string;
+          digest: Json;
+          title: string;
+          narrative: string;
+          urgency: "urgente" | "esta semana" | "próximo ciclo";
+          comment_count: number;
+          comment_fingerprint: string;
+          generated_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          branch_id: string;
+          branch_name: string;
+          window_key: string;
+          window_label: string;
+          period_start: string;
+          period_end: string;
+          digest?: Json;
+          title: string;
+          narrative: string;
+          urgency: "urgente" | "esta semana" | "próximo ciclo";
+          comment_count?: number;
+          comment_fingerprint: string;
+          generated_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          branch_name?: string;
+          window_label?: string;
+          digest?: Json;
+          title?: string;
+          narrative?: string;
+          urgency?: "urgente" | "esta semana" | "próximo ciclo";
+          comment_count?: number;
+          comment_fingerprint?: string;
+          generated_at?: string;
+          updated_at?: string;
         };
       };
       agent_reports: {

@@ -9,6 +9,7 @@ import { getListeningCollaboratorSummaries } from "@/domain/listening/daily-summ
 import type { ListeningEventRow } from "@/domain/listening/schemas";
 import { DashboardFloatingNav } from "../dashboard-floating-nav";
 import type { DashboardCurrentUser } from "../dashboard-user-menu";
+import { PlatformFooter } from "@/components/platform-footer";
 import { ListeningBranchFilter } from "./listening-branch-filter";
 import { buildListeningSectionHref } from "./listening-section-tabs";
 
@@ -32,7 +33,7 @@ export function ListeningCoachingView({
   const collaboratorSummaries = getListeningCollaboratorSummaries(listeningEvents);
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#f4f8f5_0%,#e9f0ed_100%)] text-slate-950">
+    <main className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#f4f8f5_0%,#e9f0ed_100%)] text-slate-950">
       <DashboardFloatingNav
         activeView="escucha"
         onViewChange={() => {}}
@@ -52,7 +53,7 @@ export function ListeningCoachingView({
         }}
       />
 
-      <section className="mx-auto w-full max-w-[92rem] px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+      <section className="mx-auto flex w-full max-w-[92rem] flex-1 flex-col px-4 pb-4 pt-28 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-3xl font-semibold tracking-normal text-slate-950">
@@ -190,6 +191,7 @@ export function ListeningCoachingView({
             </div>
           </div>
         </section>
+        <PlatformFooter />
       </section>
     </main>
   );

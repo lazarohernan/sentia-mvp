@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   AlertTriangle,
@@ -8,11 +8,9 @@ import {
   CheckCircle2,
   Download,
   FileText,
-  History,
   Loader2,
   Sparkles,
   X,
-  Mail,
   TrendingUp,
 } from "lucide-react";
 
@@ -21,12 +19,13 @@ import type {
 } from "@/domain/dashboard/schemas";
 import { buildDashboardAnomalies } from "@/domain/dashboard/anomalies";
 import {
-  buildReportEmailHref,
-  buildReportPrintHtml,
-  getReportRecipientEmail,
-  type ReportDeliveryChannel,
-  type ReportDeliveryRecord,
-} from "@/domain/dashboard/report-delivery";
+  getReportCadenceMeta,
+  getReportCadenceSettingMeta,
+  reportPeriods,
+  resolveReportPeriod,
+  type ReportPeriod,
+} from "@/domain/dashboard/report-cadence";
+import { buildReportPrintHtml } from "@/domain/dashboard/report-delivery";
 import {
   buildBranchReports,
   buildReportReadiness,
@@ -34,56 +33,14 @@ import {
 import type { AgentOperationalReport } from "@/domain/agent/context";
 import type { OrganizationSettings } from "@/domain/organizations/organization-settings-schemas";
 
-const REPORT_HISTORY_STORAGE_PREFIX = "perks.dashboard.report-delivery.history";
 // Agent UI is intentionally paused while the core operational roadmap is completed.
 const SHOW_AGENT_UI = false;
-
-function getReportHistoryStorageKey(scope: string) {
-  return `${REPORT_HISTORY_STORAGE_PREFIX}.${scope}`;
-}
 
 function formatHistoryTimestamp(value: string) {
   return new Intl.DateTimeFormat("es-HN", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
-}
-
-function readReportHistory(scope: string): ReportDeliveryRecord[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  const saved = window.localStorage.getItem(getReportHistoryStorageKey(scope));
-  if (!saved) {
-    return [];
-  }
-
-  try {
-    return JSON.parse(saved) as ReportDeliveryRecord[];
-  } catch {
-    return [];
-  }
-}
-
-function createDeliveryRecord(params: {
-  channel: ReportDeliveryChannel;
-  label: string;
-  recipient?: string | null;
-}): ReportDeliveryRecord {
-  const createdAt = new Date().toISOString();
-  const suffix =
-    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : createdAt;
-
-  return {
-    id: `${params.channel}-${suffix}`,
-    createdAt,
-    channel: params.channel,
-    label: params.label,
-    recipient: params.recipient,
-  };
 }
 
 function MetricCard({
@@ -114,14 +71,16 @@ export function DashboardIntelligenceReports({
   dashboardData,
   organizationName,
   organizationSettings,
-  currentUserEmail,
   initialAgentReport,
+  initialReportPeriod,
+  autoOpenReport = false,
 }: {
   dashboardData?: DashboardSummaryData;
   organizationName?: string;
   organizationSettings?: OrganizationSettings;
-  currentUserEmail?: string | null;
   initialAgentReport?: AgentOperationalReport | null;
+  initialReportPeriod?: ReportPeriod;
+  autoOpenReport?: boolean;
 }) {
   const [showReadinessNote, setShowReadinessNote] = useState(true);
   const comments = dashboardData?.comments ?? [];
@@ -130,8 +89,21 @@ export function DashboardIntelligenceReports({
   );
   const [isGeneratingAgentReport, setIsGeneratingAgentReport] = useState(false);
   const [agentReportError, setAgentReportError] = useState<string | null>(null);
-  const reports = buildBranchReports(comments);
-  const readiness = buildReportReadiness(comments, reports);
+  const [reportPreviewHtml, setReportPreviewHtml] = useState<string | null>(null);
+  const [reportPreviewTitle, setReportPreviewTitle] = useState("Informe operativo");
+  const reportPreviewFrameRef = useRef<HTMLIFrameElement | null>(null);
+  const reportCadence = organizationSettings?.reportCadence ?? "monthly";
+  const defaultReportPeriod: ReportPeriod =
+    reportCadence === "monthly" ? "monthly" : "weekly";
+  const [activeReportPeriod, setActiveReportPeriod] = useState<ReportPeriod>(
+    initialReportPeriod ?? defaultReportPeriod,
+  );
+  const hasAutoOpenedRef = useRef(false);
+  const effectiveReportPeriod = resolveReportPeriod(reportCadence, activeReportPeriod);
+  const cadenceMeta = getReportCadenceMeta(effectiveReportPeriod);
+  const cadenceSettingMeta = getReportCadenceSettingMeta(reportCadence);
+  const reports = buildBranchReports(comments, reportCadence, activeReportPeriod);
+  const readiness = buildReportReadiness(comments, reports, reportCadence, activeReportPeriod);
   const priorityBranch = reports[0];
   const weakDataCount = reports.reduce(
     (sum, report) => sum + report.partial + report.insufficient,
@@ -140,17 +112,6 @@ export function DashboardIntelligenceReports({
   const riskCount = comments.filter((comment) => comment.sentiment === "Riesgo").length;
   const analyzedCount = comments.filter((comment) => comment.analysisModel).length;
   const anomalies = buildDashboardAnomalies(comments);
-  const historyScope = useMemo(
-    () => organizationSettings?.id ?? organizationName ?? "demo",
-    [organizationName, organizationSettings?.id],
-  );
-  const [deliveryHistory, setDeliveryHistory] = useState<ReportDeliveryRecord[]>(() =>
-    readReportHistory(historyScope),
-  );
-  const recipientEmail = getReportRecipientEmail({
-    organizationSettings,
-    currentUserEmail,
-  });
   const knowledgeEntries = [
     organizationSettings?.peakHours,
     organizationSettings?.servicePriorities,
@@ -158,90 +119,73 @@ export function DashboardIntelligenceReports({
     organizationSettings?.followUpTone,
     organizationSettings?.agentNotes,
   ].filter(Boolean).length;
-  const emailHref = recipientEmail
-    ? buildReportEmailHref({
+
+  useEffect(() => {
+    if (initialReportPeriod) {
+      setActiveReportPeriod(initialReportPeriod);
+    }
+  }, [initialReportPeriod]);
+
+  useEffect(() => {
+    hasAutoOpenedRef.current = false;
+  }, [initialReportPeriod, autoOpenReport]);
+
+  useEffect(() => {
+    if (!autoOpenReport || hasAutoOpenedRef.current) {
+      return;
+    }
+
+    if (readiness.missingUsefulResponses > 0) {
+      return;
+    }
+
+    hasAutoOpenedRef.current = true;
+    setReportPreviewTitle(cadenceMeta.previewTitle);
+    setReportPreviewHtml(
+      buildReportPrintHtml({
         organizationName,
-        periodLabel: dashboardData?.period ?? "Últimos 7 días",
+        periodLabel: dashboardData?.period ?? cadenceMeta.periodLabel,
+        reportTitle: cadenceMeta.previewTitle,
         readiness,
         priorityBranch,
-        recipientEmail,
-      })
-    : null;
-
-  function persistDeliveryRecord(channel: ReportDeliveryChannel, recipient?: string | null) {
-    const label =
-      channel === "pdf"
-        ? "Exportación preliminar en PDF"
-        : recipient
-          ? `Correo preparado para ${recipient}`
-          : "Correo preparado";
-    const nextEntry = createDeliveryRecord({ channel, label, recipient });
-    const nextHistory = [nextEntry, ...deliveryHistory].slice(0, 8);
-    setDeliveryHistory(nextHistory);
-    window.localStorage.setItem(
-      getReportHistoryStorageKey(historyScope),
-      JSON.stringify(nextHistory),
+        reports,
+        comments,
+      }),
     );
-  }
+  }, [
+    autoOpenReport,
+    cadenceMeta.periodLabel,
+    cadenceMeta.previewTitle,
+    comments,
+    dashboardData?.period,
+    organizationName,
+    priorityBranch,
+    readiness,
+    reports,
+  ]);
 
   function handleExportPdf() {
+    setReportPreviewTitle(cadenceMeta.previewTitle);
     const html = buildReportPrintHtml({
       organizationName,
-      periodLabel: dashboardData?.period ?? "Últimos 7 días",
+      periodLabel: dashboardData?.period ?? cadenceMeta.periodLabel,
+      reportTitle: cadenceMeta.previewTitle,
       readiness,
       priorityBranch,
       reports,
       comments,
     });
-
-    // Intentar primero con window.open; algunos navegadores lo permiten desde
-    // un click directo. Si el bloqueador de popups lo cancela (retorna null),
-    // caemos al iframe oculto que no puede ser bloqueado.
-    const reportWindow = window.open("", "_blank");
-    if (reportWindow) {
-      reportWindow.document.open();
-      reportWindow.document.write(html);
-      reportWindow.document.close();
-      reportWindow.focus();
-      window.setTimeout(() => {
-        reportWindow.print();
-      }, 250);
-      persistDeliveryRecord("pdf");
-      return;
-    }
-
-    // Fallback: iframe oculto — no puede ser bloqueado por el bloqueador de popups.
-    const iframe = document.createElement("iframe");
-    iframe.style.cssText =
-      "position:fixed;width:1px;height:1px;top:-200px;left:-200px;border:0;opacity:0;";
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentDocument ?? iframe.contentWindow?.document;
-    if (!iframeDoc) {
-      document.body.removeChild(iframe);
-      return;
-    }
-
-    iframeDoc.open();
-    iframeDoc.write(html);
-    iframeDoc.close();
-
-    window.setTimeout(() => {
-      try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } finally {
-        window.setTimeout(() => {
-          document.body.removeChild(iframe);
-        }, 1500);
-      }
-    }, 250);
-
-    persistDeliveryRecord("pdf");
+    setReportPreviewHtml(html);
   }
 
-  function handlePrepareEmail() {
-    persistDeliveryRecord("email", recipientEmail);
+  function handlePrintPreview() {
+    const previewWindow = reportPreviewFrameRef.current?.contentWindow;
+    if (!previewWindow) {
+      return;
+    }
+
+    previewWindow.focus();
+    previewWindow.print();
   }
 
   async function handleGenerateAgentReport() {
@@ -281,62 +225,106 @@ export function DashboardIntelligenceReports({
 
   return (
     <div className="space-y-5">
-      <div className="relative">
-        {readiness.missingUsefulResponses > 0 && showReadinessNote ? (
-          <div className="pointer-events-none absolute left-8 right-8 top-[-2.35rem] z-0">
-            <div className="pointer-events-auto grid min-h-[5.15rem] grid-cols-[1fr_auto_1fr] items-start rounded-t-[1.2rem] rounded-br-[1rem] border border-slate-200/85 bg-[rgba(255,255,255,0.78)] px-5 pb-7 pt-4 text-[15px] font-medium text-slate-950 shadow-[0_14px_34px_rgba(15,23,42,0.07)] backdrop-blur-lg">
-              <div />
-              <span className="max-w-[34rem] text-center leading-6">
-                No hay suficiente información para entregar el informe aún.
-              </span>
+      {reportPreviewHtml ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 px-4 py-6 backdrop-blur-[2px]">
+          <div className="flex h-[min(90vh,58rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Vista previa
+                </p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-950">
+                  {reportPreviewTitle}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handlePrintPreview}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+                >
+                  <Download className="h-4 w-4" aria-hidden="true" />
+                  Imprimir o guardar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReportPreviewHtml(null)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+                  aria-label="Cerrar vista previa del informe"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 bg-slate-100 p-3">
+              <iframe
+                ref={reportPreviewFrameRef}
+                title="Vista previa del informe"
+                srcDoc={reportPreviewHtml}
+                className="h-full w-full rounded-[1rem] border border-slate-200 bg-white"
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {reportCadence === "both" ? (
+        <div className="flex w-fit max-w-full overflow-x-auto rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+          {reportPeriods.map((period) => {
+            const periodMeta = getReportCadenceMeta(period);
+            const isActive = activeReportPeriod === period;
+
+            return (
               <button
+                key={period}
                 type="button"
-                onClick={() => setShowReadinessNote(false)}
-                className="justify-self-end inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-black/5 hover:text-slate-900"
-                aria-label="Cerrar aviso de preparación del informe"
+                onClick={() => setActiveReportPeriod(period)}
+                aria-pressed={isActive}
+                className={[
+                  "inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold transition",
+                  isActive
+                    ? "bg-slate-950 text-white"
+                    : "text-slate-600 hover:bg-slate-50",
+                ].join(" ")}
               >
-                <X className="h-4 w-4" aria-hidden="true" />
+                {periodMeta.label}
               </button>
-            </div>
-          </div>
-        ) : null}
+            );
+          })}
+        </div>
+      ) : null}
 
-        <section
-          className={`relative z-10 rounded-[1.35rem] border border-slate-200 bg-white p-5 ${
-            readiness.missingUsefulResponses > 0 && showReadinessNote ? "mt-9" : ""
-          }`}
-        >
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
-          <div className="max-w-2xl">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-              <TrendingUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
-              Preparación del informe mensual
-            </div>
-            <h3 className="mt-3 text-2xl font-semibold tracking-normal text-slate-950">
-              {readiness.percent}% listo
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              {readiness.missingUsefulResponses > 0
-                ? `Faltan ${readiness.missingUsefulResponses} valoraciones útiles para explicar mejor los patrones por sucursal.`
-                : "La base actual permite preparar un informe mensual con buena claridad."}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
+      <section className="grid gap-4 lg:grid-cols-2">
+        <article className="rounded-[1.35rem] border border-slate-200 bg-white p-5">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+            <TrendingUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
+            {cadenceMeta.preparationTitle}
+          </div>
+          <h3 className="mt-3 text-2xl font-semibold tracking-normal text-slate-950">
+            {readiness.percent}% listo
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {readiness.missingUsefulResponses > 0
+              ? `Faltan ${readiness.missingUsefulResponses} valoraciones útiles para explicar mejor los patrones por sucursal.`
+              : `La base actual permite preparar un informe ${cadenceMeta.shortLabel} con buena claridad.`}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+              {readiness.usefulResponses.toFixed(1)} /{" "}
+              {readiness.targetUsefulResponses} respuestas útiles
+            </span>
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+              {readiness.qualityPercent}% claridad
+            </span>
+            {priorityBranch ? (
               <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                {readiness.usefulResponses.toFixed(1)} /{" "}
-                {readiness.targetUsefulResponses} respuestas útiles
+                {priorityBranch.branch} requiere más contexto
               </span>
-              <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                {readiness.qualityPercent}% claridad
-              </span>
-              {priorityBranch ? (
-                <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                  {priorityBranch.branch} requiere más contexto
-                </span>
-              ) : null}
-            </div>
+            ) : null}
           </div>
 
-          <div className="w-full border-t border-slate-100 pt-5 lg:max-w-sm lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+          <div className="mt-6 border-t border-slate-100 pt-5">
             <div className="flex items-end justify-between gap-3">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                 Avance
@@ -348,7 +336,7 @@ export function DashboardIntelligenceReports({
             <div
               className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100"
               role="progressbar"
-              aria-label="Preparación del informe mensual"
+              aria-label={cadenceMeta.preparationTitle}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={readiness.percent}
@@ -363,9 +351,81 @@ export function DashboardIntelligenceReports({
               y detalle útil para explicar el patrón del periodo.
             </p>
           </div>
-        </div>
-        </section>
-      </div>
+        </article>
+
+        <article className="flex flex-col rounded-[1.35rem] border border-slate-200 bg-white p-5">
+          {readiness.missingUsefulResponses > 0 && showReadinessNote ? (
+            <div className="mb-5 flex items-start justify-between gap-3 rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium leading-6 text-slate-800">
+              <p>No hay suficiente información para entregar el informe aún.</p>
+              <button
+                type="button"
+                onClick={() => setShowReadinessNote(false)}
+                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-black/5 hover:text-slate-900"
+                aria-label="Cerrar aviso de preparación del informe"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
+
+          <div className="flex flex-1 flex-col">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
+                  <FileText className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                  Entrega del informe
+                </div>
+                <h3 className="mt-3 text-lg font-semibold text-slate-950">
+                  {readiness.missingUsefulResponses > 0
+                    ? "Borrador operativo listo para revisión"
+                    : "Informe listo para compartir"}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Abre una vista previa minimalista dentro de la plataforma y
+                  desde allí imprime o guarda el informe.
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                {dashboardData?.period ?? cadenceMeta.periodLabel}
+              </span>
+            </div>
+
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={handleExportPdf}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900"
+              >
+                <FileText className="h-4 w-4" aria-hidden="true" />
+                Ver informe
+              </button>
+            </div>
+
+            <div className="mt-auto grid gap-3 pt-5 sm:grid-cols-2">
+              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                <CalendarDays className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Periodo del informe
+                </p>
+                <p className="mt-2 text-sm font-medium text-slate-700">
+                  {dashboardData?.period ?? cadenceMeta.periodLabel}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                <TrendingUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
+                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  Estado actual
+                </p>
+                <p className="mt-2 text-sm font-medium text-slate-700">
+                  {readiness.missingUsefulResponses > 0
+                    ? "Se abriría como borrador preliminar."
+                    : "Se puede abrir como informe consolidado."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
@@ -536,7 +596,7 @@ export function DashboardIntelligenceReports({
             </p>
           </div>
           <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-            Base para informe semanal y mensual
+            {cadenceSettingMeta.periodBadge}
           </span>
         </div>
 
@@ -596,7 +656,7 @@ export function DashboardIntelligenceReports({
                 <div className="mt-3 rounded-xl bg-white p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      Preparación mensual
+                      {cadenceMeta.branchReadinessLabel}
                     </p>
                     <span className="text-xs font-semibold text-slate-500">
                       {report.readinessPercent}%
@@ -605,7 +665,7 @@ export function DashboardIntelligenceReports({
                   <div
                     className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"
                     role="progressbar"
-                    aria-label={`Preparación mensual de ${report.branch}`}
+                    aria-label={`${cadenceMeta.branchReadinessLabel} de ${report.branch}`}
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-valuenow={report.readinessPercent}
@@ -651,132 +711,6 @@ export function DashboardIntelligenceReports({
             establecimiento.
           </div>
         )}
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <article className="rounded-[1.15rem] border border-slate-200 bg-white p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-                <FileText className="h-4 w-4 text-slate-500" aria-hidden="true" />
-                Entrega del informe
-              </div>
-              <h3 className="mt-3 text-lg font-semibold text-slate-950">
-                {readiness.missingUsefulResponses > 0
-                  ? "Borrador operativo listo para revisión"
-                  : "Informe listo para compartir"}
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Exporta esta lectura en PDF o prepara el correo desde la misma base
-                que ya ve gerencia en el panel.
-              </p>
-            </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-              {dashboardData?.period ?? "Últimos 7 días"}
-            </span>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={handleExportPdf}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              <Download className="h-4 w-4" aria-hidden="true" />
-              Exportar PDF
-            </button>
-            {emailHref ? (
-              <a
-                href={emailHref}
-                onClick={handlePrepareEmail}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-              >
-                <Mail className="h-4 w-4" aria-hidden="true" />
-                Preparar correo
-              </a>
-            ) : (
-              <button
-                type="button"
-                disabled
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-400"
-              >
-                <Mail className="h-4 w-4" aria-hidden="true" />
-                Configura un correo
-              </button>
-            )}
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
-              <CalendarDays className="h-4 w-4 text-slate-500" aria-hidden="true" />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Entrega por defecto
-              </p>
-              <p className="mt-2 text-sm font-medium text-slate-700">
-                Semanal para operación y mensual para gerencia.
-              </p>
-            </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
-              <TrendingUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Estado actual
-              </p>
-              <p className="mt-2 text-sm font-medium text-slate-700">
-                {readiness.missingUsefulResponses > 0
-                  ? "Se enviaría como borrador preliminar."
-                  : "Se puede enviar como informe consolidado."}
-              </p>
-            </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
-              <Mail className="h-4 w-4 text-slate-500" aria-hidden="true" />
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Destino actual
-              </p>
-              <p className="mt-2 text-sm font-medium text-slate-700">
-                {recipientEmail ?? "Sin correo configurado"}
-              </p>
-            </div>
-          </div>
-        </article>
-
-        <article className="rounded-[1.15rem] border border-slate-200 bg-white p-5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-            <History className="h-4 w-4 text-slate-500" aria-hidden="true" />
-            Historial de entregas
-          </div>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Registro local de exportaciones y correos preparados desde este panel.
-          </p>
-
-          {deliveryHistory.length > 0 ? (
-            <div className="mt-5 space-y-3">
-              {deliveryHistory.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="rounded-xl border border-slate-100 bg-slate-50/80 p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">
-                        {entry.label}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {formatHistoryTimestamp(entry.createdAt)}
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                      {entry.channel === "pdf" ? "PDF" : "Correo"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-5 rounded-xl border border-dashed border-slate-200 p-4 text-sm leading-6 text-slate-500">
-              Aún no hay entregas registradas en esta vista.
-            </div>
-          )}
-        </article>
       </section>
     </div>
   );

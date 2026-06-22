@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { reportCadences } from "@/domain/dashboard/report-cadence";
 import {
   sanitizeEmailInput,
   sanitizeOptionalTextInput,
@@ -54,6 +55,7 @@ export const organizationSettingsSchema = z.object({
   compensationPolicy: z.string().max(1000).nullable(),
   followUpTone: z.string().max(240).nullable(),
   agentNotes: z.string().max(1200).nullable(),
+  reportCadence: z.enum(reportCadences),
   createdAt: z.string(),
 });
 
@@ -155,6 +157,10 @@ export const updateAlertEscalationInputSchema = z.object({
   }, z.string().email().nullable()),
 });
 
+export const updateReportCadenceInputSchema = z.object({
+  reportCadence: z.enum(reportCadences),
+});
+
 export type OrganizationSettings = z.infer<typeof organizationSettingsSchema>;
 export type UpdateOrganizationSettingsInput = z.infer<
   typeof updateOrganizationSettingsInputSchema
@@ -162,6 +168,13 @@ export type UpdateOrganizationSettingsInput = z.infer<
 export type UpdateAlertEscalationInput = z.infer<
   typeof updateAlertEscalationInputSchema
 >;
+export type UpdateReportCadenceInput = z.infer<
+  typeof updateReportCadenceInputSchema
+>;
+
+export type ReportCadenceSettings = {
+  reportCadence: OrganizationSettings["reportCadence"];
+};
 
 export type AlertEscalationSettings = {
   alertEscalationPhone: string | null;

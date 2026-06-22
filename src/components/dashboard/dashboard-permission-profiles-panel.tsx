@@ -19,6 +19,7 @@ import type { FormEvent } from "react";
 
 import {
   getPermissionLabels,
+  inferMemberRoleFromPermissionProfile,
   platformPermissions,
   type PermissionKey,
   type PermissionProfile,
@@ -59,6 +60,18 @@ function buildDeleteConfirmMessage(profile: PermissionProfile) {
   ].join("\n\n");
 }
 
+function getInferredAccessLabel(permissions: PermissionKey[]) {
+  const managerPermissions = new Set<PermissionKey>([
+    "branches",
+    "team",
+    "settings",
+  ]);
+
+  return permissions.some((permission) => managerPermissions.has(permission))
+    ? "Manager"
+    : "Colaborador";
+}
+
 export function DashboardPermissionProfilesPanel({
   profiles,
   canManage = false,
@@ -77,6 +90,10 @@ export function DashboardPermissionProfilesPanel({
     [selectedPermissions],
   );
   const isEditing = editingProfileId !== null;
+  const inferredAccessLabel =
+    selectedPermissions.length > 0
+      ? getInferredAccessLabel(selectedPermissions)
+      : "Sin definir";
 
   function resetForm() {
     setName("");
@@ -98,6 +115,13 @@ export function DashboardPermissionProfilesPanel({
         ? current.filter((item) => item !== permission)
         : [...current, permission],
     );
+  }
+
+  function applyCollaboratorTemplate() {
+    setName((current) => current || "Colaborador escucha");
+    setSelectedPermissions(["listening"]);
+    setEditingProfileId(null);
+    setError("");
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -236,6 +260,27 @@ export function DashboardPermissionProfilesPanel({
             <legend className="text-sm font-semibold text-slate-700">
               Permisos de la plataforma
             </legend>
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 px-4 py-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-emerald-950">
+                    Plantilla recomendada para colaboradores
+                  </p>
+                  <p className="mt-1 text-sm leading-5 text-emerald-900/80">
+                    Crea un perfil con solo Escucha. Ese perfil entra al portal
+                    de colaborador y no ve gestión administrativa.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={applyCollaboratorTemplate}
+                  disabled={!canManage || isSubmitting}
+                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Usar Colaborador
+                </button>
+              </div>
+            </div>
             <div className="grid gap-3">
               {platformPermissions.map((permission) => {
                 const Icon = permissionIcons[permission.key];
@@ -282,6 +327,19 @@ export function DashboardPermissionProfilesPanel({
               })}
             </div>
           </fieldset>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-sm font-semibold text-slate-700">
+              Tipo de acceso resultante
+            </p>
+            <p className="mt-1 text-lg font-semibold text-slate-950">
+              {inferredAccessLabel}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Los permisos Sucursales, Equipo o Configuracion convierten el rol
+              en Manager. Sin esos permisos, el rol queda como Colaborador.
+            </p>
+          </div>
 
           {error ? (
             <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
@@ -357,6 +415,18 @@ export function DashboardPermissionProfilesPanel({
                         <h4 className="text-sm font-semibold text-slate-950">
                           {profile.name}
                         </h4>
+                        <span
+                          className={[
+                            "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1",
+                            inferMemberRoleFromPermissionProfile(profile) === "collaborator"
+                              ? "bg-emerald-50 text-emerald-800 ring-emerald-100"
+                              : "bg-blue-50 text-blue-800 ring-blue-100",
+                          ].join(" ")}
+                        >
+                          {inferMemberRoleFromPermissionProfile(profile) === "collaborator"
+                            ? "Acceso colaborador"
+                            : "Acceso manager"}
+                        </span>
                         {memberCount > 0 ? (
                           <span className="inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                             {memberCount === 1

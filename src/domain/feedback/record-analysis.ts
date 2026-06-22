@@ -127,6 +127,12 @@ export function getStatus(
   );
 }
 
+const DEMO_SEED_MARKER_PATTERN = /\s*\[DEMO-SEED-[^\]]+\]\s*/g;
+
+export function sanitizeFeedbackText(text: string) {
+  return text.replace(DEMO_SEED_MARKER_PATTERN, " ").replace(/\s+/g, " ").trim();
+}
+
 export function truncate(text: string, length: number) {
   if (text.length <= length) return text;
   return `${text.slice(0, length - 3).trim()}...`;

@@ -3,11 +3,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DashboardNotification } from "@/domain/dashboard/schemas";
 import { formatRelativeDate } from "@/domain/feedback/record-analysis";
 import type { Database } from "@/lib/supabase/database.types";
+import { dispatchPushForNotificationIfConfigured } from "@/domain/push/notifications";
 import type { NotificationDraft, NotificationRow } from "./schemas";
 
 type Client = SupabaseClient<Database>;
 
 function mapRowToDashboardNotification(row: NotificationRow): DashboardNotification {
+  const listeningSurvey = isListeningSurveyNotification(row);
+
   return {
     id: row.id,
     title: row.title,
@@ -16,7 +19,19 @@ function mapRowToDashboardNotification(row: NotificationRow): DashboardNotificat
     href: row.href ?? "/dashboard",
     unread: !row.is_read,
     tone: row.tone,
+    isListeningSurvey: listeningSurvey,
   };
+}
+
+export function isListeningSurveyNotification(row: NotificationRow) {
+  const metadata = row.metadata;
+
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return false;
+  }
+
+  const dedupeKey = "dedupe_key" in metadata ? metadata.dedupe_key : null;
+  return typeof dedupeKey === "string" && dedupeKey.startsWith("listening-survey:");
 }
 
 function draftToInsert(draft: NotificationDraft): Database["public"]["Tables"]["notifications"]["Insert"] {
@@ -58,7 +73,7 @@ export async function findNotificationByDedupeKey(
 export async function upsertNotificationDraft(
   client: Client,
   draft: NotificationDraft,
-): Promise<void> {
+): Promise<"inserted" | "updated"> {
   const existing = await findNotificationByDedupeKey(
     client,
     draft.organizationId,
@@ -87,14 +102,21 @@ export async function upsertNotificationDraft(
       throw new Error(`Failed to update notification: ${error.message}`);
     }
 
-    return;
+    return "updated";
   }
 
-  const { error } = await client.from("notifications").insert(payload as never);
+  const { data, error } = await client
+    .from("notifications")
+    .insert(payload as never)
+    .select("*")
+    .single();
 
   if (error) {
     throw new Error(`Failed to insert notification: ${error.message}`);
   }
+
+  await dispatchPushForNotificationIfConfigured(data as NotificationRow);
+  return "inserted";
 }
 
 export async function syncNotificationDrafts(
@@ -143,7 +165,73 @@ export async function getNotificationsForOrganization(
 
   if (error || !data) return [];
 
-  return (data as NotificationRow[]).map(mapRowToDashboardNotification);
+  return (data as NotificationRow[])
+    .filter((row) => !isListeningSurveyNotification(row))
+    .map(mapRowToDashboardNotification);
+}
+
+export async function getNotificationsForUser(
+  client: Client,
+  params: {
+    organizationId: string;
+    userId: string;
+    limit?: number;
+  },
+): Promise<DashboardNotification[]> {
+  const { data, error } = await client
+    .from("notifications")
+    .select("*")
+    .eq("organization_id", params.organizationId)
+    .eq("audience_type", "user")
+    .eq("recipient_user_id", params.userId)
+    .order("created_at", { ascending: false })
+    .limit(params.limit ?? 20);
+
+  if (error || !data) return [];
+
+  return (data as NotificationRow[])
+    .filter((row) => !(isListeningSurveyNotification(row) && row.is_read))
+    .map(mapRowToDashboardNotification);
+}
+
+export async function getNotificationById(
+  client: Client,
+  notificationId: string,
+): Promise<NotificationRow | null> {
+  const { data, error } = await client
+    .from("notifications")
+    .select("*")
+    .eq("id", notificationId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as NotificationRow;
+}
+
+export async function getActiveListeningSurveyNotificationForUser(
+  client: Client,
+  params: {
+    organizationId: string;
+    userId: string;
+  },
+): Promise<NotificationRow | null> {
+  const { data, error } = await client
+    .from("notifications")
+    .select("*")
+    .eq("organization_id", params.organizationId)
+    .eq("audience_type", "user")
+    .eq("recipient_user_id", params.userId)
+    .eq("category", "task")
+    .eq("is_read", false)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error || !data) return null;
+
+  return (
+    (data as NotificationRow[]).find((row) => isListeningSurveyNotification(row)) ??
+    null
+  );
 }
 
 export async function markNotificationAsRead(
@@ -157,6 +245,31 @@ export async function markNotificationAsRead(
       is_read: true,
       read_at: readAt,
     } as never)
+    .eq("id", notificationId)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) return false;
+  return true;
+}
+
+export async function deleteNotification(
+  client: Client,
+  notificationId: string,
+): Promise<boolean> {
+  const notification = await getNotificationById(client, notificationId);
+
+  if (!notification) {
+    return false;
+  }
+
+  if (isListeningSurveyNotification(notification)) {
+    return false;
+  }
+
+  const { data, error } = await client
+    .from("notifications")
+    .delete()
     .eq("id", notificationId)
     .select("id")
     .maybeSingle();

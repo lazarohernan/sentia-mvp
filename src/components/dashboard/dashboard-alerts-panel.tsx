@@ -1,28 +1,34 @@
 "use client";
 
-import {
-  AlertTriangle,
-  Clock3,
-  MessageSquareQuote,
-  Settings2,
-  ShieldAlert,
-  UserRound,
-  X,
-} from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { Settings2, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
-import type { DashboardAlertItem } from "@/domain/dashboard/alerts";
+import type { Branch } from "@/domain/branches/schemas";
+import {
+  filterDashboardAlerts,
+  type DashboardAlertItem,
+  type DashboardAlertStatusFilter,
+} from "@/domain/dashboard/alerts";
 import type { DashboardFollowUpMetrics } from "@/domain/dashboard/schemas";
 import type {
   AlertEscalationSettings,
   OrganizationSettings,
 } from "@/domain/organizations/organization-settings-schemas";
+import type { TeamMember } from "@/domain/organizations/team";
 
+import { DashboardAlertCard } from "./dashboard-alert-card";
 import { DashboardAlertsEscalationSettingsPanel } from "./dashboard-alerts-escalation-settings-panel";
 import { DashboardEmptyState } from "./dashboard-empty-state";
 import { DashboardSection } from "./dashboard-section";
 
 const ESCALATION_TIP_DISMISS_KEY = "perks.dashboard.alerts.escalation-tip.dismissed";
+
+const statusFilters: Array<{ value: DashboardAlertStatusFilter; label: string }> = [
+  { value: "todos", label: "Todas" },
+  { value: "nuevo", label: "Nuevas" },
+  { value: "en_revision", label: "En revisión" },
+  { value: "escalado", label: "Escaladas" },
+];
 
 function subscribeToEscalationTipDismissed(onStoreChange: () => void) {
   window.addEventListener("storage", onStoreChange);
@@ -33,18 +39,9 @@ function isEscalationTipDismissed() {
   return localStorage.getItem(ESCALATION_TIP_DISMISS_KEY) === "1";
 }
 
-type DashboardAlertsViewProps = {
-  alerts: DashboardAlertItem[];
-  metrics: DashboardFollowUpMetrics;
-  organizationSettings?: OrganizationSettings | null;
-  canManageEscalation?: boolean;
-  onEscalationSettingsSaved?: (settings: AlertEscalationSettings) => void;
-  onOpenSubmission?: (submissionId: string) => void;
-};
-
 function formatHours(value: number | null) {
   if (value === null) {
-    return "Sin datos";
+    return "—";
   }
 
   if (value < 1) {
@@ -54,68 +51,32 @@ function formatHours(value: number | null) {
   return `${value.toFixed(1)} h`;
 }
 
-function priorityToneClasses(tone: DashboardAlertItem["tone"]) {
-  if (tone === "danger") {
-    return {
-      chip: "bg-red-50 text-red-700",
-      card: "border-red-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#fff7f7_100%)]",
-      icon: "bg-red-50 text-red-700",
-    };
-  }
-
-  if (tone === "warning") {
-    return {
-      chip: "bg-amber-50 text-amber-700",
-      card: "border-amber-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#fffaf2_100%)]",
-      icon: "bg-amber-50 text-amber-700",
-    };
-  }
-
-  return {
-    chip: "bg-emerald-50 text-emerald-800",
-    card: "border-emerald-200/80 bg-[linear-gradient(180deg,#ffffff_0%,#f5fbf8_100%)]",
-    icon: "bg-emerald-50 text-emerald-800",
-  };
-}
-
-function extractSubmissionId(alertId: string) {
-  if (!alertId.startsWith("submission-")) {
-    return null;
-  }
-
-  return alertId.replace("submission-", "");
-}
-
-function EscalationTipBanner({ onDismiss }: { onDismiss: () => void }) {
-  return (
-    <div className="relative rounded-2xl border border-slate-200 bg-[#f7f8f4] p-4 pr-12">
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="absolute right-3 top-3 inline-flex size-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-white hover:text-slate-800"
-        aria-label="Cerrar aviso"
-      >
-        <X size={16} aria-hidden="true" />
-      </button>
-      <p className="text-sm font-semibold text-slate-900">
-        Contacto de escalamiento
-      </p>
-      <p className="mt-1 text-sm leading-6 text-slate-600">
-        Puedes guardar a quién avisar cuando un caso sea crítico o escalado. El
-        seguimiento de cada caso se registra en Valoraciones.
-      </p>
-    </div>
-  );
-}
+type DashboardAlertsViewProps = {
+  alerts: DashboardAlertItem[];
+  metrics: DashboardFollowUpMetrics;
+  branches?: Branch[];
+  assignees?: TeamMember[];
+  organizationSettings?: OrganizationSettings | null;
+  canManageEscalation?: boolean;
+  canManageFollowUp?: boolean;
+  onEscalationSettingsSaved?: (settings: AlertEscalationSettings) => void;
+  onOpenSubmission?: (submissionId: string) => void;
+};
 
 export function DashboardAlertsView({
   alerts,
   metrics,
+  branches = [],
+  assignees = [],
   organizationSettings,
   canManageEscalation = false,
+  canManageFollowUp = false,
   onEscalationSettingsSaved,
   onOpenSubmission,
 }: DashboardAlertsViewProps) {
+  const [localAlerts, setLocalAlerts] = useState(alerts);
+  const [statusFilter, setStatusFilter] = useState<DashboardAlertStatusFilter>("todos");
+  const [branchFilter, setBranchFilter] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [tipDismissedOverride, setTipDismissedOverride] = useState(false);
   const [escalationOverride, setEscalationOverride] =
@@ -126,6 +87,20 @@ export function DashboardAlertsView({
     () => false,
   );
   const isTipVisible = !tipDismissedFromStorage && !tipDismissedOverride;
+
+  useEffect(() => {
+    setLocalAlerts(alerts);
+  }, [alerts]);
+
+  const filteredAlerts = useMemo(
+    () =>
+      filterDashboardAlerts(localAlerts, {
+        status: statusFilter,
+        branchId: branchFilter || null,
+      }),
+    [branchFilter, localAlerts, statusFilter],
+  );
+
   const escalationPhone =
     escalationOverride?.alertEscalationPhone ??
     organizationSettings?.alertEscalationPhone ??
@@ -145,156 +120,129 @@ export function DashboardAlertsView({
     onEscalationSettingsSaved?.(settings);
   }
 
+  function handleAlertUpdated(alertId: string, next: Partial<DashboardAlertItem>) {
+    setLocalAlerts((current) =>
+      current.map((alert) => (alert.id === alertId ? { ...alert, ...next } : alert)),
+    );
+  }
+
+  function handleAlertRemoved(alertId: string) {
+    setLocalAlerts((current) => current.filter((alert) => alert.id !== alertId));
+  }
+
   return (
     <>
       <DashboardSection
         id="alertas"
         title="Alertas"
-        description="Situaciones que requieren atención o seguimiento."
+        description="Casos que requieren atención. Actualiza estado, responsable y notas sin salir de aquí."
         action={
           <button
             type="button"
             onClick={() => setIsSettingsOpen(true)}
-            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900"
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900"
           >
             <Settings2 size={16} aria-hidden="true" />
-            Configurar contacto
+            Contacto
           </button>
         }
       >
-        <div className="space-y-6">
-          {isTipVisible ? <EscalationTipBanner onDismiss={dismissTip} /> : null}
+        <div className="space-y-5">
+          {isTipVisible && !escalationEmail ? (
+            <div className="rounded-2xl border border-amber-200/80 bg-amber-50/70 px-4 py-3 text-sm leading-6 text-amber-950">
+              <p className="font-semibold">Configura un correo de escalamiento</p>
+              <p className="mt-1 text-amber-900/90">
+                Cuando un caso pase a escalado, Perks puede avisar automáticamente.
+              </p>
+              <button
+                type="button"
+                onClick={dismissTip}
+                className="mt-2 text-xs font-semibold text-amber-900 underline"
+              >
+                Entendido
+              </button>
+            </div>
+          ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Casos abiertos
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-slate-950">
-                {metrics.openCount}
-              </p>
-            </article>
-            <article className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Escalados
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-rose-700">
-                {metrics.escalatedCount}
-              </p>
-            </article>
-            <article className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Tiempo promedio de respuesta
-              </p>
-              <p className="mt-2 inline-flex items-center gap-2 text-2xl font-semibold text-slate-950">
-                <Clock3 size={20} className="text-emerald-700" aria-hidden="true" />
-                {formatHours(metrics.avgResponseHours)}
-              </p>
-            </article>
-            <article className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Tiempo promedio de resolución
-              </p>
-              <p className="mt-2 inline-flex items-center gap-2 text-2xl font-semibold text-slate-950">
-                <Clock3 size={20} className="text-emerald-700" aria-hidden="true" />
-                {formatHours(metrics.avgResolutionHours)}
-              </p>
-            </article>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {[
+              { label: "Abiertos", value: metrics.openCount },
+              { label: "En revisión", value: metrics.inReviewCount },
+              { label: "Escalados", value: metrics.escalatedCount },
+              { label: "SLA vencido", value: metrics.slaBreachedCount },
+              { label: "Respuesta prom.", value: formatHours(metrics.avgResponseHours) },
+            ].map((metric) => (
+              <article
+                key={metric.label}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  {metric.label}
+                </p>
+                <p className="mt-1 text-2xl font-semibold text-slate-950">{metric.value}</p>
+              </article>
+            ))}
           </div>
 
-          {alerts.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {alerts.map((alert) => {
-                const submissionId = extractSubmissionId(alert.id);
-
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-2">
+              {statusFilters.map((filter) => {
+                const isActive = statusFilter === filter.value;
                 return (
-                  <article
-                    key={alert.id}
-                    className={`rounded-2xl border p-5 ${priorityToneClasses(alert.tone).card}`}
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => setStatusFilter(filter.value)}
+                    className={[
+                      "inline-flex h-9 items-center rounded-full px-3 text-sm font-medium transition",
+                      isActive
+                        ? "bg-slate-950 text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+                    ].join(" ")}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${priorityToneClasses(alert.tone).icon}`}
-                          >
-                            <AlertTriangle size={16} aria-hidden="true" />
-                          </span>
-                          <div className="min-w-0">
-                            <h3 className="text-base font-semibold text-slate-950">
-                              {alert.title}
-                            </h3>
-                            <p className="mt-1 text-sm text-slate-500">
-                              {alert.subtitle}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <span
-                        className={[
-                          "rounded-full px-3 py-1 text-xs font-semibold",
-                          priorityToneClasses(alert.tone).chip,
-                        ].join(" ")}
-                      >
-                        {alert.priority}
-                      </span>
-                    </div>
-
-                    <p className="mt-4 text-sm leading-6 text-slate-700">
-                      {alert.detail}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {alert.owner ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                          <UserRound size={12} aria-hidden="true" />
-                          {alert.owner}
-                        </span>
-                      ) : null}
-                      {alert.suggestedSla ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                          <Clock3 size={12} aria-hidden="true" />
-                          {alert.suggestedSla}
-                        </span>
-                      ) : null}
-                      {alert.requiresContact ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                          <MessageSquareQuote size={12} aria-hidden="true" />
-                          Contacto sugerido
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {alert.probableCause ? (
-                      <div className="mt-4 rounded-xl border border-slate-200/80 bg-white/80 px-4 py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                          Causa probable
-                        </p>
-                        <p className="mt-1 text-sm leading-6 text-slate-600">
-                          {alert.probableCause}
-                        </p>
-                      </div>
-                    ) : null}
-
-                    {submissionId && onOpenSubmission ? (
-                      <button
-                        type="button"
-                        onClick={() => onOpenSubmission(submissionId)}
-                        className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800"
-                      >
-                        <AlertTriangle size={16} aria-hidden="true" />
-                        Abrir seguimiento
-                      </button>
-                    ) : null}
-                  </article>
+                    {filter.label}
+                  </button>
                 );
               })}
+            </div>
+            {branches.length > 1 ? (
+              <label className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-500">Sucursal</span>
+                <select
+                  value={branchFilter}
+                  onChange={(event) => setBranchFilter(event.target.value)}
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-700/10"
+                >
+                  <option value="">Todas</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+          </div>
+
+          {filteredAlerts.length > 0 ? (
+            <div className="grid gap-4 xl:grid-cols-2">
+              {filteredAlerts.map((alert) => (
+                <DashboardAlertCard
+                  key={alert.id}
+                  alert={alert}
+                  assignees={assignees}
+                  canManage={canManageFollowUp}
+                  onOpenSubmission={onOpenSubmission}
+                  onUpdated={handleAlertUpdated}
+                  onRemoved={handleAlertRemoved}
+                />
+              ))}
             </div>
           ) : (
             <DashboardEmptyState
               icon={ShieldAlert}
-              title="Sin alertas abiertas"
-              description="Las alertas aparecerán cuando haya quejas, casos críticos o seguimientos pendientes."
+              title="Sin alertas en este filtro"
+              description="Cuando haya quejas, casos críticos o seguimientos pendientes aparecerán aquí."
             />
           )}
         </div>

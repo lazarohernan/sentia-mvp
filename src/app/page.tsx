@@ -15,12 +15,12 @@ export default function Home() {
 
       <section className="relative mx-auto flex min-h-screen w-full max-w-[1500px] flex-col px-7 py-6 sm:px-10 lg:px-14">
         <nav className="flex items-center justify-between gap-4">
-          <p
-            className="hero-enter-soft text-4xl font-bold leading-none text-[#053f34] sm:text-5xl"
-            style={{ fontFamily: "var(--font-display)", animationDelay: "80ms" }}
-          >
-            Perks
-          </p>
+          <img
+            src="/brand/perks-logo.png"
+            alt="Perks"
+            className="hero-enter-soft h-12 w-auto sm:h-14"
+            style={{ animationDelay: "80ms" }}
+          />
 
           <div className="flex items-center justify-end gap-4">
             <Link
@@ -42,57 +42,7 @@ export default function Home() {
           </div>
         </nav>
 
-        <div className="relative flex flex-1 items-center justify-center py-14 lg:py-10">
-          <div className="relative z-10 mx-auto max-w-[700px] text-center">
-            <h1
-              aria-label="Escucha lo que tu negocio aun no ve"
-              className="text-[4.15rem] font-bold leading-[0.91] tracking-normal text-[#102832] sm:text-[5.55rem] lg:text-[6.65rem]"
-              style={{
-                fontFamily: "var(--font-display)",
-                WebkitTextStroke: "0.9px currentColor",
-                textShadow: "0 0 0 currentColor",
-              }}
-            >
-              <span className="hero-enter block" style={{ animationDelay: "180ms" }}>
-                Escucha lo que
-              </span>
-              <span className="hero-enter block" style={{ animationDelay: "280ms" }}>
-                tu negocio
-              </span>
-              <span className="hero-enter block text-[#07936c]" style={{ animationDelay: "380ms" }}>
-                aun no ve
-              </span>
-            </h1>
-            <p
-              className="hero-enter mx-auto mt-7 max-w-xl text-[1.42rem] font-normal leading-[1.24] text-[#344340] sm:text-[1.62rem]"
-              style={{ animationDelay: "500ms" }}
-            >
-              <span className="block">
-                Convierte cada comentario en
-              </span>
-              <span className="block">
-                señales, alertas y decisiones claras.
-              </span>
-            </p>
-            <div
-              className="hero-enter-soft mt-10 flex flex-col justify-center gap-5 sm:flex-row"
-              style={{ animationDelay: "620ms" }}
-            >
-              <Link
-                href="/login"
-                className="inline-flex h-14 min-w-56 items-center justify-center rounded-[14px] bg-[linear-gradient(180deg,#078161,#045946)] px-8 text-base font-semibold text-white shadow-[0_18px_34px_rgba(4,89,70,0.22)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_42px_rgba(4,89,70,0.27)]"
-              >
-                Ver plataforma
-              </Link>
-              <Link
-                href="/feedback/demo-cafe"
-                className="inline-flex h-14 min-w-64 items-center justify-center rounded-[14px] border-2 border-[#075445] bg-white/58 px-8 text-base font-medium text-[#075445] shadow-[0_14px_28px_rgba(51,40,17,0.08)] backdrop-blur transition hover:-translate-y-0.5 hover:bg-white"
-              >
-                Probar experiencia
-              </Link>
-            </div>
-          </div>
-        </div>
+        <div className="relative flex flex-1 items-center justify-center py-14 lg:py-10" />
       </section>
     </main>
   );

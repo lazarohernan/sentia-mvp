@@ -24,6 +24,7 @@ function buildShellDashboardData(
       openCount: 0,
       escalatedCount: 0,
       inReviewCount: 0,
+      slaBreachedCount: 0,
       resolvedCount: 0,
       avgResponseHours: null,
       avgResolutionHours: null,
@@ -165,6 +166,7 @@ describe("DashboardShell", () => {
           compensationPolicy: null,
           followUpTone: null,
           agentNotes: null,
+          reportCadence: "monthly",
           createdAt: "2026-06-01T12:00:00.000Z",
         }}
         currentUser={{ fullName: "Usuario Demo", email: "demo@perks.hn" }}
@@ -284,12 +286,8 @@ describe("DashboardShell", () => {
     expect(screen.getByText("Centro muestra un salto de riesgo")).toBeInTheDocument();
     expect(screen.getByText("Patrones por establecimiento")).toBeInTheDocument();
     expect(screen.getByText("Entrega del informe")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Exportar PDF" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Preparar correo" })).toHaveAttribute(
-      "href",
-      expect.stringContaining("mailto:gerencia%40perks.hn"),
-    );
-    expect(screen.getByText("Historial de entregas")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ver informe" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Preparar correo" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
   });
 
@@ -373,11 +371,11 @@ describe("DashboardShell", () => {
     expect(screen.getByRole("button", { name: "Mejoras" })).toBeInTheDocument();
     expect(screen.getByText("Plan de mejora por sucursal")).toBeInTheDocument();
     expect(
-      screen.getByText("Acciones operativas sugeridas para el siguiente ciclo"),
+      screen.getByRole("button", { name: /Generar mejoras con IA/i }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("Centro").length).toBeGreaterThan(0);
-    expect(screen.getByText("Responsable")).toBeInTheDocument();
-    expect(screen.getByText("Señal de éxito")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Pulsa/i),
+    ).toBeInTheDocument();
   });
 
   it("switches between informes and mejoras inside the same module", async () => {
@@ -610,6 +608,7 @@ describe("DashboardShell", () => {
             openCount: 0,
             escalatedCount: 0,
             inReviewCount: 0,
+      slaBreachedCount: 0,
             resolvedCount: 0,
             avgResponseHours: null,
             avgResolutionHours: null,

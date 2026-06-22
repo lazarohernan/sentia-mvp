@@ -101,6 +101,43 @@ export async function getListeningEventsByOrganization(
   return (data as RawListeningEvent[]).map(mapListeningEvent);
 }
 
+export async function getListeningEventsByUser(
+  client: Client,
+  params: {
+    organizationId: string;
+    userId: string;
+    limit?: number;
+    offset?: number;
+  },
+): Promise<ListeningEventRow[]> {
+  const limit = params.limit ?? 10;
+  const offset = params.offset ?? 0;
+
+  const { data, error } = await client
+    .from("listening_events")
+    .select(
+      `
+        id,
+        organization_id,
+        branch_id,
+        user_id,
+        level,
+        note,
+        created_at,
+        branches(name),
+        profiles(full_name)
+      `,
+    )
+    .eq("organization_id", params.organizationId)
+    .eq("user_id", params.userId)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error || !data) return [];
+
+  return (data as RawListeningEvent[]).map(mapListeningEvent);
+}
+
 function mapListeningEvent(row: RawListeningEvent): ListeningEventRow {
   return {
     id: row.id,

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { DashboardFloatingNav } from "./dashboard-floating-nav";
@@ -122,5 +122,74 @@ describe("DashboardFloatingNav", () => {
     expect(onViewChange).toHaveBeenCalledWith("gestion");
     expect(window.location.pathname).toBe("/dashboard");
     expect(window.location.hash).toBe("#equipo");
+  });
+
+  it("allows deleting a notification from the popover", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <DashboardFloatingNav
+        activeView="resumen"
+        onViewChange={() => {}}
+        notifications={[
+          {
+            id: "notification-001",
+            title: "Informe listo",
+            detail: "El informe semanal esta disponible.",
+            time: "hace 1 min",
+            href: "/dashboard#informes",
+            unread: true,
+            tone: "success",
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /notificaciones/i }));
+    expect(screen.getByText("Informe listo")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /eliminar notificacion: informe listo/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText("Informe listo")).not.toBeInTheDocument();
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/notifications/notification-001", {
+      method: "DELETE",
+    });
+  });
+
+  it("does not show delete for listening survey notifications", () => {
+    render(
+      <DashboardFloatingNav
+        activeView="resumen"
+        onViewChange={() => {}}
+        notifications={[
+          {
+            id: "survey-001",
+            title: "Registro de escucha pendiente",
+            detail: "Completa tu registro de escucha para este turno.",
+            time: "hace 1 min",
+            href: "/colaborador?view=evaluacion",
+            unread: true,
+            tone: "warning",
+            isListeningSurvey: true,
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /notificaciones/i }));
+
+    expect(screen.getByText("Registro de escucha pendiente")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: /eliminar notificacion: registro de escucha pendiente/i,
+      }),
+    ).not.toBeInTheDocument();
   });
 });

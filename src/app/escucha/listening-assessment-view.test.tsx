@@ -39,6 +39,11 @@ describe("ListeningAssessmentView", () => {
     );
 
     fireEvent.click(screen.getByRole("radio", { name: /Debate/i }));
+    expect(
+      screen.getByText(
+        "¿En qué conversación escuchaste ideas distintas a las tuyas? ¿Qué te costó soltar o qué te sorprendió?",
+      ),
+    ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Reflexión del turno"), {
       target: { value: "Escuche con apertura durante una queja." },
     });

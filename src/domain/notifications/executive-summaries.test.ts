@@ -34,6 +34,10 @@ const baseFeedback: FeedbackRecord = {
       suggested_owner: "Gerencia de turno",
       suggested_sla: "Hoy mismo",
       requires_contact: true,
+      information_quality: "sufficient",
+      follow_up_question: null,
+      follow_up_answer: null,
+      model_used: "gpt-4.1-mini",
       confidence: 0.91,
     },
   ],
@@ -51,6 +55,33 @@ describe("buildExecutiveNotificationDrafts", () => {
     expect(drafts[0]?.dedupeKey).toContain("manager-risk-summary:org-1:");
     expect(drafts[1]?.dedupeKey).toContain("manager-period-summary:org-1:");
     expect(drafts[0]?.category).toBe("alert");
+  });
+
+  it("does not merge branches that share the same name", () => {
+    const dateRange = getDashboardDateRange({ period: "7d" });
+    const drafts = buildExecutiveNotificationDrafts(
+      [
+        baseFeedback,
+        {
+          ...baseFeedback,
+          id: "feedback-2",
+          branch_id: "branch-2",
+          branches: {
+            id: "branch-2",
+            name: "Sucursal Centro",
+            slug: "sucursal-centro-2",
+            organization_id: "org-1",
+          },
+        },
+      ],
+      {
+        organizationId: "org-1",
+        dateRange,
+      },
+    );
+
+    expect(drafts[0]?.branchId).toBe("branch-1");
+    expect(drafts[0]?.detail).toContain("1 comentarios");
   });
 });
 

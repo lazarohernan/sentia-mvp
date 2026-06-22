@@ -26,6 +26,9 @@
   --shadow-soft: 0 14px 40px rgb(15 23 42 / 0.08);
   --radius-panel: 8px;
   --radius-pill: 999px;
+  --font-geist-sans: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
+  --font-geist-mono: "SFMono-Regular", "Cascadia Code", "Liberation Mono", monospace;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
 }
 
 @theme inline {
@@ -49,8 +52,8 @@
   --shadow-soft: var(--shadow-soft);
   --radius-panel: var(--radius-panel);
   --radius-pill: var(--radius-pill);
-  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 body {

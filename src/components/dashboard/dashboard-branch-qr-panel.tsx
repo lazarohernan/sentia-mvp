@@ -20,8 +20,10 @@ type SignedQrLink = {
   feedbackPath: string;
 };
 
-function getBranchCommentCount(branchName: string, dashboardData?: DashboardSummaryData) {
-  const health = dashboardData?.branchHealth.find((item) => item.branch === branchName);
+function getBranchCommentCount(branch: Branch, dashboardData?: DashboardSummaryData) {
+  const health = dashboardData?.branchHealth.find(
+    (item) => item.branchId === branch.id || item.branch === branch.name,
+  );
   return health?.comments ?? "0 comentarios";
 }
 
@@ -36,7 +38,7 @@ export function DashboardBranchQrPanel({
   const [isLoadingLink, setIsLoadingLink] = useState(true);
   const [signedLink, setSignedLink] = useState<SignedQrLink | null>(null);
   const scans = dashboardData?.qrScanCounts?.[branch.id] ?? 0;
-  const comments = getBranchCommentCount(branch.name, dashboardData);
+  const comments = getBranchCommentCount(branch, dashboardData);
 
   useEffect(() => {
     let cancelled = false;

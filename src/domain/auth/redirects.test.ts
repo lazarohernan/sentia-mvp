@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { getHomePathForRole, getSafeRedirectPath, buildInviteCallbackUrl } from "./redirects";
 
 describe("auth redirects", () => {
-  it("sends collaborators to escucha by default", () => {
-    expect(getHomePathForRole("collaborator")).toBe("/escucha");
+  it("sends collaborators to their portal by default", () => {
+    expect(getHomePathForRole("collaborator")).toBe("/colaborador");
     expect(getHomePathForRole("manager")).toBe("/dashboard");
     expect(getHomePathForRole("owner")).toBe("/dashboard");
   });

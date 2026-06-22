@@ -12,6 +12,7 @@ import {
   getSentiment,
   getStatus,
   getTone,
+  sanitizeFeedbackText,
   truncate,
   type FeedbackRecord,
 } from "@/domain/feedback/record-analysis";
@@ -20,6 +21,8 @@ import {
   workflowStatusToLabel,
 } from "@/domain/feedback/workflow-status";
 import { buildExecutiveNotificationDrafts } from "@/domain/notifications/executive-summaries";
+import { buildReportReadyNotificationDrafts } from "@/domain/notifications/report-ready";
+import type { ReportCadence } from "@/domain/dashboard/report-cadence";
 import {
   getNotificationsForOrganization,
   syncNotificationDrafts,
@@ -287,6 +290,7 @@ function buildBranchHealth(
               : "neutral";
 
       return {
+        branchId: branch.id,
         branch: branch.name,
         status:
           metrics.scoredCount === 0 ? "Sin comentarios" : metrics.label,
@@ -316,11 +320,12 @@ function buildComments(feedback: FeedbackRecord[]): DashboardCommentRow[] {
       customer: record.contact_name || "Cliente anónimo",
       business: "Feedback",
       branch: record.branches?.name ?? "Sucursal",
+      branchId: record.branch_id,
       feedbackType: getFeedbackTypeLabel(record.type),
       sentiment: getSentiment(record),
       csatScore: record.csat_score ?? record.emotion_score,
       status: getStatus(record),
-      message: record.free_text,
+      message: sanitizeFeedbackText(record.free_text),
       receivedAt: formatRelativeDate(record.created_at),
       createdAtIso: record.created_at,
       analysisSummary: analysis?.summary ?? undefined,
@@ -355,7 +360,7 @@ function buildRecentComments(feedback: FeedbackRecord[]): DashboardRecentComment
     return {
       id: record.id,
       branch: record.branches?.name ?? "Sucursal",
-      comment: truncate(record.free_text, 38),
+      comment: truncate(sanitizeFeedbackText(record.free_text), 38),
       sentiment: getSentiment(record),
       csat: record.csat_score === null ? "N/A" : `${record.csat_score}/5`,
       status,
@@ -389,7 +394,7 @@ function buildAttentionItems(feedback: FeedbackRecord[]): DashboardAttentionItem
 
       return getTone(record) === "danger" || workflowStatus === "escalado";
     })
-    .slice(0, 6)
+    .slice(0, 20)
     .map((record, index) => {
       const analysis = getAnalysis(record);
       const workflowStatus = getWorkflowStatusForRecord(record);
@@ -400,10 +405,11 @@ function buildAttentionItems(feedback: FeedbackRecord[]): DashboardAttentionItem
       const suggestedOwner = analysis?.suggested_owner?.trim();
       const probableCause = analysis?.probable_cause?.trim();
       const suggestedSla = analysis?.suggested_sla?.trim();
+      const categoryLabel = getCategoryLabel(analysis?.category);
 
       return {
         priority,
-        title: `${record.branches?.name ?? "Sucursal"} - ${getCategoryLabel(analysis?.category)}`,
+        title: `${record.branches?.name ?? "Sucursal"} - ${categoryLabel}`,
         description:
           [
             analysis?.recommended_action ?? "Revisar comentario con el equipo",
@@ -416,6 +422,13 @@ function buildAttentionItems(feedback: FeedbackRecord[]): DashboardAttentionItem
         status: mapWorkflowToAttentionStatus(workflowStatus),
         tone: priority === "Prioridad alta" ? "danger" : "warning",
         submissionId: record.id,
+        branchId: record.branch_id,
+        branchName: record.branches?.name ?? undefined,
+        workflowStatus,
+        assignedUserId: record.assigned_user_id ?? null,
+        createdAtIso: record.created_at,
+        urgency: analysis?.urgency ?? null,
+        categoryLabel,
       };
     });
 }
@@ -468,14 +481,23 @@ async function loadDashboardNotifications(
     organizationId: string;
     dateRange: DashboardDateRange;
     feedback: FeedbackRecord[];
+    comments: DashboardCommentRow[];
+    reportCadence?: ReportCadence;
     branchIds?: string[];
     syncDrafts?: boolean;
   },
 ) {
-  const drafts = buildExecutiveNotificationDrafts(params.feedback, {
+  const executiveDrafts = buildExecutiveNotificationDrafts(params.feedback, {
     organizationId: params.organizationId,
     dateRange: params.dateRange,
   });
+  const reportDrafts = buildReportReadyNotificationDrafts({
+    organizationId: params.organizationId,
+    dateRange: params.dateRange,
+    reportCadence: params.reportCadence ?? "monthly",
+    comments: params.comments,
+  });
+  const drafts = [...executiveDrafts, ...reportDrafts];
 
   if (params.syncDrafts !== false) {
     try {
@@ -500,6 +522,7 @@ export async function getDashboardSummaryData(
     organizationName?: string;
     branches: Branch[];
     dateRange: DashboardDateRange;
+    reportCadence?: ReportCadence;
     syncNotificationDrafts?: boolean;
   },
 ): Promise<DashboardSummaryData> {
@@ -513,12 +536,15 @@ export async function getDashboardSummaryData(
     });
   }
 
+  const comments = buildComments(feedback);
   const notifications =
     params.organizationId && feedback.length > 0
       ? await loadDashboardNotifications(client, {
           organizationId: params.organizationId,
           dateRange: params.dateRange,
           feedback,
+          comments,
+          reportCadence: params.reportCadence,
           branchIds,
           syncDrafts: params.syncNotificationDrafts,
         })
@@ -548,7 +574,7 @@ export async function getDashboardSummaryData(
     attentionItems: buildAttentionItems(feedback),
     branchHealth: buildBranchHealth(params.branches, feedback),
     recentComments: buildRecentComments(feedback),
-    comments: buildComments(feedback),
+    comments,
     notifications,
     followUpMetrics: computeFollowUpMetrics(feedback),
     qrScanCounts,

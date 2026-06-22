@@ -20,8 +20,10 @@ import type { FormEvent } from "react";
 import type { Branch } from "@/domain/branches/schemas";
 import type { AgentOperationalReport } from "@/domain/agent/context";
 import { buildDashboardAlertItems } from "@/domain/dashboard/alerts";
+import type { ReportPeriod } from "@/domain/dashboard/report-cadence";
 import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
+import { getDashboardViewFromNotificationHref } from "@/domain/notifications/navigation";
 import type { DashboardSummaryData } from "@/domain/dashboard/schemas";
 import type { ListeningEventRow } from "@/domain/listening/schemas";
 import type { OrganizationSettings } from "@/domain/organizations/organization-settings-schemas";
@@ -32,17 +34,20 @@ import { DashboardAlertsView } from "./dashboard-alerts-panel";
 import { DashboardCommentsTable } from "./dashboard-comments-table";
 import { DashboardEmptyState } from "./dashboard-empty-state";
 import { DashboardExecutiveHeader } from "./dashboard-executive-header";
+import { DashboardBusinessProfileDrawer } from "./dashboard-business-profile-drawer";
 import { DashboardFloatingNav } from "./dashboard-floating-nav";
 import type { DashboardNavView } from "./dashboard-floating-nav";
 import { DashboardImprovementPlans } from "./dashboard-improvement-plans";
 import { DashboardIntelligenceReports } from "./dashboard-intelligence-reports";
 import { DashboardBranchQrPanel } from "./dashboard-branch-qr-panel";
-import { DashboardOrganizationSettingsPanel } from "./dashboard-organization-settings-panel";
+import { DashboardOrganizationOperationalSettingsPanel } from "./dashboard-organization-operational-settings-panel";
+import { DashboardReportCadenceSettingsPanel } from "./dashboard-report-cadence-settings-panel";
 import { DashboardPermissionProfilesPanel } from "./dashboard-permission-profiles-panel";
 import { DashboardSection } from "./dashboard-section";
 import { DashboardSummaryView } from "./dashboard-summary-view";
 import { DashboardTeamPanel } from "./dashboard-team-panel";
 import type { DashboardCurrentUser } from "./dashboard-user-menu";
+import { PlatformFooter } from "@/components/platform-footer";
 
 type OperationsTab = "sucursales" | "equipo" | "permisos" | "configuracion";
 type ReportsTab = "informes" | "mejoras";
@@ -122,6 +127,8 @@ type DashboardShellProps = {
   dashboardData?: DashboardSummaryData;
   latestAgentReport?: AgentOperationalReport;
   dateRange?: DashboardDateRange;
+  informesReportPeriod?: ReportPeriod;
+  autoOpenReport?: boolean;
 };
 
 type CreateBranchDrawerProps = {
@@ -160,13 +167,16 @@ function DashboardBranchesList({
   onViewQr: (branch: Branch) => void;
 }) {
   const healthByBranch = new Map(
-    (dashboardData?.branchHealth ?? []).map((item) => [item.branch, item]),
+    (dashboardData?.branchHealth ?? []).map((item) => [
+      item.branchId ?? `name:${item.branch}`,
+      item,
+    ]),
   );
 
   return (
     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
       {branches.map((branch) => {
-        const health = healthByBranch.get(branch.name);
+        const health = healthByBranch.get(branch.id) ?? healthByBranch.get(`name:${branch.name}`);
         const status = branch.is_active ? health?.status ?? "Activa" : "Inactiva";
         const csatValue = health?.csat ?? "Sin datos";
         const commentsValue = health?.comments ?? "0 comentarios";
@@ -610,6 +620,8 @@ export function DashboardShell({
   dashboardData,
   latestAgentReport,
   dateRange = getDashboardDateRange({}),
+  informesReportPeriod,
+  autoOpenReport = false,
 }: DashboardShellProps) {
   const serverBranches = branches ?? [];
   const serverBranchIds = new Set(serverBranches.map((branch) => branch.id));
@@ -632,6 +644,7 @@ export function DashboardShell({
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [qrBranchId, setQrBranchId] = useState<string | null>(null);
   const [selectedQrBranch, setSelectedQrBranch] = useState<Branch | null>(null);
+  const [isBusinessProfileOpen, setIsBusinessProfileOpen] = useState(false);
   const liveBranches = [
     ...createdBranches.filter((branch) => !serverBranchIds.has(branch.id)),
     ...serverBranches.map((branch) => updatedBranches[branch.id] ?? branch),
@@ -749,15 +762,27 @@ export function DashboardShell({
     : null;
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#f4f8f5_0%,#e9f0ed_100%)] text-slate-950">
+    <main className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#f4f8f5_0%,#e9f0ed_100%)] text-slate-950">
       <DashboardFloatingNav
         activeView={activeView}
         onViewChange={setActiveView}
+        onNotificationNavigate={(href) => {
+          const nextView = getDashboardViewFromNotificationHref(href);
+          if (nextView) {
+            setActiveView(nextView);
+            if (nextView === "informes") {
+              setActiveReportsTab("informes");
+            }
+          }
+        }}
         notifications={dashboardData?.notifications}
         currentUser={currentUser}
+        organizationName={liveOrganizationName}
+        canManageBusinessProfile={canManageTeam}
+        onOpenBusinessProfile={() => setIsBusinessProfileOpen(true)}
       />
-      <section className="mx-auto w-full max-w-368 px-4 pb-16 pt-28 sm:px-6 lg:px-8">
-        <div>
+      <section className="mx-auto flex w-full max-w-368 flex-1 flex-col px-4 pb-4 pt-28 sm:px-6 lg:px-8">
+        <div className="flex-1">
           {activeView === "resumen" ? (
             <>
               <DashboardExecutiveHeader
@@ -832,8 +857,9 @@ export function DashboardShell({
                     dashboardData={dashboardData}
                     organizationName={organizationName}
                     organizationSettings={organizationSettings}
-                    currentUserEmail={currentUser?.email}
                     initialAgentReport={latestAgentReport}
+                    initialReportPeriod={informesReportPeriod}
+                    autoOpenReport={autoOpenReport}
                   />
                 ) : (
                   <DashboardImprovementPlans dashboardData={dashboardData} />
@@ -966,20 +992,37 @@ export function DashboardShell({
               ) : null}
 
               {activeOperationsTab === "configuracion" ? (
-                <DashboardSection
-                  id="configuracion"
-                  title="Configuracion"
-                  description="Datos generales del negocio, logo e informacion de contacto."
-                >
-                  <DashboardOrganizationSettingsPanel
-                    initialSettings={organizationSettings}
-                    canManage={canManageTeam}
-                    onSaved={(settings) => {
-                      setOrganizationSettings(settings);
-                      setLiveOrganizationName(settings.name);
-                    }}
-                  />
-                </DashboardSection>
+                <div className="space-y-5">
+                  <DashboardSection
+                    id="configuracion-informes"
+                    title="Informes"
+                    description="Frecuencia de revision y entrega del informe operativo."
+                  >
+                    <DashboardReportCadenceSettingsPanel
+                      initialCadence={organizationSettings?.reportCadence ?? "monthly"}
+                      canManage={canManageTeam}
+                      onSaved={(reportCadence) => {
+                        setOrganizationSettings((current) =>
+                          current ? { ...current, reportCadence } : current,
+                        );
+                      }}
+                    />
+                  </DashboardSection>
+
+                  <DashboardSection
+                    id="configuracion-operacion"
+                    title="Operacion"
+                    description="Prioridades y reglas que orientan alertas, informes y seguimiento."
+                  >
+                    <DashboardOrganizationOperationalSettingsPanel
+                      initialSettings={organizationSettings}
+                      canManage={canManageTeam}
+                      onSaved={(settings) => {
+                        setOrganizationSettings(settings);
+                      }}
+                    />
+                  </DashboardSection>
+                </div>
               ) : null}
             </section>
           ) : null}
@@ -993,12 +1036,18 @@ export function DashboardShell({
                   escalatedCount: 0,
                   inReviewCount: 0,
                   resolvedCount: 0,
+                  slaBreachedCount: 0,
                   avgResponseHours: null,
                   avgResolutionHours: null,
                 }
               }
+              branches={liveBranches.filter((branch) => branch.is_active)}
+              assignees={teamMembers.filter(
+                (member) => member.role === "owner" || member.role === "manager",
+              )}
               organizationSettings={organizationSettings}
               canManageEscalation={canManageFollowUp}
+              canManageFollowUp={canManageFollowUp}
               onEscalationSettingsSaved={(settings) => {
                 setOrganizationSettings((current) =>
                   current
@@ -1018,6 +1067,7 @@ export function DashboardShell({
             />
           ) : null}
         </div>
+        <PlatformFooter />
       </section>
       <CreateBranchDrawer
         key={`${selectedBranch?.id ?? "create-branch"}-${isBranchDrawerOpen ? "open" : "closed"}`}
@@ -1044,6 +1094,16 @@ export function DashboardShell({
           }}
         />
       ) : null}
+      <DashboardBusinessProfileDrawer
+        open={isBusinessProfileOpen}
+        onClose={() => setIsBusinessProfileOpen(false)}
+        initialSettings={organizationSettings}
+        canManage={canManageTeam}
+        onSaved={(settings) => {
+          setOrganizationSettings(settings);
+          setLiveOrganizationName(settings.name);
+        }}
+      />
     </main>
   );
 }

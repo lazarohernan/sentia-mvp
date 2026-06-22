@@ -32,6 +32,7 @@ describe("buildAgentContextSnapshot", () => {
       compensationPolicy: "disculpa y bebida cuando aplique",
       followUpTone: "cercano y breve",
       agentNotes: "validar promo antes de escalar precio",
+      reportCadence: "monthly",
       createdAt: "2026-06-01T00:00:00.000Z",
     });
 
@@ -131,6 +132,9 @@ describe("buildAgentContextSnapshot", () => {
       followUpTone: "cercano y breve",
       agentNotes: "validar promo antes de escalar precio",
     });
+    expect(snapshot.dashboardComments[0]?.createdAtIso).toBe(
+      "2026-06-10T12:00:00.000Z",
+    );
     expect(snapshot.branchReports[0]?.branch).toBe("Centro");
     expect(snapshot.recentComments[0]?.dominantPattern).toBe("Tiempo de espera");
   });
@@ -154,6 +158,7 @@ describe("buildAgentContextSnapshot", () => {
       compensationPolicy: null,
       followUpTone: null,
       agentNotes: null,
+      reportCadence: "monthly",
       createdAt: "2026-06-01T00:00:00.000Z",
     });
 

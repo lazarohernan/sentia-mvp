@@ -25,6 +25,7 @@ describe("adaptive feedback follow-up", () => {
       emotionScore: 3,
       freeText: "Estuvo excelente, pero hay mucho que mejorar.",
       clarification: {
+        question: undefined,
         category: "wait_time",
         detail: "La fila fue lenta al pagar.",
       },
@@ -42,6 +43,7 @@ describe("adaptive feedback follow-up", () => {
       emotionScore: 3,
       freeText: "Todo bien pero podria mejorar.",
       clarification: {
+        question: undefined,
         category: "customer_service",
         detail: "La atención fue confusa en caja.",
       },
@@ -55,6 +57,7 @@ describe("adaptive feedback follow-up", () => {
       emotionScore: 3,
       freeText: "Todo bien pero podria mejorar.",
       clarification: {
+        question: undefined,
         category: "customer_service",
         detail: "La atención fue confusa en caja.",
       },

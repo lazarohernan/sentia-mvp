@@ -8,7 +8,7 @@ const branchRows = vi.fn(
     error: null;
   }> => ({ data: [], error: null }),
 );
-const insertFeedback = vi.fn(async () => ({ error: null }));
+const insertFeedback = vi.fn(async (_payload?: unknown) => ({ error: null }));
 const selectFeedbackId = vi.fn(async () => ({
   data: { id: "11111111-1111-4111-8111-111111111111" },
   error: null,

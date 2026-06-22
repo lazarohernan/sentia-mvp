@@ -21,6 +21,15 @@ function truncate(value: string, maxLength: number) {
   return `${value.slice(0, maxLength - 3).trim()}...`;
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 export function getReportRecipientEmail(params: {
   organizationSettings?: OrganizationSettings;
   currentUserEmail?: string | null;
@@ -36,16 +45,19 @@ export function getReportRecipientEmail(params: {
 export function buildReportHeadline(params: {
   readiness: ReportReadiness;
   priorityBranch?: BranchReport;
+  reportTitle?: string;
 }) {
+  const reportLabel = params.reportTitle ?? "informe mensual";
+
   if (params.readiness.missingUsefulResponses > 0) {
     return params.priorityBranch
-      ? `${params.priorityBranch.branch} necesita más contexto antes del cierre mensual`
-      : "Aún falta contexto para cerrar el informe mensual";
+      ? `${params.priorityBranch.branch} necesita más contexto antes del cierre`
+      : `Aún falta contexto para cerrar el ${reportLabel}`;
   }
 
   return params.priorityBranch
     ? `${params.priorityBranch.branch} marca la referencia principal del periodo`
-    : "El informe mensual ya está listo para compartirse";
+    : `El ${reportLabel} ya está listo para compartirse`;
 }
 
 export function buildReportEmailHref(params: {
@@ -80,6 +92,7 @@ export function buildReportEmailHref(params: {
 export function buildReportPrintHtml(params: {
   organizationName?: string;
   periodLabel: string;
+  reportTitle?: string;
   readiness: ReportReadiness;
   priorityBranch?: BranchReport;
   reports: BranchReport[];
@@ -96,11 +109,11 @@ export function buildReportPrintHtml(params: {
     .map(
       (report) => `
         <tr>
-          <td>${report.branch}</td>
+          <td>${escapeHtml(report.branch)}</td>
           <td>${report.total}</td>
           <td>${report.readinessPercent}%</td>
-          <td>${report.topPattern}</td>
-          <td>${report.recommendedAction}</td>
+          <td>${escapeHtml(report.topPattern)}</td>
+          <td>${escapeHtml(report.recommendedAction)}</td>
         </tr>
       `,
     )
@@ -110,9 +123,9 @@ export function buildReportPrintHtml(params: {
     .map(
       (comment) => `
         <tr>
-          <td>${comment.branch}</td>
-          <td>${comment.sentiment}</td>
-          <td>${truncate(comment.message, 140)}</td>
+          <td>${escapeHtml(comment.branch)}</td>
+          <td>${escapeHtml(comment.sentiment)}</td>
+          <td>${escapeHtml(truncate(comment.message, 140))}</td>
         </tr>
       `,
     )
@@ -121,13 +134,14 @@ export function buildReportPrintHtml(params: {
   const headline = buildReportHeadline({
     readiness: params.readiness,
     priorityBranch: params.priorityBranch,
+    reportTitle: params.reportTitle?.toLowerCase(),
   });
 
   return `<!doctype html>
   <html lang="es">
     <head>
       <meta charset="utf-8" />
-      <title>Informe mensual</title>
+      <title>${escapeHtml(params.reportTitle ?? "Informe mensual")}</title>
       <style>
         body { font-family: Inter, Arial, sans-serif; color: #0f172a; margin: 40px; }
         h1,h2,h3,p { margin: 0; }
@@ -148,10 +162,10 @@ export function buildReportPrintHtml(params: {
     </head>
     <body>
       <div class="header">
-        <p class="eyebrow">${params.organizationName ?? "Perks"} · ${params.periodLabel}</p>
-        <h1 class="headline">${headline}</h1>
-        <p class="sub">${params.readiness.detail}</p>
-        <p class="sub">Generado el ${generatedAt}</p>
+        <p class="eyebrow">${escapeHtml(params.organizationName ?? "Perks")} · ${escapeHtml(params.periodLabel)}</p>
+        <h1 class="headline">${escapeHtml(headline)}</h1>
+        <p class="sub">${escapeHtml(params.readiness.detail)}</p>
+        <p class="sub">Generado el ${escapeHtml(generatedAt)}</p>
       </div>
 
       <div class="grid">

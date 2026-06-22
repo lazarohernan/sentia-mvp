@@ -2,27 +2,24 @@
 
 import {
   Building2,
-  ClipboardList,
   Globe,
   ImagePlus,
   Loader2,
   Mail,
   MapPin,
-  MessageSquareQuote,
   Phone,
   Save,
-  ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import type { OrganizationSettings } from "@/domain/organizations/organization-settings-schemas";
 
-type DashboardOrganizationSettingsPanelProps = {
+type DashboardOrganizationProfilePanelProps = {
   initialSettings?: OrganizationSettings;
   canManage?: boolean;
   onSaved?: (settings: OrganizationSettings) => void;
+  showHeader?: boolean;
 };
 
 function emptySettings(): OrganizationSettings {
@@ -44,18 +41,21 @@ function emptySettings(): OrganizationSettings {
     compensationPolicy: null,
     followUpTone: null,
     agentNotes: null,
+    reportCadence: "monthly",
     createdAt: new Date(0).toISOString(),
   };
 }
 
-function OrganizationSettingsForm({
+function OrganizationProfileForm({
   initialSettings,
   canManage,
   onSaved,
+  showHeader = true,
 }: {
   initialSettings: OrganizationSettings;
   canManage: boolean;
   onSaved?: (settings: OrganizationSettings) => void;
+  showHeader?: boolean;
 }) {
   const [settings, setSettings] = useState(initialSettings);
   const [name, setName] = useState(initialSettings.name);
@@ -66,15 +66,6 @@ function OrganizationSettingsForm({
   const [websiteUrl, setWebsiteUrl] = useState(initialSettings.websiteUrl ?? "");
   const [address, setAddress] = useState(initialSettings.address ?? "");
   const [logoUrl, setLogoUrl] = useState(initialSettings.logoUrl ?? "");
-  const [peakHours, setPeakHours] = useState(initialSettings.peakHours ?? "");
-  const [servicePriorities, setServicePriorities] = useState(
-    initialSettings.servicePriorities ?? "",
-  );
-  const [compensationPolicy, setCompensationPolicy] = useState(
-    initialSettings.compensationPolicy ?? "",
-  );
-  const [followUpTone, setFollowUpTone] = useState(initialSettings.followUpTone ?? "");
-  const [agentNotes, setAgentNotes] = useState(initialSettings.agentNotes ?? "");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -146,12 +137,12 @@ function OrganizationSettingsForm({
           contactPhone,
           websiteUrl,
           address,
-          peakHours,
-          servicePriorities,
-          compensationPolicy,
-          followUpTone,
-          agentNotes,
           logoUrl: logoUrl || null,
+          peakHours: settings.peakHours,
+          servicePriorities: settings.servicePriorities,
+          compensationPolicy: settings.compensationPolicy,
+          followUpTone: settings.followUpTone,
+          agentNotes: settings.agentNotes,
         }),
       });
 
@@ -161,13 +152,13 @@ function OrganizationSettingsForm({
       };
 
       if (!response.ok || !body.settings) {
-        setError(body.error ?? "No se pudo guardar la configuracion.");
+        setError(body.error ?? "No se pudo guardar el perfil.");
         return;
       }
 
       setSettings(body.settings);
       onSaved?.(body.settings);
-      setSuccess("Informacion del negocio guardada.");
+      setSuccess("Perfil del negocio guardado.");
     } catch {
       setError("No se pudo conectar con el servidor.");
     } finally {
@@ -180,16 +171,18 @@ function OrganizationSettingsForm({
       onSubmit={handleSubmit}
       className="rounded-[1.25rem] border border-slate-200 bg-white"
     >
-      <div className="border-b border-slate-100 px-5 py-4">
-        <p className="text-sm font-semibold text-emerald-800">Perfil del negocio</p>
-        <h3 className="mt-1 text-xl font-semibold text-slate-950">
-          Informacion visible de tu empresa
-        </h3>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-          Configura el nombre, logo y datos de contacto que quieras mostrar en la experiencia
-          de Perks.
-        </p>
-      </div>
+      {showHeader ? (
+        <div className="border-b border-slate-100 px-5 py-4">
+          <p className="text-sm font-semibold text-emerald-800">Perfil del negocio</p>
+          <h3 className="mt-1 text-xl font-semibold text-slate-950">
+            Informacion visible de tu empresa
+          </h3>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            Nombre, logo y datos de contacto que se muestran en la experiencia de
+            Perks.
+          </p>
+        </div>
+      ) : null}
 
       <div className="space-y-6 p-5">
         <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] p-4">
@@ -338,130 +331,6 @@ function OrganizationSettingsForm({
           </label>
         </div>
 
-        <div className="rounded-[1.1rem] border border-slate-100 bg-[#f7f8f4] p-4">
-          <div className="flex items-start gap-3">
-            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-700">
-              <Sparkles className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                Contexto operativo del negocio
-              </p>
-              <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-                Esta configuracion ayuda al sistema a interpretar mejor la
-                operacion, priorizar senales y sugerir seguimiento con mas
-                criterio del negocio.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">
-                Horarios pico
-              </span>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                Si lo dejas vacio, el agente intentara detectarlos automaticamente
-                segun volumen y friccion por dia y hora.
-              </p>
-              <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <ClipboardList
-                  className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
-                  aria-hidden="true"
-                />
-                <textarea
-                  value={peakHours}
-                  onChange={(event) => setPeakHours(event.target.value)}
-                  disabled={!canManage}
-                  rows={3}
-                  placeholder="Ejemplo: viernes 5pm a 8pm y sabado 12pm a 3pm."
-                  className="w-full resize-none bg-transparent text-sm text-slate-900 outline-none disabled:text-slate-500"
-                />
-              </div>
-            </label>
-
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">
-                Prioridades de servicio
-              </span>
-              <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <ShieldCheck
-                  className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
-                  aria-hidden="true"
-                />
-                <textarea
-                  value={servicePriorities}
-                  onChange={(event) => setServicePriorities(event.target.value)}
-                  disabled={!canManage}
-                  rows={3}
-                  placeholder="Ejemplo: rapidez en caja, limpieza constante y trato cordial."
-                  className="w-full resize-none bg-transparent text-sm text-slate-900 outline-none disabled:text-slate-500"
-                />
-              </div>
-            </label>
-
-            <label className="block md:col-span-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Politica de compensacion
-              </span>
-              <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <Building2
-                  className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
-                  aria-hidden="true"
-                />
-                <textarea
-                  value={compensationPolicy}
-                  onChange={(event) => setCompensationPolicy(event.target.value)}
-                  disabled={!canManage}
-                  rows={4}
-                  placeholder="Ejemplo: si hubo espera excesiva, ofrecer disculpa, bebida o descuento segun criterio de gerencia."
-                  className="w-full resize-none bg-transparent text-sm text-slate-900 outline-none disabled:text-slate-500"
-                />
-              </div>
-            </label>
-
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">
-                Tono de follow-up
-              </span>
-              <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <MessageSquareQuote
-                  className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
-                  aria-hidden="true"
-                />
-                <textarea
-                  value={followUpTone}
-                  onChange={(event) => setFollowUpTone(event.target.value)}
-                  disabled={!canManage}
-                  rows={3}
-                  placeholder="Ejemplo: cercano, respetuoso, breve y sin promesas que no podamos cumplir."
-                  className="w-full resize-none bg-transparent text-sm text-slate-900 outline-none disabled:text-slate-500"
-                />
-              </div>
-            </label>
-
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">
-                Notas operativas para IA
-              </span>
-              <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-                <Sparkles
-                  className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
-                  aria-hidden="true"
-                />
-                <textarea
-                  value={agentNotes}
-                  onChange={(event) => setAgentNotes(event.target.value)}
-                  disabled={!canManage}
-                  rows={3}
-                  placeholder="Ejemplo: no escalar automaticamente temas de precio; primero validar si fue promo mal comunicada."
-                  className="w-full resize-none bg-transparent text-sm text-slate-900 outline-none disabled:text-slate-500"
-                />
-              </div>
-            </label>
-          </div>
-        </div>
-
         {success ? (
           <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
             {success}
@@ -486,7 +355,7 @@ function OrganizationSettingsForm({
               ) : (
                 <Save className="h-4 w-4" aria-hidden="true" />
               )}
-              {isSubmitting ? "Guardando..." : "Guardar cambios"}
+              {isSubmitting ? "Guardando..." : "Guardar perfil"}
             </button>
           </div>
         ) : null}
@@ -495,11 +364,12 @@ function OrganizationSettingsForm({
   );
 }
 
-export function DashboardOrganizationSettingsPanel({
+export function DashboardOrganizationProfilePanel({
   initialSettings,
   canManage = false,
   onSaved,
-}: DashboardOrganizationSettingsPanelProps) {
+  showHeader = true,
+}: DashboardOrganizationProfilePanelProps) {
   const resolved = initialSettings ?? emptySettings();
   const formKey = [
     resolved.id,
@@ -508,16 +378,15 @@ export function DashboardOrganizationSettingsPanel({
     resolved.tagline ?? "",
     resolved.contactEmail ?? "",
     resolved.contactPhone ?? "",
-    resolved.peakHours ?? "",
-    resolved.servicePriorities ?? "",
   ].join(":");
 
   return (
-    <OrganizationSettingsForm
+    <OrganizationProfileForm
       key={formKey}
       initialSettings={resolved}
       canManage={canManage}
       onSaved={onSaved}
+      showHeader={showHeader}
     />
   );
 }

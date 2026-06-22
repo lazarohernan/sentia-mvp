@@ -10,7 +10,7 @@ export function getSafeRedirectPath(value: string | null | undefined) {
 
 export function getHomePathForRole(role: MemberRole | undefined) {
   if (role === "collaborator") {
-    return "/escucha";
+    return "/colaborador";
   }
 
   return "/dashboard";

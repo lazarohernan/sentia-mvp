@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  CheckCircle2,
-  CircleAlert,
   Loader2,
   Save,
   Smile,
@@ -13,6 +11,7 @@ import type { Branch } from "@/domain/branches/schemas";
 import {
   listeningLevelDescriptions,
   listeningLevelLabels,
+  listeningLevelReflectionPrompts,
 } from "@/domain/listening/schemas";
 import type { ListeningEventRow } from "@/domain/listening/schemas";
 
@@ -64,6 +63,10 @@ export function ListeningAssessmentView({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const reflectionPromptId = "listening-reflection-prompt";
+  const selectedReflectionPrompt = selectedLevel
+    ? listeningLevelReflectionPrompts[selectedLevel]
+    : "Elige un nivel a la izquierda y te proponemos una pregunta para guiar tu reflexión.";
 
   async function handleSubmit() {
     if (!selectedLevel || !assignedBranch) {
@@ -104,12 +107,7 @@ export function ListeningAssessmentView({
       <main className="min-h-screen bg-[#f5f6f1] text-slate-950">
         <section className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-6 py-6 sm:px-8">
           <nav className="flex items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
-            <p
-              className="text-4xl font-bold leading-none text-[#053f34]"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Perks
-            </p>
+            <img src="/brand/perks-logo.png" alt="Perks" className="h-12 w-auto" />
             <p className="text-sm font-semibold text-slate-500">
               {organizationName ?? "Tu organización"}
             </p>
@@ -137,12 +135,7 @@ export function ListeningAssessmentView({
     <main className="min-h-screen bg-[#f5f6f1] text-slate-950">
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-10">
         <nav className="flex items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
-          <p
-            className="text-4xl font-bold leading-none text-[#053f34]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Perks
-          </p>
+          <img src="/brand/perks-logo.png" alt="Perks" className="h-12 w-auto" />
 
           <p className="text-sm font-semibold text-slate-500">
             {organizationName ?? "Tu organización"}
@@ -151,7 +144,7 @@ export function ListeningAssessmentView({
 
         <header className="flex flex-col gap-5 py-8 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Niveles de escucha
               </p>
               <h1 className="mt-2 max-w-3xl text-3xl font-semibold tracking-normal text-slate-950 sm:text-4xl">
@@ -172,30 +165,14 @@ export function ListeningAssessmentView({
 
           <div className="grid gap-6 pb-8 xl:grid-cols-[1.15fr_0.85fr]">
             <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-              <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-slate-950">
-                    Selecciona una opción
-                  </h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-500">
-                    Usa como referencia una conversación real o el momento más
-                    representativo del turno.
-                  </p>
-                </div>
-                <div
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
-                    selectedLevel
-                      ? "bg-slate-950 text-white"
-                      : "bg-amber-50 text-amber-800"
-                  }`}
-                >
-                  {selectedLevel ? (
-                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                  ) : (
-                    <CircleAlert className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  {selectedLevel ? "Nivel seleccionado" : "Pendiente"}
-                </div>
+              <div className="border-b border-slate-100 pb-5">
+                <h2 className="text-lg font-semibold text-slate-950">
+                  Selecciona una opción
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Usa como referencia una conversación real o el momento más
+                  representativo del turno.
+                </p>
               </div>
 
               <div className="mt-5 grid gap-3">
@@ -232,7 +209,19 @@ export function ListeningAssessmentView({
 
             <aside className="space-y-6">
               <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-                <label className="block">
+                <div className="border-b border-slate-100 pb-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Pregunta para tu reflexión
+                  </p>
+                  <p
+                    id={reflectionPromptId}
+                    className="mt-2 text-sm font-medium leading-6 text-slate-800"
+                  >
+                    {selectedReflectionPrompt}
+                  </p>
+                </div>
+
+                <label className="mt-5 block">
                   <span className="text-sm font-semibold text-slate-700">
                     Reflexión del turno
                   </span>
@@ -240,8 +229,13 @@ export function ListeningAssessmentView({
                     value={reflection}
                     onChange={(event) => setReflection(event.target.value)}
                     maxLength={500}
-                    placeholder="Describe una conversación o momento donde notaste cómo estabas escuchando."
-                    className="mt-2 min-h-36 w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                    aria-describedby={reflectionPromptId}
+                    placeholder={
+                      selectedLevel
+                        ? "Comparte el momento que te vino a la mente. Unas líneas bastan."
+                        : "Primero elige el nivel que mejor describe tu turno."
+                    }
+                    className="mt-2 min-h-36 w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                   />
                 </label>
 
