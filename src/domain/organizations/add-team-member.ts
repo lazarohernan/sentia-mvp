@@ -18,6 +18,61 @@ function needsActivationInvite(user: AuthUserMatch) {
   return !user.last_sign_in_at;
 }
 
+async function userHasMemberships(
+  client: ServiceClient,
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await client
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .limit(1);
+
+  if (error) {
+    throw new Error("No se pudo validar la cuenta existente del usuario.");
+  }
+
+  return Boolean(data?.length);
+}
+
+async function deleteOrphanAuthUser(
+  client: ServiceClient,
+  userId: string,
+): Promise<void> {
+  const { error: pushDeleteError } = await client
+    .from("push_subscriptions")
+    .delete()
+    .eq("user_id", userId);
+
+  if (pushDeleteError) {
+    throw new Error("No se pudieron limpiar las suscripciones push del usuario.");
+  }
+
+  const { error: listeningDetachError } = await client
+    .from("listening_events")
+    .update({ user_id: null } as never)
+    .eq("user_id", userId);
+
+  if (listeningDetachError) {
+    throw new Error("No se pudo preservar el historial de escucha del usuario.");
+  }
+
+  const { error: followUpDetachError } = await client
+    .from("feedback_follow_up_actions")
+    .update({ actor_user_id: null } as never)
+    .eq("actor_user_id", userId);
+
+  if (followUpDetachError) {
+    throw new Error("No se pudo preservar el historial de seguimiento del usuario.");
+  }
+
+  const { error: authDeleteError } = await client.auth.admin.deleteUser(userId, false);
+
+  if (authDeleteError) {
+    throw new Error("No se pudo limpiar la cuenta anterior del usuario.");
+  }
+}
+
 async function findAuthUserByEmail(
   client: ServiceClient,
   email: string,
@@ -66,6 +121,23 @@ async function resolveAuthUserId(
   const existingUser = await findAuthUserByEmail(client, params.email);
 
   if (existingUser) {
+    const hasMemberships = await userHasMemberships(client, existingUser.id);
+
+    if (!hasMemberships) {
+      await deleteOrphanAuthUser(client, existingUser.id);
+
+      const { userId, inviteLink } = await createInviteActivationLink(client, {
+        email: params.email,
+        fullName: params.fullName,
+        siteUrl: params.siteUrl,
+      });
+
+      return {
+        userId,
+        inviteLink,
+      };
+    }
+
     if (!needsActivationInvite(existingUser)) {
       return { userId: existingUser.id, inviteLink: null };
     }
