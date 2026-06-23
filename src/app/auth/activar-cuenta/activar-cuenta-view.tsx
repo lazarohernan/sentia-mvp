@@ -1,6 +1,7 @@
 "use client";
 
-import { KeyRound, UserRound } from "lucide-react";
+import { Eye, EyeOff, KeyRound, UserRound } from "lucide-react";
+import { useState } from "react";
 
 import { activateAccountAction } from "@/app/auth/actions";
 
@@ -26,10 +27,12 @@ export function ActivarCuentaView({
 }: ActivarCuentaViewProps) {
   const errorMessage = errorCode ? errorMessages[errorCode] ?? "No se pudo activar la cuenta." : null;
   const isResetMode = mode === "reset";
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#06100d_0%,#091612_100%)] p-2 text-white sm:p-3">
-      <section className="mx-auto grid min-h-[calc(100vh-1rem)] max-w-3xl overflow-hidden rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,17,14,0.96)_0%,rgba(8,19,16,0.94)_100%)] shadow-[0_24px_90px_rgba(0,0,0,0.45)]">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#06100d_0%,#091612_100%)] text-white">
+      <section className="grid min-h-screen bg-[linear-gradient(180deg,rgba(7,17,14,0.96)_0%,rgba(8,19,16,0.94)_100%)]">
         <form
           action={activateAccountAction}
           className="flex flex-col px-6 py-7 sm:px-10 lg:px-16"
@@ -76,14 +79,28 @@ export function ActivarCuentaView({
                 <div className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-white/8 bg-[#34413b] px-4 text-white transition focus-within:border-emerald-300/70 focus-within:ring-2 focus-within:ring-emerald-300/20">
                   <KeyRound size={21} className="shrink-0 text-white/55" aria-hidden="true" />
                   <input
-                    className="h-full w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
+                    className="h-full min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-white/45"
                     name="password"
-                    type="password"
+                    type={isPasswordVisible ? "text" : "password"}
                     autoComplete="new-password"
                     placeholder="Minimo 8 caracteres"
                     minLength={8}
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setIsPasswordVisible((current) => !current)}
+                    className="shrink-0 rounded-md p-1 text-white/55 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/30"
+                    aria-label={
+                      isPasswordVisible ? "Ocultar contrasena" : "Mostrar contrasena"
+                    }
+                  >
+                    {isPasswordVisible ? (
+                      <EyeOff size={20} aria-hidden="true" />
+                    ) : (
+                      <Eye size={20} aria-hidden="true" />
+                    )}
+                  </button>
                 </div>
               </label>
 
@@ -94,14 +111,30 @@ export function ActivarCuentaView({
                 <div className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-white/8 bg-[#34413b] px-4 text-white transition focus-within:border-emerald-300/70 focus-within:ring-2 focus-within:ring-emerald-300/20">
                   <KeyRound size={21} className="shrink-0 text-white/55" aria-hidden="true" />
                   <input
-                    className="h-full w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
+                    className="h-full min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-white/45"
                     name="confirmPassword"
-                    type="password"
+                    type={isConfirmPasswordVisible ? "text" : "password"}
                     autoComplete="new-password"
                     placeholder="Repite tu contrasena"
                     minLength={8}
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmPasswordVisible((current) => !current)}
+                    className="shrink-0 rounded-md p-1 text-white/55 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-300/30"
+                    aria-label={
+                      isConfirmPasswordVisible
+                        ? "Ocultar confirmacion de contrasena"
+                        : "Mostrar confirmacion de contrasena"
+                    }
+                  >
+                    {isConfirmPasswordVisible ? (
+                      <EyeOff size={20} aria-hidden="true" />
+                    ) : (
+                      <Eye size={20} aria-hidden="true" />
+                    )}
+                  </button>
                 </div>
               </label>
             </div>
