@@ -10,6 +10,7 @@ import { DashboardQrPreview } from "./dashboard-qr-preview";
 type DashboardBranchQrPanelProps = {
   branch: Branch;
   organizationName?: string;
+  organizationLogoUrl?: string | null;
   dashboardData?: DashboardSummaryData;
   onBack: () => void;
 };
@@ -30,6 +31,7 @@ function getBranchCommentCount(branch: Branch, dashboardData?: DashboardSummaryD
 export function DashboardBranchQrPanel({
   branch,
   organizationName,
+  organizationLogoUrl,
   dashboardData,
   onBack,
 }: DashboardBranchQrPanelProps) {
@@ -39,6 +41,7 @@ export function DashboardBranchQrPanel({
   const [signedLink, setSignedLink] = useState<SignedQrLink | null>(null);
   const scans = dashboardData?.qrScanCounts?.[branch.id] ?? 0;
   const comments = getBranchCommentCount(branch, dashboardData);
+  const publicHost = signedLink?.url ? new URL(signedLink.url).hostname : "perksay.com";
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +106,48 @@ export function DashboardBranchQrPanel({
 
   return (
     <section className="rounded-[1.25rem] border border-slate-200 bg-white">
+      {signedLink ? (
+        <div className="qr-print-sheet">
+          <div className="qr-print-card">
+            <header className="qr-print-header">
+              {organizationLogoUrl ? (
+                <img
+                  src={organizationLogoUrl}
+                  alt={organizationName ?? "Logo del negocio"}
+                  className="qr-print-business-logo"
+                />
+              ) : (
+                <div className="qr-print-business-fallback">
+                  {organizationName ?? "Negocio"}
+                </div>
+              )}
+            </header>
+
+            <section className="qr-print-message">
+              <p className="qr-print-kicker">Tu opinión nos ayuda a mejorar</p>
+              <h1>Escanea el código para darnos tu opinión</h1>
+              <p>
+                Cuéntanos cómo fue tu experiencia en {branch.name}. Tu respuesta llega
+                directamente al equipo de {organizationName ?? "este negocio"}.
+              </p>
+            </section>
+
+            <div className="qr-print-code">
+              <DashboardQrPreview value={signedLink.url} />
+            </div>
+
+            <section className="qr-print-branch">
+              <p>{organizationName ?? "Negocio"}</p>
+              <strong>{branch.name}</strong>
+            </section>
+
+            <footer className="qr-print-footer">
+              <span>{publicHost}</span>
+            </footer>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
         <button
           type="button"
@@ -142,15 +187,6 @@ export function DashboardBranchQrPanel({
             <p className="mt-2 text-sm text-slate-500">
               {scans} escaneos · {comments}
             </p>
-            <div className="mt-4 w-full max-w-md rounded-xl border border-slate-200 bg-white px-4 py-3 text-left">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Enlace firmado
-              </p>
-              <p className="mt-2 break-all text-sm font-medium text-slate-700">
-                {signedLink?.path ?? "No disponible"}
-              </p>
-            </div>
-
             {error ? (
               <p className="mt-3 text-sm text-red-700">{error}</p>
             ) : null}

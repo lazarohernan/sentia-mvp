@@ -889,6 +889,7 @@ export function DashboardShell({
                   <DashboardBranchQrPanel
                     branch={qrBranch}
                     organizationName={liveOrganizationName}
+                    organizationLogoUrl={organizationSettings?.logoUrl}
                     dashboardData={dashboardData}
                     onBack={() => {
                       setQrBranchId(null);

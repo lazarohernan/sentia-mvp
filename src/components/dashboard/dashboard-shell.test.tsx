@@ -640,11 +640,12 @@ describe("DashboardShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ver QR" }));
 
     await waitFor(() => {
-      expect(screen.getByText("/q/test-token")).toBeInTheDocument();
+      expect(screen.getByText("http://localhost/q/test-token")).toBeInTheDocument();
     });
 
     expect(screen.getByText("Codigo QR")).toBeInTheDocument();
     expect(screen.getAllByText("Mall Norte").length).toBeGreaterThan(0);
+    expect(screen.queryByText("/q/test-token")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /abrir formulario/i })).toHaveAttribute(
       "href",
       "/q/test-token",
@@ -730,8 +731,9 @@ describe("DashboardShell", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("/q/test-token-centro")).toBeInTheDocument();
+      expect(screen.getByText("http://localhost/q/test-token-centro")).toBeInTheDocument();
     });
+    expect(screen.queryByText("/q/test-token-centro")).not.toBeInTheDocument();
   });
 
   it("edits a branch from the drawer and updates the card", async () => {
