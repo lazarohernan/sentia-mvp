@@ -17,7 +17,10 @@ export async function createInviteActivationLink(
     type: "invite",
     email: params.email,
     options: {
-      redirectTo: buildAuthCallbackUrl(params.siteUrl, "/auth/activar-cuenta"),
+      redirectTo: buildAuthCallbackUrl(
+        params.siteUrl,
+        "/auth/activar-cuenta?mode=invite",
+      ),
       data: { full_name: params.fullName },
     },
   });
@@ -37,7 +40,7 @@ export async function createInviteActivationLink(
     inviteLink: buildInviteCallbackUrl(
       params.siteUrl,
       tokenHash,
-      "/auth/activar-cuenta",
+      "/auth/activar-cuenta?mode=invite",
     ),
   };
 }

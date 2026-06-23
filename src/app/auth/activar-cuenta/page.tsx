@@ -9,11 +9,13 @@ export const dynamic = "force-dynamic";
 type ActivarCuentaPageProps = {
   searchParams: Promise<{
     error?: string;
+    mode?: string;
   }>;
 };
 
 export default async function ActivarCuentaPage({ searchParams }: ActivarCuentaPageProps) {
   const params = await searchParams;
+  const mode = params.mode === "reset" ? "reset" : "invite";
 
   if (!hasSupabasePublicEnv()) {
     return (
@@ -21,6 +23,7 @@ export default async function ActivarCuentaPage({ searchParams }: ActivarCuentaP
         email=""
         fullName=""
         errorCode="supabase_not_configured"
+        mode={mode}
       />
     );
   }
@@ -44,6 +47,7 @@ export default async function ActivarCuentaPage({ searchParams }: ActivarCuentaP
       email={user.email ?? ""}
       fullName={fullName}
       errorCode={params.error}
+      mode={mode}
     />
   );
 }

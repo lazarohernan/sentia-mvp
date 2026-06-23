@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
   const origin = new URL(request.url).origin;
   const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-    redirectTo: buildAuthCallbackUrl(origin, "/auth/activar-cuenta"),
+    redirectTo: buildAuthCallbackUrl(origin, "/auth/activar-cuenta?mode=reset"),
   });
 
   if (error) {

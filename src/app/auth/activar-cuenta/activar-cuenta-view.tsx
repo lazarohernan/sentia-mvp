@@ -15,14 +15,17 @@ type ActivarCuentaViewProps = {
   email: string;
   fullName: string;
   errorCode?: string;
+  mode?: "invite" | "reset";
 };
 
 export function ActivarCuentaView({
   email,
   fullName,
   errorCode,
+  mode = "invite",
 }: ActivarCuentaViewProps) {
   const errorMessage = errorCode ? errorMessages[errorCode] ?? "No se pudo activar la cuenta." : null;
+  const isResetMode = mode === "reset";
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#06100d_0%,#091612_100%)] p-2 text-white sm:p-3">
@@ -34,14 +37,15 @@ export function ActivarCuentaView({
           <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center py-10">
             <div className="text-center">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-300/80">
-                Bienvenido al equipo
+                {isResetMode ? "Actualización de acceso" : "Bienvenido al equipo"}
               </p>
               <h1 className="mt-3 text-3xl font-semibold tracking-normal text-white sm:text-4xl">
-                Activa tu acceso
+                {isResetMode ? "Cambia tu contraseña" : "Crea tu contraseña"}
               </h1>
               <p className="mx-auto mt-4 max-w-md text-base leading-7 text-white/55">
-                Confirma tu nombre y crea una contrasena. Solo lo haces una vez;
-                despues puedes entrar con enlace rapido si lo prefieres.
+                {isResetMode
+                  ? "Define una nueva contraseña para recuperar tu acceso a Perks."
+                  : "Confirma tu nombre y crea tu contraseña para activar tu acceso a Perks."}
               </p>
               <p className="mt-3 text-sm font-medium text-white/70">{email}</p>
             </div>
@@ -112,12 +116,13 @@ export function ActivarCuentaView({
               type="submit"
               className="mt-7 inline-flex h-14 w-full items-center justify-center rounded-lg bg-[#56b298] px-4 text-base font-bold text-white transition hover:bg-[#62c2a7]"
             >
-              Activar cuenta y continuar
+              {isResetMode ? "Cambiar contraseña y continuar" : "Crear contraseña y continuar"}
             </button>
 
             <p className="mt-5 text-center text-xs leading-5 text-white/45">
-              Datos como cumpleanos pueden completarse despues con gerencia. Lo
-              importante ahora es activar tu acceso para la evaluacion de escucha.
+              {isResetMode
+                ? "Después podrás entrar nuevamente con tu correo y la contraseña actualizada."
+                : "Después podrás entrar con tu correo y la contraseña que acabas de crear."}
             </p>
           </div>
         </form>
