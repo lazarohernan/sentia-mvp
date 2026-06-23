@@ -56,7 +56,7 @@ export async function GET(request: Request, { params }: BranchQrLinkRouteProps) 
 
     return NextResponse.json({
       ...link,
-      feedbackPath: `/feedback/${branch.slug}?token=${encodeURIComponent(link.token)}`,
+      feedbackPath: link.path,
     });
   } catch {
     return NextResponse.json({ error: "No se pudo generar el QR firmado." }, { status: 500 });
