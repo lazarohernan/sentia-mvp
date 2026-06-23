@@ -495,7 +495,7 @@ export interface Database {
           id: string;
           submission_id: string;
           organization_id: string;
-          actor_user_id: string;
+          actor_user_id: string | null;
           action_type: "status_change" | "note" | "assignment" | "escalation";
           previous_status: string | null;
           new_status: string | null;
@@ -569,7 +569,7 @@ export interface Database {
           id: string;
           organization_id: string;
           branch_id: string | null;
-          user_id: string;
+          user_id: string | null;
           level: "download" | "debate" | "empathetic_listening" | "generative_dialogue";
           note: string | null;
           created_at: string;

@@ -20,7 +20,7 @@ export type ListeningEventRow = {
   organizationId: string;
   branchId: string | null;
   branchName: string | null;
-  userId: string;
+  userId: string | null;
   userName: string;
   level: z.infer<typeof listeningLevelSchema>;
   levelLabel: string;

@@ -9,10 +9,19 @@ import { type TeamMember, roleLabels } from "./team";
 
 type ServiceClient = SupabaseClient<Database>;
 
-async function findAuthUserIdByEmail(
+type AuthUserMatch = {
+  id: string;
+  last_sign_in_at?: string | null;
+};
+
+function needsActivationInvite(user: AuthUserMatch) {
+  return !user.last_sign_in_at;
+}
+
+async function findAuthUserByEmail(
   client: ServiceClient,
   email: string,
-): Promise<string | null> {
+): Promise<AuthUserMatch | null> {
   let page = 1;
 
   while (page <= 5) {
@@ -30,7 +39,10 @@ async function findAuthUserIdByEmail(
     );
 
     if (match) {
-      return match.id;
+      return {
+        id: match.id,
+        last_sign_in_at: match.last_sign_in_at,
+      };
     }
 
     if (data.users.length < 200) {
@@ -51,10 +63,23 @@ async function resolveAuthUserId(
     siteUrl: string;
   },
 ): Promise<{ userId: string; inviteLink: string | null }> {
-  const existingUserId = await findAuthUserIdByEmail(client, params.email);
+  const existingUser = await findAuthUserByEmail(client, params.email);
 
-  if (existingUserId) {
-    return { userId: existingUserId, inviteLink: null };
+  if (existingUser) {
+    if (!needsActivationInvite(existingUser)) {
+      return { userId: existingUser.id, inviteLink: null };
+    }
+
+    const { userId, inviteLink } = await createInviteActivationLink(client, {
+      email: params.email,
+      fullName: params.fullName,
+      siteUrl: params.siteUrl,
+    });
+
+    return {
+      userId,
+      inviteLink,
+    };
   }
 
   const { userId, inviteLink } = await createInviteActivationLink(client, {

@@ -11,7 +11,7 @@ type RawListeningEvent = {
   id: string;
   organization_id: string;
   branch_id: string | null;
-  user_id: string;
+  user_id: string | null;
   level: ListeningEventRow["level"];
   note: string | null;
   created_at: string;
@@ -145,7 +145,7 @@ function mapListeningEvent(row: RawListeningEvent): ListeningEventRow {
     branchId: row.branch_id,
     branchName: row.branches?.name ?? null,
     userId: row.user_id,
-    userName: row.profiles?.full_name ?? "Usuario",
+    userName: row.profiles?.full_name ?? "Usuario eliminado",
     level: row.level,
     levelLabel: listeningLevelLabels[row.level],
     note: row.note,

@@ -52,13 +52,71 @@ export async function removeTeamMember(
     throw new Error("No tienes permisos para eliminar a esta persona.");
   }
 
-  const { error: deleteError } = await client
+  const { data: remainingMemberships, error: remainingError } = await client
     .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", params.targetUserId)
+    .neq("organization_id", params.organizationId);
+
+  if (remainingError) {
+    throw new Error("No se pudo validar el acceso del colaborador.");
+  }
+
+  const hasOtherOrganizations = Boolean(remainingMemberships?.length);
+
+  let pushDeleteQuery = client
+    .from("push_subscriptions")
     .delete()
-    .eq("organization_id", params.organizationId)
     .eq("user_id", params.targetUserId);
 
-  if (deleteError) {
+  if (hasOtherOrganizations) {
+    pushDeleteQuery = pushDeleteQuery.eq("organization_id", params.organizationId);
+  }
+
+  const { error: pushDeleteError } = await pushDeleteQuery;
+
+  if (pushDeleteError) {
+    throw new Error("No se pudieron limpiar las suscripciones push del colaborador.");
+  }
+
+  if (hasOtherOrganizations) {
+    const { error: membershipDeleteError } = await client
+      .from("organization_members")
+      .delete()
+      .eq("organization_id", params.organizationId)
+      .eq("user_id", params.targetUserId);
+
+    if (membershipDeleteError) {
+      throw new Error("No se pudo eliminar al colaborador.");
+    }
+
+    return;
+  }
+
+  const { error: listeningDetachError } = await client
+    .from("listening_events")
+    .update({ user_id: null } as never)
+    .eq("user_id", params.targetUserId);
+
+  if (listeningDetachError) {
+    throw new Error("No se pudo preservar el historial de escucha del colaborador.");
+  }
+
+  const { error: followUpDetachError } = await client
+    .from("feedback_follow_up_actions")
+    .update({ actor_user_id: null } as never)
+    .eq("actor_user_id", params.targetUserId);
+
+  if (followUpDetachError) {
+    throw new Error("No se pudo preservar el historial de seguimiento del colaborador.");
+  }
+
+  const { error: authDeleteError } = await client.auth.admin.deleteUser(
+    params.targetUserId,
+    false,
+  );
+
+  if (authDeleteError) {
     throw new Error("No se pudo eliminar al colaborador.");
   }
 }

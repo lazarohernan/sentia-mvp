@@ -192,7 +192,8 @@ export function getListeningCollaboratorSummaries(
   const groupedEvents = new Map<string, ListeningEventRow[]>();
 
   for (const event of events) {
-    groupedEvents.set(event.userId, [...(groupedEvents.get(event.userId) ?? []), event]);
+    const groupKey = event.userId ?? `deleted:${event.id}`;
+    groupedEvents.set(groupKey, [...(groupedEvents.get(groupKey) ?? []), event]);
   }
 
   return [...groupedEvents.entries()]
