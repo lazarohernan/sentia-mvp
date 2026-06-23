@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Loader2, Mail, Plus, X } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
@@ -23,7 +23,7 @@ type AddTeamMemberDrawerProps = {
 type SuccessState = {
   memberName: string;
   email: string;
-  inviteLink: string | null;
+  inviteEmailStatus?: "sent" | "skipped" | null;
 };
 
 export function AddTeamMemberDrawer({
@@ -41,7 +41,6 @@ export function AddTeamMemberDrawer({
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState<SuccessState | null>(null);
-  const [copied, setCopied] = useState(false);
 
   function resetForm() {
     setFullName("");
@@ -50,21 +49,11 @@ export function AddTeamMemberDrawer({
     setPermissionProfileId("");
     setError("");
     setSuccess(null);
-    setCopied(false);
   }
 
   function handleClose() {
     resetForm();
     onClose();
-  }
-
-  async function handleCopyLink(link: string) {
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -93,6 +82,7 @@ export function AddTeamMemberDrawer({
       const body = (await response.json()) as {
         member?: TeamMember;
         inviteLink?: string | null;
+        inviteEmailStatus?: "sent" | "skipped" | null;
         error?: string;
       };
 
@@ -111,7 +101,7 @@ export function AddTeamMemberDrawer({
       setSuccess({
         memberName: memberWithProfile.fullName,
         email,
-        inviteLink: body.inviteLink ?? null,
+        inviteEmailStatus: body.inviteEmailStatus ?? null,
       });
     } catch {
       setError("No se pudo conectar con el servidor.");
@@ -131,17 +121,6 @@ export function AddTeamMemberDrawer({
 
     return inferMemberRoleFromPermissionProfile(profile) === "collaborator";
   });
-
-  const emailInviteHref =
-    success?.inviteLink && success.email
-      ? [
-          `mailto:${encodeURIComponent(success.email)}`,
-          `?subject=${encodeURIComponent("Activa tu acceso a Perks")}`,
-          `&body=${encodeURIComponent(
-            `Hola ${success.memberName},\n\nTe comparto tu enlace para activar tu cuenta en Perks. Abre este enlace, confirma tu nombre y crea tu contraseña:\n\n${success.inviteLink}\n\nDespués podrás entrar desde /login.`,
-          )}`,
-        ].join("")
-      : "";
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/30 backdrop-blur-[2px]">
@@ -181,43 +160,25 @@ export function AddTeamMemberDrawer({
               forma parte del equipo.
             </p>
 
-            {success.inviteLink ? (
+            {success.inviteEmailStatus === "sent" ? (
               <div className="mt-5 rounded-lg border border-emerald-100 bg-emerald-50/70 p-4">
                 <p className="text-sm font-semibold text-emerald-950">
-                  Enlace de activacion
+                  Invitación enviada
                 </p>
                 <p className="mt-1 text-sm leading-6 text-emerald-900/80">
-                  Compartelo por WhatsApp o correo. El colaborador abrira activacion de
-                  cuenta desde este enlace.
+                  Enviamos el correo de activación a{" "}
+                  <span className="font-semibold">{success.email}</span>. La persona podrá crear
+                  su contraseña desde ese mensaje.
                 </p>
-                <div className="mt-3 flex items-start gap-2 rounded-lg border border-emerald-200 bg-white p-3">
-                  <p className="min-w-0 flex-1 break-all text-xs text-slate-600">
-                    {success.inviteLink}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyLink(success.inviteLink!)}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700"
-                  >
-                    {copied ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-700" aria-hidden="true" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                    )}
-                    {copied ? "Copiado" : "Copiar"}
-                  </button>
-                </div>
-                <a
-                  href={emailInviteHref}
-                  className="mt-3 inline-flex h-10 items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-50"
-                >
-                  <Mail className="h-4 w-4" aria-hidden="true" />
-                  Enviar por correo
-                </a>
+              </div>
+            ) : success.inviteEmailStatus === "skipped" ? (
+              <div className="mt-5 rounded-lg border border-amber-100 bg-amber-50/70 p-4 text-sm leading-6 text-amber-900">
+                El colaborador fue agregado, pero el correo no se envió porque Resend no está
+                configurado en este entorno.
               </div>
             ) : (
               <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-                Esta persona ya tenia cuenta. Puede entrar en{" "}
+                Esta persona ya tenía cuenta. Puede entrar en{" "}
                 <span className="font-semibold text-slate-900">/login</span>.
               </div>
             )}

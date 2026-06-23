@@ -90,7 +90,7 @@ describe("AddTeamMemberDrawer", () => {
     });
   });
 
-  it("shows a prepared email link after creating an activation link", async () => {
+  it("confirms that the activation email was sent", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
@@ -108,6 +108,7 @@ describe("AddTeamMemberDrawer", () => {
               accountStatus: "pending_activation",
             },
             inviteLink: "http://localhost/auth/callback?token_hash=test",
+            inviteEmailStatus: "sent",
           },
           { status: 201 },
         ),
@@ -133,10 +134,8 @@ describe("AddTeamMemberDrawer", () => {
     fireEvent.click(screen.getByRole("button", { name: "Agregar colaborador" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("link", { name: "Enviar por correo" })).toHaveAttribute(
-        "href",
-        expect.stringContaining("mailto:ana%40empresa.com"),
-      );
+      expect(screen.getByText("Invitación enviada")).toBeInTheDocument();
     });
+    expect(screen.queryByRole("button", { name: /copiar/i })).toBeNull();
   });
 });

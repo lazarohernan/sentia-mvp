@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Check, Copy, Loader2, Mail, MapPin, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Mail, MapPin, Send, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { formatTableDate } from "@/domain/feedback/record-analysis";
@@ -48,7 +48,6 @@ export function TeamMemberDetailView({
   onMemberUpdated,
   onMemberRemoved,
 }: TeamMemberDetailViewProps) {
-  const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,7 +56,6 @@ export function TeamMemberDetailView({
   const [deleteError, setDeleteError] = useState("");
   const [roleError, setRoleError] = useState("");
   const [isRoleSaving, setIsRoleSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const selectedProfile =
     permissionProfiles.find((profile) => profile.id === member.permissionProfileId) ??
@@ -82,16 +80,6 @@ export function TeamMemberDetailView({
     return () => window.clearInterval(timer);
   }, [cooldownSeconds]);
 
-  async function handleCopyLink(link: string) {
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  }
-
   async function handleResendInvite() {
     setError("");
     setSuccess("");
@@ -106,6 +94,7 @@ export function TeamMemberDetailView({
       const body = (await response.json()) as {
         inviteLink?: string;
         accountStatus?: TeamMember["accountStatus"];
+        inviteEmailStatus?: "sent" | "skipped";
         error?: string;
         retryAfterSeconds?: number;
       };
@@ -116,13 +105,16 @@ export function TeamMemberDetailView({
         return;
       }
 
-      if (!response.ok || !body.inviteLink) {
+      if (!response.ok) {
         setError(body.error ?? "No se pudo reenviar la invitacion.");
         return;
       }
 
-      setInviteLink(body.inviteLink);
-      setSuccess("Nuevo enlace generado. Compartelo con el colaborador.");
+      setSuccess(
+        body.inviteEmailStatus === "sent"
+          ? "Invitación reenviada por correo."
+          : "Invitación generada, pero el correo no se envió porque Resend no está configurado.",
+      );
       setCooldownSeconds(10 * 60);
       onMemberUpdated({
         ...member,
@@ -337,8 +329,8 @@ export function TeamMemberDetailView({
           <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-4">
             <p className="text-sm font-semibold text-amber-950">Activacion pendiente</p>
             <p className="mt-1 text-sm leading-6 text-amber-900/80">
-              Este colaborador aun no entra por primera vez. Puedes generar un nuevo enlace de
-              activacion para compartirlo.
+              Este colaborador aún no entra por primera vez. Puedes reenviar la invitación por
+              correo para que cree su contraseña.
             </p>
 
             {success ? (
@@ -353,24 +345,6 @@ export function TeamMemberDetailView({
                 {cooldownSeconds > 0 ? ` Podras reenviar en ${formatCooldown(cooldownSeconds)}.` : ""}
               </p>
             ) : null}
-
-            {(inviteLink ? (
-              <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-white p-3">
-                <p className="min-w-0 flex-1 break-all text-xs text-slate-600">{inviteLink}</p>
-                <button
-                  type="button"
-                  onClick={() => handleCopyLink(inviteLink)}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700"
-                >
-                  {copied ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-700" aria-hidden="true" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                  )}
-                  {copied ? "Copiado" : "Copiar"}
-                </button>
-              </div>
-            ) : null)}
 
             <button
               type="button"
