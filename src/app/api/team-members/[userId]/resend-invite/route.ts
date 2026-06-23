@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { resendTeamMemberInvite } from "@/domain/organizations/resend-team-member-invite";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
+import { sendTeamInviteEmail } from "@/lib/email/send-team-invite-email";
 import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv, hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -18,6 +19,26 @@ function rateLimitResponse(message: string, resetAt: number) {
   const retryAfterSeconds = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
 
   return NextResponse.json({ error: message, retryAfterSeconds }, { status: 429 });
+}
+
+function getAppUrl(request: Request) {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "") ??
+    new URL(request.url).origin
+  );
+}
+
+async function getOrganizationName(
+  client: ReturnType<typeof createServiceClient>,
+  organizationId: string,
+) {
+  const { data } = await client
+    .from("organizations")
+    .select("name")
+    .eq("id", organizationId)
+    .maybeSingle();
+
+  return (data as { name?: string } | null)?.name ?? "Tu organización";
 }
 
 type ResendInviteRouteProps = {
@@ -92,16 +113,30 @@ export async function POST(request: Request, { params }: ResendInviteRouteProps)
     );
   }
 
-  const siteUrl = new URL(request.url).origin;
+  const siteUrl = getAppUrl(request);
 
   try {
-    const result = await resendTeamMemberInvite(createServiceClient(), {
+    const serviceClient = createServiceClient();
+    const result = await resendTeamMemberInvite(serviceClient, {
       organizationId: membership.organizationId,
       targetUserId,
       siteUrl,
     });
 
-    return NextResponse.json(result);
+    const organizationName = await getOrganizationName(
+      serviceClient,
+      membership.organizationId,
+    );
+    const inviteEmailStatus = await sendTeamInviteEmail({
+      to: result.email,
+      fullName: result.fullName,
+      organizationName,
+      roleLabel: result.roleLabel,
+      inviteLink: result.inviteLink,
+      appUrl: siteUrl,
+    });
+
+    return NextResponse.json({ ...result, inviteEmailStatus });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error desconocido";
 
@@ -115,6 +150,13 @@ export async function POST(request: Request, { params }: ResendInviteRouteProps)
 
     if (message.includes("propietario")) {
       return NextResponse.json({ error: message }, { status: 403 });
+    }
+
+    if (message.includes("correo")) {
+      return NextResponse.json(
+        { error: "No se pudo enviar la invitacion por correo." },
+        { status: 502 },
+      );
     }
 
     return NextResponse.json({ error: "No se pudo reenviar la invitacion." }, { status: 500 });

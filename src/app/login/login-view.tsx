@@ -34,24 +34,31 @@ export function LoginView({
   const isRegisterMode = REGISTRATION_ENABLED && mode === "registro";
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#06100d_0%,#091612_100%)] p-2 text-white sm:p-3">
-      <section className="grid min-h-[calc(100vh-1rem)] overflow-hidden rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,17,14,0.96)_0%,rgba(8,19,16,0.94)_100%)] shadow-[0_24px_90px_rgba(0,0,0,0.45)] lg:grid-cols-[1fr_1.02fr]">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#06100d_0%,#091612_100%)] text-white">
+      <section className="grid min-h-screen overflow-hidden bg-[url('/images/auth-rustic-business.webp')] bg-cover bg-center lg:grid-cols-[1fr_1.02fr]">
         <form
           action={isRegisterMode ? signUpAction : signInAction}
-          className="flex min-h-[660px] flex-col bg-[radial-gradient(circle_at_top_left,rgba(86,178,152,0.08),transparent_28%),linear-gradient(180deg,#07120e_0%,#081410_100%)] px-6 py-7 sm:px-10 lg:min-h-0 lg:px-16"
+          className="flex min-h-[660px] flex-col bg-[#06100d]/82 px-6 py-7 shadow-[24px_0_80px_rgba(0,0,0,0.2)] backdrop-blur-2xl sm:px-10 lg:min-h-0 lg:px-16"
         >
           <div className="mx-auto flex h-full w-full max-w-xl flex-col">
             <h1 className="sr-only">Perks. Escucha mejor y actua a tiempo.</h1>
+            <div className="flex justify-start">
+              <img
+                src="/brand/perks-logo-white.png"
+                alt="Perks"
+                className="h-11 w-auto sm:h-12"
+              />
+            </div>
 
             <div className="my-auto py-10">
-              <div className="text-center">
+              <div className="text-left">
                 <h2 className="text-3xl font-semibold tracking-normal text-white sm:text-4xl">
                   {isRegisterMode ? "Crea tu cuenta" : "Bienvenido de nuevo"}
                 </h2>
-                <p className="mx-auto mt-4 max-w-sm text-base leading-7 text-white/55">
+                <p className="mt-4 max-w-sm text-base leading-7 text-white/55">
                   {isRegisterMode
                     ? "Configura tu empresa y empieza a organizar la experiencia de tus clientes."
-                    : "Ingresa para evaluar escucha o revisar comentarios y alertas."}
+                    : "Accede a tu espacio de trabajo y continua gestionando tu experiencia en Perks."}
                 </p>
               </div>
 
@@ -194,12 +201,12 @@ export function LoginView({
               />
 
               {!isRegisterMode ? (
-                <p className="mt-5 text-center text-sm text-white/50">
+                <p className="mt-5 text-left text-sm text-white/50">
                   ¿Olvidaste tu contrasena? Pide ayuda a tu gerente.
                 </p>
               ) : null}
 
-              <p className="mt-5 text-center text-xs leading-5 text-white/45">
+              <p className="mt-5 text-left text-xs leading-5 text-white/45">
                 Al continuar aceptas nuestros{" "}
                 <span className="font-semibold text-white/70">Términos de uso</span>
                 {" "}y{" "}
@@ -212,9 +219,9 @@ export function LoginView({
           </div>
         </form>
 
-        <aside className="hidden min-h-[660px] bg-[#07100d] p-[32px_32px_32px_0] text-white lg:block">
-          <div className="relative h-full overflow-hidden rounded-[1.7rem] bg-[#0a1b16]">
-            <div className="absolute inset-0 bg-[url('/images/auth-tech-bg.png')] bg-cover bg-center" />
+        <aside className="hidden min-h-[660px] text-white lg:block">
+          <div className="relative h-full overflow-hidden bg-[#0a1b16]">
+            <div className="absolute inset-0 bg-[url('/images/auth-rustic-business.webp')] bg-cover bg-center" />
             <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(3,14,11,0.88)_0%,rgba(6,22,18,0.34)_24%,rgba(8,28,23,0.18)_44%,rgba(10,38,34,0.36)_62%,rgba(12,53,52,0.88)_100%)]" />
           </div>
         </aside>

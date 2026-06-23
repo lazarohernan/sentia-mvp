@@ -6,8 +6,17 @@ import type { TeamMemberAccountStatus } from "./team";
 
 type ServiceClient = SupabaseClient<Database>;
 
+const inviteRoleLabels = {
+  owner: "Propietario",
+  manager: "Gerente",
+  collaborator: "Colaborador",
+} as const;
+
 export type ResendTeamMemberInviteResult = {
   inviteLink: string;
+  email: string;
+  fullName: string;
+  roleLabel: string;
   accountStatus: TeamMemberAccountStatus;
 };
 
@@ -21,7 +30,7 @@ export async function resendTeamMemberInvite(
 ): Promise<ResendTeamMemberInviteResult> {
   const { data: member, error: memberError } = await client
     .from("organization_members")
-    .select("user_id, role, profiles(full_name)")
+    .select("user_id, role, profiles(full_name), organization_roles(name)")
     .eq("organization_id", params.organizationId)
     .eq("user_id", params.targetUserId)
     .maybeSingle();
@@ -31,8 +40,9 @@ export async function resendTeamMemberInvite(
   }
 
   const memberRow = member as {
-    role: string;
+    role: keyof typeof inviteRoleLabels;
     profiles: { full_name: string } | null;
+    organization_roles: { name: string } | null;
   };
 
   if (memberRow.role === "owner") {
@@ -67,6 +77,9 @@ export async function resendTeamMemberInvite(
 
   return {
     inviteLink,
+    email: authData.user.email,
+    fullName: typeof fullName === "string" ? fullName : "Colaborador",
+    roleLabel: memberRow.organization_roles?.name ?? inviteRoleLabels[memberRow.role],
     accountStatus: "pending_activation",
   };
 }

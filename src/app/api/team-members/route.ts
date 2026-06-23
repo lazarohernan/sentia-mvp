@@ -7,6 +7,7 @@ import {
   inferMemberRoleFromPermissionProfile,
 } from "@/domain/organizations/permission-profiles";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
+import { sendTeamInviteEmail } from "@/lib/email/send-team-invite-email";
 import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv, hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -22,6 +23,26 @@ function canAssignRole(actorRole: string, targetRole: "manager" | "collaborator"
   }
 
   return actorRole === "manager" && targetRole === "collaborator";
+}
+
+function getAppUrl(request: Request) {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "") ??
+    new URL(request.url).origin
+  );
+}
+
+async function getOrganizationName(
+  client: ReturnType<typeof createServiceClient>,
+  organizationId: string,
+) {
+  const { data } = await client
+    .from("organizations")
+    .select("name")
+    .eq("id", organizationId)
+    .maybeSingle();
+
+  return (data as { name?: string } | null)?.name ?? "Tu organización";
 }
 
 export async function POST(request: Request) {
@@ -96,7 +117,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const siteUrl = new URL(request.url).origin;
+  const siteUrl = getAppUrl(request);
 
   try {
     const result = await addTeamMember(serviceClient, {
@@ -108,7 +129,25 @@ export async function POST(request: Request) {
       siteUrl,
     });
 
-    return NextResponse.json(result, { status: 201 });
+    let inviteEmailStatus: "sent" | "skipped" | null = null;
+
+    if (result.inviteLink && result.member.email) {
+      const organizationName = await getOrganizationName(
+        serviceClient,
+        membership.organizationId,
+      );
+
+      inviteEmailStatus = await sendTeamInviteEmail({
+        to: result.member.email,
+        fullName: result.member.fullName,
+        organizationName,
+        roleLabel: result.member.permissionProfileName ?? result.member.roleLabel,
+        inviteLink: result.inviteLink,
+        appUrl: siteUrl,
+      });
+    }
+
+    return NextResponse.json({ ...result, inviteEmailStatus }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error desconocido";
 
@@ -118,6 +157,13 @@ export async function POST(request: Request) {
 
     if (message.includes("sucursal")) {
       return NextResponse.json({ error: message }, { status: 400 });
+    }
+
+    if (message.includes("correo")) {
+      return NextResponse.json(
+        { error: "El colaborador fue creado, pero no se pudo enviar la invitacion." },
+        { status: 502 },
+      );
     }
 
     return NextResponse.json(
