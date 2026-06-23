@@ -129,6 +129,16 @@ export async function sendTeamInviteEmail(
   });
 
   if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    console.error("team_invite_email_failed", {
+      status: response.status,
+      error:
+        typeof errorBody?.message === "string"
+          ? errorBody.message
+          : typeof errorBody?.name === "string"
+            ? errorBody.name
+            : "unknown_resend_error",
+    });
     throw new Error("No se pudo enviar la invitacion por correo.");
   }
 
