@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { sanitizeOptionalTextInput } from "@/lib/security/input";
 import type { Database } from "@/lib/supabase/database.types";
 
 type Client = SupabaseClient<Database>;
@@ -26,13 +27,16 @@ export async function upsertPushSubscription(
     deviceLabel?: string | null;
   },
 ): Promise<void> {
+  const deviceLabel = sanitizeOptionalTextInput(params.deviceLabel)?.slice(0, 120) ?? null;
+  const userAgent = sanitizeOptionalTextInput(params.userAgent)?.slice(0, 300) ?? null;
+
   const payload: PushSubscriptionInsert = {
     organization_id: params.organizationId,
     user_id: params.userId,
     endpoint: params.endpoint,
     subscription: params.subscription,
-    user_agent: params.userAgent ?? null,
-    device_label: params.deviceLabel?.trim() || null,
+    user_agent: userAgent,
+    device_label: deviceLabel,
     last_seen_at: new Date().toISOString(),
     disabled_at: null,
     last_error_at: null,

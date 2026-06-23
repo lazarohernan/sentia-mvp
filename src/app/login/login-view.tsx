@@ -15,6 +15,7 @@ type LoginViewProps = {
   mode?: "login" | "registro";
   redirectTo?: string;
   errorCode?: string;
+  statusCode?: string;
 };
 
 const errorMessages: Record<string, string> = {
@@ -26,10 +27,16 @@ const errorMessages: Record<string, string> = {
   registration_disabled: "El registro publico esta desactivado.",
 };
 
+const statusMessages: Record<string, string> = {
+  account_activated:
+    "Tu contraseña quedó lista. Inicia sesión con tu correo y contraseña.",
+};
+
 export function LoginView({
   mode = "login",
   redirectTo,
   errorCode,
+  statusCode,
 }: LoginViewProps) {
   const isRegisterMode = REGISTRATION_ENABLED && mode === "registro";
 
@@ -65,6 +72,12 @@ export function LoginView({
               {errorCode ? (
                 <p className="mt-6 rounded-lg border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
                   {errorMessages[errorCode] ?? "No se pudo iniciar sesion."}
+                </p>
+              ) : null}
+
+              {statusCode ? (
+                <p className="mt-6 rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-50">
+                  {statusMessages[statusCode] ?? "Operación completada."}
                 </p>
               ) : null}
 

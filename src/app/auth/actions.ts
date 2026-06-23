@@ -8,10 +8,7 @@ import {
   signInSchema,
   signUpSchema,
 } from "@/domain/auth/schemas";
-import {
-  getHomePathForRole,
-  getSafeRedirectPath,
-} from "@/domain/auth/redirects";
+import { getHomePathForRole, getSafeRedirectPath } from "@/domain/auth/redirects";
 import { REGISTRATION_ENABLED } from "@/domain/auth/config";
 import { sanitizeEmailInput } from "@/lib/security/input";
 import {
@@ -215,6 +212,6 @@ export async function activateAccountAction(formData: FormData): Promise<void> {
     redirect("/auth/activar-cuenta?error=activation_failed");
   }
 
-  const membership = await getOrganizationMembershipByUser(supabase, user.id);
-  redirect(getHomePathForRole(membership?.role));
+  await supabase.auth.signOut();
+  redirect("/login?status=account_activated");
 }

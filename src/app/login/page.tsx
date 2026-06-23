@@ -6,6 +6,7 @@ type LoginPageProps = {
     mode?: string;
     redirectTo?: string;
     error?: string;
+    status?: string;
   }>;
 };
 
@@ -19,6 +20,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       }
       redirectTo={params.redirectTo}
       errorCode={params.error}
+      statusCode={params.status}
     />
   );
 }

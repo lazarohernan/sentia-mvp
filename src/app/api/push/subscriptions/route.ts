@@ -6,6 +6,7 @@ import {
   disablePushSubscription,
   upsertPushSubscription,
 } from "@/domain/push/repository";
+import { sanitizeOptionalTextInput } from "@/lib/security/input";
 import { createClient } from "@/lib/supabase/server";
 
 const subscriptionSchema = z.object({
@@ -19,7 +20,11 @@ const subscriptionSchema = z.object({
 
 const subscribeBodySchema = z.object({
   subscription: subscriptionSchema,
-  deviceLabel: z.string().trim().max(120).optional(),
+  deviceLabel: z
+    .string()
+    .optional()
+    .transform(sanitizeOptionalTextInput)
+    .refine((value) => value === undefined || value.length <= 120),
 });
 
 const unsubscribeBodySchema = z.object({

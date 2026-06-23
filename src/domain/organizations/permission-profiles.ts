@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import { sanitizeTextInput } from "@/lib/security/input";
+
 import type { Database } from "@/lib/supabase/database.types";
 import type { MemberRole } from "./schemas";
 
@@ -82,7 +84,10 @@ export const permissionKeySchema = z.enum([
 ]);
 
 export const createPermissionProfileInputSchema = z.object({
-  name: z.string().trim().min(2).max(80),
+  name: z
+    .string()
+    .transform(sanitizeTextInput)
+    .pipe(z.string().min(2).max(80)),
   permissions: z.array(permissionKeySchema).min(1).transform((permissions) => [
     ...new Set(permissions),
   ]),

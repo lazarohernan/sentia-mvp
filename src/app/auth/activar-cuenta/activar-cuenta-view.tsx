@@ -4,6 +4,7 @@ import { Eye, EyeOff, KeyRound, UserRound } from "lucide-react";
 import { useState } from "react";
 
 import { activateAccountAction } from "@/app/auth/actions";
+import { ActivateAccountSubmitButton } from "./activate-account-submit-button";
 
 const errorMessages: Record<string, string> = {
   invalid_activation: "Revisa tu nombre y que las contrasenas coincidan.",
@@ -145,12 +146,10 @@ export function ActivarCuentaView({
               </p>
             ) : null}
 
-            <button
-              type="submit"
-              className="mt-7 inline-flex h-14 w-full items-center justify-center rounded-lg bg-[#56b298] px-4 text-base font-bold text-white transition hover:bg-[#62c2a7]"
-            >
-              {isResetMode ? "Cambiar contraseña y continuar" : "Crear contraseña y continuar"}
-            </button>
+            <ActivateAccountSubmitButton
+              label={isResetMode ? "Cambiar contraseña y continuar" : "Crear contraseña y continuar"}
+              pendingLabel={isResetMode ? "Cambiando contraseña..." : "Creando contraseña..."}
+            />
 
             <p className="mt-5 text-center text-xs leading-5 text-white/45">
               {isResetMode

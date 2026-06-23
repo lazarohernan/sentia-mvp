@@ -17,7 +17,6 @@ const ALLOWED_LOGO_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
-  "image/svg+xml",
 ]);
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
@@ -238,8 +237,6 @@ function getLogoExtension(file: File) {
       return "png";
     case "image/webp":
       return "webp";
-    case "image/svg+xml":
-      return "svg";
     default:
       return null;
   }
@@ -253,7 +250,7 @@ export async function uploadOrganizationLogo(
   },
 ): Promise<string> {
   if (!ALLOWED_LOGO_TYPES.has(params.file.type)) {
-    throw new Error("Formato de logo no soportado. Usa JPG, PNG, WEBP o SVG.");
+    throw new Error("Formato de logo no soportado. Usa JPG, PNG o WEBP.");
   }
 
   if (params.file.size > MAX_LOGO_BYTES) {
@@ -262,7 +259,7 @@ export async function uploadOrganizationLogo(
 
   const extension = getLogoExtension(params.file);
   if (!extension) {
-    throw new Error("Formato de logo no soportado. Usa JPG, PNG, WEBP o SVG.");
+    throw new Error("Formato de logo no soportado. Usa JPG, PNG o WEBP.");
   }
 
   const path = `${params.organizationId}/logo.${extension}`;

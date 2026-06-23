@@ -14,6 +14,13 @@ type BranchQrLinkRouteProps = {
   params: Promise<{ branchId: string }>;
 };
 
+function getQrLinkOrigin(request: Request) {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "") ??
+    new URL(request.url).origin
+  );
+}
+
 export async function GET(request: Request, { params }: BranchQrLinkRouteProps) {
   const { branchId } = await params;
 
@@ -44,7 +51,7 @@ export async function GET(request: Request, { params }: BranchQrLinkRouteProps) 
   }
 
   try {
-    const origin = new URL(request.url).origin;
+    const origin = getQrLinkOrigin(request);
     const link = buildSignedBranchQrLink(branch, origin);
 
     return NextResponse.json({

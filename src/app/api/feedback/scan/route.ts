@@ -2,12 +2,16 @@ import { z } from "zod";
 
 import { getActiveBranchBySlug } from "@/domain/branches/repository";
 import { recordBranchQrScan } from "@/domain/branches/qr-scans";
+import { sanitizeTextInput } from "@/lib/security/input";
 import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
 
 const scanSchema = z.object({
-  branchSlug: z.string().min(2).max(120),
+  branchSlug: z
+    .string()
+    .transform(sanitizeTextInput)
+    .pipe(z.string().min(2).max(120)),
 });
 
 export async function POST(request: Request) {
