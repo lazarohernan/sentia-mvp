@@ -62,6 +62,11 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+:focus-visible {
+  outline: 3px solid #2bb58c;
+  outline-offset: 3px;
+}
+
 @keyframes hero-rise {
   from {
     opacity: 0;
@@ -100,6 +105,88 @@ body {
   .hero-enter,
   .hero-enter-soft {
     animation: none;
+  }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  transition:
+    opacity 780ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 780ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.reveal-soft {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.reveal-soft.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-soft {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+}
+
+@keyframes workflow-progress {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.workflow-progress-fill {
+  width: 100%;
+  transform: scaleX(0);
+  animation-name: workflow-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workflow-progress-fill {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
+
+.hero-media-cut {
+  clip-path: none;
+}
+
+@media (min-width: 640px) {
+  .hero-media-cut {
+    clip-path: polygon(0 0, 100% 0, 100% 96%, 72% 100%, 0 97%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-media-cut [data-parallax-layer],
+  .hero-media-cut .will-change-transform {
+    transform: none !important;
   }
 }
 

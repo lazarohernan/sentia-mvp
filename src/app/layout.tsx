@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Perks",
-  description: "Plataforma de feedback, analitica IA y fidelizacion.",
+  title: "Perks | Convierte comentarios en decisiones claras",
+  description:
+    "Plataforma de escucha operativa para recoger feedback, priorizar alertas y dar seguimiento por sucursal.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
