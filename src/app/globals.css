@@ -420,3 +420,60 @@ body {
     white-space: nowrap;
   }
 }
+
+/* Dashboard date filter: visible range chips with spacing between days */
+.rdp-root.rdp-perks {
+  --rdp-day-height: 2.4rem;
+  --rdp-day-width: 2.4rem;
+  --rdp-day_button-height: 2.05rem;
+  --rdp-day_button-width: 2.05rem;
+  --rdp-day_button-border-radius: 0.5rem;
+  --rdp-selected-border: 2px solid transparent;
+  --rdp-accent-color: #065f46;
+  --rdp-accent-background-color: #d1fae5;
+  --rdp-range_middle-background-color: transparent;
+  --rdp-range_middle-color: #064e3b;
+  --rdp-range_start-background: transparent;
+  --rdp-range_end-background: transparent;
+  --rdp-range_start-date-background-color: #065f46;
+  --rdp-range_end-date-background-color: #065f46;
+  --rdp-today-color: #065f46;
+}
+
+.rdp-root.rdp-perks .rdp-month_grid {
+  border-collapse: separate;
+  border-spacing: 0.22rem 0.22rem;
+}
+
+/* Kill continuous cell fill; color only the day buttons */
+.rdp-root.rdp-perks .rdp-range_start,
+.rdp-root.rdp-perks .rdp-range_middle,
+.rdp-root.rdp-perks .rdp-range_end {
+  background: transparent !important;
+}
+
+.rdp-root.rdp-perks .rdp-range_start .rdp-day_button,
+.rdp-root.rdp-perks .rdp-range_end .rdp-day_button {
+  background-color: #065f46 !important;
+  color: #fff !important;
+  border-radius: 0.5rem !important;
+  border-color: transparent !important;
+}
+
+.rdp-root.rdp-perks .rdp-range_middle .rdp-day_button {
+  background-color: #d1fae5 !important;
+  color: #064e3b !important;
+  border-radius: 0.5rem !important;
+  border: 2px solid transparent !important;
+}
+
+.rdp-root.rdp-perks .rdp-selected:not(.rdp-range_middle) .rdp-day_button {
+  background-color: #065f46 !important;
+  color: #fff !important;
+  border-radius: 0.5rem !important;
+  border-color: transparent !important;
+}
+
+.rdp-root.rdp-perks .rdp-today:not(.rdp-selected):not(.rdp-range_middle) .rdp-day_button {
+  box-shadow: inset 0 0 0 1px rgb(6 95 70 / 0.45);
+}

@@ -1,8 +1,21 @@
 "use client";
 
-import { CalendarDays, Loader2 } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  RotateCcw,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import {
+  DayPicker,
+  getDefaultClassNames,
+  type DateRange,
+} from "react-day-picker";
+import { es } from "react-day-picker/locale";
+import "react-day-picker/style.css";
 
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
 
@@ -19,6 +32,32 @@ const presets = [
   { label: "7 días", period: "7d" },
   { label: "30 días", period: "30d" },
 ];
+
+function parseYmd(value: string): Date {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, (month ?? 1) - 1, day ?? 1);
+}
+
+function formatYmd(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatRangeLabel(range: DateRange | undefined) {
+  if (!range?.from) return "Elige desde y hasta";
+  const fromLabel = range.from.toLocaleDateString("es-HN", {
+    day: "numeric",
+    month: "short",
+  });
+  if (!range.to) return `${fromLabel} → …`;
+  const toLabel = range.to.toLocaleDateString("es-HN", {
+    day: "numeric",
+    month: "short",
+  });
+  return `${fromLabel} – ${toLabel}`;
+}
 
 function buildFilterHref(params: {
   period: string;
@@ -60,6 +99,14 @@ export function DashboardDateFilter({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
+  const [range, setRange] = useState<DateRange | undefined>(() => ({
+    from: parseYmd(dateRange.startDate),
+    to: parseYmd(dateRange.endDate),
+  }));
+
+  const defaultClassNames = useMemo(() => getDefaultClassNames(), []);
+  const canApply = Boolean(range?.from && range?.to);
+  const isCustomActive = dateRange.period === "custom";
 
   function navigateTo(href: string) {
     setIsOpen(false);
@@ -80,17 +127,13 @@ export function DashboardDateFilter({
     );
   }
 
-  function handleCustomSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const start = String(formData.get("start") ?? "");
-    const end = String(formData.get("end") ?? "");
-
+  function handleApplyCustom() {
+    if (!range?.from || !range.to) return;
     navigateTo(
       buildFilterHref({
         period: "custom",
-        start,
-        end,
+        start: formatYmd(range.from),
+        end: formatYmd(range.to),
         selectedBranchId,
         selectedBranchIds,
         targetHash,
@@ -99,13 +142,36 @@ export function DashboardDateFilter({
     );
   }
 
+  function handleClearFilter() {
+    setRange(undefined);
+    navigateTo(
+      buildFilterHref({
+        period: "7d",
+        selectedBranchId,
+        selectedBranchIds,
+        targetHash,
+        basePath,
+      }),
+    );
+  }
+
+  const canClear =
+    dateRange.period !== "7d" || Boolean(range?.from || range?.to);
+
   return (
     <details
       name="dashboard-header-filter"
       className="group relative"
       open={isOpen}
       onToggle={(event) => {
-        setIsOpen(event.currentTarget.open);
+        const nextOpen = event.currentTarget.open;
+        setIsOpen(nextOpen);
+        if (nextOpen) {
+          setRange({
+            from: parseYmd(dateRange.startDate),
+            to: parseYmd(dateRange.endDate),
+          });
+        }
       }}
     >
       <summary
@@ -120,7 +186,7 @@ export function DashboardDateFilter({
         {dateRange.label}
       </summary>
 
-      <div className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_60px_rgba(15,23,42,0.16)]">
+      <div className="absolute right-0 z-40 mt-2 w-[min(22.5rem,calc(100vw-2rem))] rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_60px_rgba(15,23,42,0.16)]">
         <div className="grid grid-cols-3 gap-2">
           {presets.map((preset) => {
             const isActive = dateRange.period === preset.period;
@@ -144,50 +210,85 @@ export function DashboardDateFilter({
           })}
         </div>
 
-        <form
-          onSubmit={handleCustomSubmit}
-          className="mt-3 rounded-xl bg-[#f7f8f4] p-3"
+        <div
+          className={[
+            "mt-3 rounded-xl p-3",
+            isCustomActive ? "bg-emerald-50/70 ring-1 ring-emerald-100" : "bg-[#f7f8f4]",
+          ].join(" ")}
         >
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-            Rango personalizado
-          </p>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-xs font-semibold text-slate-500">
-                Desde
-              </span>
-              <input
-                type="date"
-                name="start"
-                defaultValue={dateRange.startDate}
-                disabled={isPending}
-                className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:opacity-70"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-semibold text-slate-500">
-                Hasta
-              </span>
-              <input
-                type="date"
-                name="end"
-                defaultValue={dateRange.endDate}
-                disabled={isPending}
-                className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:opacity-70"
-              />
-            </label>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              Rango personalizado
+            </p>
+            <p className="text-xs font-medium text-emerald-900/80">
+              {formatRangeLabel(range)}
+            </p>
           </div>
-          <button
-            type="submit"
+
+          <DayPicker
+            mode="range"
+            locale={es}
+            selected={range}
+            onSelect={setRange}
             disabled={isPending}
-            className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-wait disabled:opacity-80"
-          >
-            {isPending ? (
-              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-            ) : null}
-            {isPending ? "Aplicando…" : "Aplicar filtro"}
-          </button>
-        </form>
+            numberOfMonths={1}
+            defaultMonth={range?.from ?? parseYmd(dateRange.startDate)}
+            className="rdp-perks mx-auto"
+            classNames={{
+              root: `${defaultClassNames.root} rdp-perks w-full`,
+              months: `${defaultClassNames.months} w-full`,
+              month: `${defaultClassNames.month} w-full`,
+              month_caption: `${defaultClassNames.month_caption} mb-2 px-8 text-sm font-semibold capitalize text-slate-800`,
+              nav: `${defaultClassNames.nav} absolute inset-x-0 top-0 flex items-center justify-between`,
+              button_previous: `${defaultClassNames.button_previous} inline-flex size-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white hover:text-emerald-900`,
+              button_next: `${defaultClassNames.button_next} inline-flex size-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white hover:text-emerald-900`,
+              weekdays: `${defaultClassNames.weekdays} mt-1`,
+              weekday: `${defaultClassNames.weekday} text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-slate-400`,
+              week: `${defaultClassNames.week} mt-1`,
+              day: `${defaultClassNames.day} text-sm`,
+              day_button: `${defaultClassNames.day_button} rounded-lg font-medium text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-900`,
+              selected: defaultClassNames.selected,
+              range_start: defaultClassNames.range_start,
+              range_end: defaultClassNames.range_end,
+              range_middle: defaultClassNames.range_middle,
+              today: `${defaultClassNames.today}`,
+              outside: `${defaultClassNames.outside} text-slate-300`,
+              disabled: `${defaultClassNames.disabled} text-slate-300`,
+              chevron: `${defaultClassNames.chevron} fill-emerald-800`,
+            }}
+            components={{
+              Chevron: ({ orientation }) =>
+                orientation === "left" ? (
+                  <ChevronLeft size={16} aria-hidden="true" />
+                ) : (
+                  <ChevronRight size={16} aria-hidden="true" />
+                ),
+            }}
+          />
+
+          <div className="mt-3 flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={isPending || !canApply}
+              onClick={handleApplyCustom}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isPending ? (
+                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+              ) : null}
+              {isPending ? "Aplicando…" : "Aplicar filtro"}
+            </button>
+            <button
+              type="button"
+              disabled={isPending || !canClear}
+              onClick={handleClearFilter}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RotateCcw size={15} aria-hidden="true" />
+              Limpiar filtro
+            </button>
+          </div>
+        </div>
       </div>
     </details>
   );
