@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -21,6 +22,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  useTransition,
 } from "react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { createPortal } from "react-dom";
@@ -138,6 +140,8 @@ export function DashboardFloatingNav({
   onOpenBusinessProfile,
   listeningSubNav,
 }: DashboardFloatingNavProps) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const [visibleNotifications, setVisibleNotifications] = useState(notifications);
 
   // ── Notificaciones ────────────────────────────────────────────────────────
@@ -385,7 +389,9 @@ export function DashboardFloatingNav({
                         listeningSubNav?.activeTab === "coaching"
                           ? (listeningSubNav.coachingHref ?? "/dashboard/escucha/coaching")
                           : (listeningSubNav?.analyticsHref ?? "/dashboard/escucha");
-                      window.location.href = activeHref;
+                      startTransition(() => {
+                        router.push(activeHref);
+                      });
                     }}
                     className={[
                       "flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-full px-3 text-sm font-medium transition",

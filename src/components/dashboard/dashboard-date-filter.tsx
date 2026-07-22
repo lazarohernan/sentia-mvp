@@ -1,5 +1,8 @@
-import { CalendarDays } from "lucide-react";
-import Link from "next/link";
+"use client";
+
+import { CalendarDays, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState, useTransition } from "react";
 
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
 
@@ -17,22 +20,34 @@ const presets = [
   { label: "30 días", period: "30d" },
 ];
 
-function buildPresetHref(
-  period: string,
-  selectedBranchId?: string,
-  targetHash?: string,
-  basePath = "/dashboard",
-  selectedBranchIds?: string[],
-) {
-  const params = new URLSearchParams({ period });
+function buildFilterHref(params: {
+  period: string;
+  selectedBranchId?: string;
+  selectedBranchIds?: string[];
+  targetHash?: string;
+  basePath?: string;
+  start?: string;
+  end?: string;
+}) {
+  const searchParams = new URLSearchParams({ period: params.period });
 
-  if (selectedBranchIds && selectedBranchIds.length > 0) {
-    selectedBranchIds.forEach((branchId) => params.append("branchId", branchId));
-  } else if (selectedBranchId) {
-    params.set("branchId", selectedBranchId);
+  if (params.period === "custom") {
+    if (params.start) searchParams.set("start", params.start);
+    if (params.end) searchParams.set("end", params.end);
   }
 
-  return `${basePath}?${params.toString()}${targetHash ? `#${targetHash}` : ""}`;
+  if (params.selectedBranchIds && params.selectedBranchIds.length > 0) {
+    params.selectedBranchIds.forEach((branchId) =>
+      searchParams.append("branchId", branchId),
+    );
+  } else if (params.selectedBranchId) {
+    searchParams.set("branchId", params.selectedBranchId);
+  }
+
+  const basePath = params.basePath ?? "/dashboard";
+  return `${basePath}?${searchParams.toString()}${
+    params.targetHash ? `#${params.targetHash}` : ""
+  }`;
 }
 
 export function DashboardDateFilter({
@@ -42,10 +57,66 @@ export function DashboardDateFilter({
   targetHash,
   basePath = "/dashboard",
 }: DashboardDateFilterProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [isOpen, setIsOpen] = useState(false);
+
+  function navigateTo(href: string) {
+    setIsOpen(false);
+    startTransition(() => {
+      router.push(href);
+    });
+  }
+
+  function handlePresetClick(period: string) {
+    navigateTo(
+      buildFilterHref({
+        period,
+        selectedBranchId,
+        selectedBranchIds,
+        targetHash,
+        basePath,
+      }),
+    );
+  }
+
+  function handleCustomSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const start = String(formData.get("start") ?? "");
+    const end = String(formData.get("end") ?? "");
+
+    navigateTo(
+      buildFilterHref({
+        period: "custom",
+        start,
+        end,
+        selectedBranchId,
+        selectedBranchIds,
+        targetHash,
+        basePath,
+      }),
+    );
+  }
+
   return (
-    <details name="dashboard-header-filter" className="group relative">
-      <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 [&::-webkit-details-marker]:hidden">
-        <CalendarDays size={16} aria-hidden="true" />
+    <details
+      name="dashboard-header-filter"
+      className="group relative"
+      open={isOpen}
+      onToggle={(event) => {
+        setIsOpen(event.currentTarget.open);
+      }}
+    >
+      <summary
+        className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 [&::-webkit-details-marker]:hidden"
+        aria-busy={isPending}
+      >
+        {isPending ? (
+          <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+        ) : (
+          <CalendarDays size={16} aria-hidden="true" />
+        )}
         {dateRange.label}
       </summary>
 
@@ -55,39 +126,28 @@ export function DashboardDateFilter({
             const isActive = dateRange.period === preset.period;
 
             return (
-              <Link
+              <button
                 key={preset.period}
-                href={buildPresetHref(
-                  preset.period,
-                  selectedBranchId,
-                  targetHash,
-                  basePath,
-                  selectedBranchIds,
-                )}
+                type="button"
+                disabled={isPending}
+                onClick={() => handlePresetClick(preset.period)}
                 className={[
-                  "inline-flex h-9 items-center justify-center rounded-xl text-sm font-semibold transition",
+                  "inline-flex h-9 items-center justify-center rounded-xl text-sm font-semibold transition disabled:cursor-wait disabled:opacity-70",
                   isActive
                     ? "bg-emerald-800 text-white"
                     : "bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-900",
                 ].join(" ")}
               >
                 {preset.label}
-              </Link>
+              </button>
             );
           })}
         </div>
 
         <form
-          action={`${basePath}${targetHash ? `#${targetHash}` : ""}`}
+          onSubmit={handleCustomSubmit}
           className="mt-3 rounded-xl bg-[#f7f8f4] p-3"
         >
-          <input type="hidden" name="period" value="custom" />
-          {selectedBranchId ? (
-            <input type="hidden" name="branchId" value={selectedBranchId} />
-          ) : null}
-          {selectedBranchIds?.map((branchId) => (
-            <input key={branchId} type="hidden" name="branchId" value={branchId} />
-          ))}
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
             Rango personalizado
           </p>
@@ -100,7 +160,8 @@ export function DashboardDateFilter({
                 type="date"
                 name="start"
                 defaultValue={dateRange.startDate}
-                className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                disabled={isPending}
+                className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:opacity-70"
               />
             </label>
             <label className="block">
@@ -111,15 +172,20 @@ export function DashboardDateFilter({
                 type="date"
                 name="end"
                 defaultValue={dateRange.endDate}
-                className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                disabled={isPending}
+                className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:opacity-70"
               />
             </label>
           </div>
           <button
             type="submit"
-            className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900"
+            disabled={isPending}
+            className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-wait disabled:opacity-80"
           >
-            Aplicar filtro
+            {isPending ? (
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+            ) : null}
+            {isPending ? "Aplicando…" : "Aplicar filtro"}
           </button>
         </form>
       </div>

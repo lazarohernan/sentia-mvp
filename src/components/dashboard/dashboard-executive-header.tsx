@@ -1,6 +1,8 @@
 "use client";
 
 import { Filter } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 
 import type { Branch } from "@/domain/branches/schemas";
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
@@ -43,6 +45,8 @@ export function DashboardExecutiveHeader({
   selectedBranchId,
   lockedBranchScope = false,
 }: DashboardExecutiveHeaderProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const activeDateRange = dashboardData?.dateRange ?? dateRange;
   const isSingleBranchScope = dashboardData?.scope === "1 sucursal";
   const selectedBranch =
@@ -59,10 +63,13 @@ export function DashboardExecutiveHeader({
   ];
 
   function handleBranchChange(branchId: string) {
-    if (lockedBranchScope) return;
-    window.location.href = buildBranchHref({
+    if (lockedBranchScope || isPending) return;
+    const href = buildBranchHref({
       dateRange: activeDateRange,
       branchId,
+    });
+    startTransition(() => {
+      router.push(href);
     });
   }
 
@@ -100,7 +107,7 @@ export function DashboardExecutiveHeader({
             placeholder={lockedBranchScope ? "Sucursal asignada" : "Sucursal"}
             menuAlign="right"
             menuWidthClassName="w-[min(18rem,calc(100vw-2rem))]"
-            disabled={lockedBranchScope}
+            disabled={lockedBranchScope || isPending}
             leadingIcon={Filter}
           />
         </div>
