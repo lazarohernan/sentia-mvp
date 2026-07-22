@@ -1,51 +1,42 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createBranchQrToken } from "@/domain/branches/qr-token";
 import { clearRateLimitStore } from "@/lib/security/rate-limit";
 
-const branchRows = vi.fn(
-  async (): Promise<{
-    data: Array<{ id: string; name: string; organization_id: string }>;
-    error: null;
-  }> => ({ data: [], error: null }),
-);
-const insertFeedback = vi.fn(async (_payload?: unknown) => ({ error: null }));
-const selectFeedbackId = vi.fn(async () => ({
-  data: { id: "11111111-1111-4111-8111-111111111111" },
-  error: null,
-}));
-const insertAiAnalysis = vi.fn(async () => ({ error: null }));
+const BRANCH_ID = "11111111-1111-4111-8111-111111111111";
+const ORG_ID = "22222222-2222-4222-8222-222222222222";
+const BRANCH_SLUG = "demo-cafe";
+
 const selectBranchById = vi.fn(async () => ({
   data: {
-    id: "11111111-1111-4111-8111-111111111111",
+    id: BRANCH_ID,
     name: "Demo Cafe",
-    organization_id: "22222222-2222-4222-8222-222222222222",
-    slug: "demo-cafe",
+    organization_id: ORG_ID,
+    slug: BRANCH_SLUG,
   },
   error: null,
 }));
+const insertFeedback = vi.fn(async (payload?: unknown) => {
+  void payload;
+  return { error: null };
+});
+const selectFeedbackId = vi.fn(async () => ({
+  data: { id: BRANCH_ID },
+  error: null,
+}));
+const insertAiAnalysis = vi.fn(async () => ({ error: null }));
+const insertAiUsageEvent = vi.fn(async () => ({ error: null }));
 
 function createTableMock(table: string) {
   if (table === "branches") {
     return {
-      select: vi.fn((columns?: string) => {
-        if (columns === "*") {
-          return {
-            eq: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: selectBranchById,
-              })),
-            })),
-          };
-        }
-
-        return {
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
           eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              limit: branchRows,
-            })),
+            maybeSingle: selectBranchById,
           })),
-        };
-      }),
+        })),
+      })),
     };
   }
 
@@ -65,6 +56,12 @@ function createTableMock(table: string) {
   if (table === "ai_analyses") {
     return {
       insert: insertAiAnalysis,
+    };
+  }
+
+  if (table === "ai_usage_events") {
+    return {
+      insert: insertAiUsageEvent,
     };
   }
 
@@ -95,6 +92,27 @@ import { POST } from "./route";
 function configureServiceEnv() {
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://sayit.supabase.co");
   vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role");
+  vi.stubEnv("QR_SIGNING_SECRET", "test-qr-signing-secret");
+}
+
+function signedPayload(overrides: Record<string, unknown> = {}) {
+  const branchToken = createBranchQrToken({
+    branchId: BRANCH_ID,
+    branchSlug: BRANCH_SLUG,
+    organizationId: ORG_ID,
+  });
+
+  return {
+    branchSlug: BRANCH_SLUG,
+    branchId: BRANCH_ID,
+    branchToken,
+    type: "suggestion",
+    csatScore: 4,
+    emotionScore: 4,
+    freeText: "Seria bueno tener una fila rapida para pedidos pequenos.",
+    consentAccepted: true,
+    ...overrides,
+  };
 }
 
 describe("POST /api/feedback", () => {
@@ -102,19 +120,19 @@ describe("POST /api/feedback", () => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
     clearRateLimitStore();
-    branchRows.mockResolvedValue({ data: [], error: null });
     insertFeedback.mockClear();
     insertAiAnalysis.mockClear();
+    insertAiUsageEvent.mockClear();
     selectFeedbackId.mockResolvedValue({
-      data: { id: "11111111-1111-4111-8111-111111111111" },
+      data: { id: BRANCH_ID },
       error: null,
     });
     selectBranchById.mockResolvedValue({
       data: {
-        id: "11111111-1111-4111-8111-111111111111",
+        id: BRANCH_ID,
         name: "Demo Cafe",
-        organization_id: "22222222-2222-4222-8222-222222222222",
-        slug: "demo-cafe",
+        organization_id: ORG_ID,
+        slug: BRANCH_SLUG,
       },
       error: null,
     });
@@ -137,18 +155,34 @@ describe("POST /api/feedback", () => {
     expect(response.status).toBe(400);
   });
 
-  it("returns 503 instead of accepting feedback when persistence is not configured", async () => {
+  it("rejects slug-only payloads without a signed QR token", async () => {
+    configureServiceEnv();
+
     const response = await POST(
       new Request("http://localhost/api/feedback", {
         method: "POST",
         body: JSON.stringify({
-          branchSlug: "demo-cafe",
+          branchSlug: BRANCH_SLUG,
           type: "suggestion",
           csatScore: 4,
           emotionScore: 4,
           freeText: "Seria bueno tener una fila rapida para pedidos pequenos.",
           consentAccepted: true,
         }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(insertFeedback).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 instead of accepting feedback when persistence is not configured", async () => {
+    vi.stubEnv("QR_SIGNING_SECRET", "test-qr-signing-secret");
+
+    const response = await POST(
+      new Request("http://localhost/api/feedback", {
+        method: "POST",
+        body: JSON.stringify(signedPayload()),
       }),
     );
 
@@ -157,87 +191,44 @@ describe("POST /api/feedback", () => {
 
   it("returns 404 when branch is missing", async () => {
     configureServiceEnv();
-    branchRows.mockResolvedValueOnce({ data: [], error: null });
+    selectBranchById.mockResolvedValueOnce({ data: null, error: null } as never);
 
     const response = await POST(
       new Request("http://localhost/api/feedback", {
         method: "POST",
-        body: JSON.stringify({
-          branchSlug: "missing-branch",
-          type: "complaint",
-          csatScore: 2,
-          emotionScore: 2,
-          freeText: "El servicio fue lento y nadie me dio una respuesta clara.",
-          consentAccepted: true,
-        }),
+        body: JSON.stringify(signedPayload()),
       }),
     );
 
     expect(response.status).toBe(404);
   });
 
-  it("returns 409 when a public slug matches multiple active branches", async () => {
+  it("returns 403 when the signed token is invalid", async () => {
     configureServiceEnv();
-    branchRows.mockResolvedValueOnce({
-      data: [
-        {
-          id: "11111111-1111-4111-8111-111111111111",
-          name: "Demo Cafe",
-          organization_id: "22222222-2222-4222-8222-222222222222",
-        },
-        {
-          id: "33333333-3333-4333-8333-333333333333",
-          name: "Demo Cafe",
-          organization_id: "44444444-4444-4444-8444-444444444444",
-        },
-      ],
-      error: null,
-    });
 
     const response = await POST(
       new Request("http://localhost/api/feedback", {
         method: "POST",
-        body: JSON.stringify({
-          branchSlug: "demo-cafe",
-          type: "complaint",
-          csatScore: 2,
-          emotionScore: 2,
-          freeText: "El servicio fue lento y nadie me dio una respuesta clara.",
-          consentAccepted: true,
-        }),
+        body: JSON.stringify(
+          signedPayload({
+            branchToken: "invalid-token-value-123456",
+          }),
+        ),
       }),
     );
 
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(403);
     expect(insertFeedback).not.toHaveBeenCalled();
   });
 
-  it("accepts a valid feedback payload", async () => {
+  it("accepts a valid signed feedback payload", async () => {
     vi.stubEnv("HUGGINGFACE_API_TOKEN", "");
     configureServiceEnv();
-    branchRows.mockResolvedValueOnce({
-      data: [
-        {
-          id: "11111111-1111-4111-8111-111111111111",
-          name: "Demo Cafe",
-          organization_id: "22222222-2222-4222-8222-222222222222",
-        },
-      ],
-      error: null,
-    });
 
     const response = await POST(
       new Request("http://localhost/api/feedback", {
         method: "POST",
-        body: JSON.stringify({
-          branchSlug: "demo-cafe",
-          type: "suggestion",
-          npsScore: 8,
-          csatScore: 4,
-          emotionScore: 4,
-          freeText: "Seria bueno tener una fila rapida para pedidos pequenos.",
-          consentAccepted: true,
-        }),
+        body: JSON.stringify(signedPayload()),
       }),
     );
 
@@ -253,16 +244,6 @@ describe("POST /api/feedback", () => {
   it("returns sentiment analysis when Hugging Face is configured", async () => {
     vi.stubEnv("HUGGINGFACE_API_TOKEN", "test-token");
     configureServiceEnv();
-    branchRows.mockResolvedValueOnce({
-      data: [
-        {
-          id: "11111111-1111-4111-8111-111111111111",
-          name: "Demo Cafe",
-          organization_id: "22222222-2222-4222-8222-222222222222",
-        },
-      ],
-      error: null,
-    });
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
@@ -273,14 +254,14 @@ describe("POST /api/feedback", () => {
     const response = await POST(
       new Request("http://localhost/api/feedback", {
         method: "POST",
-        body: JSON.stringify({
-          branchSlug: "demo-cafe",
-          type: "complaint",
-          csatScore: 2,
-          emotionScore: 2,
-          freeText: "El servicio fue lento y nadie me dio una respuesta clara.",
-          consentAccepted: true,
-        }),
+        body: JSON.stringify(
+          signedPayload({
+            type: "complaint",
+            csatScore: 2,
+            emotionScore: 2,
+            freeText: "El servicio fue lento y nadie me dio una respuesta clara.",
+          }),
+        ),
       }),
     );
 
@@ -304,16 +285,6 @@ describe("POST /api/feedback", () => {
 
   it("rate limits repeated feedback submissions from the same IP", async () => {
     configureServiceEnv();
-    branchRows.mockResolvedValue({
-      data: [
-        {
-          id: "11111111-1111-4111-8111-111111111111",
-          name: "Demo Cafe",
-          organization_id: "22222222-2222-4222-8222-222222222222",
-        },
-      ],
-      error: null,
-    });
 
     let lastResponse: Response | null = null;
 
@@ -324,14 +295,7 @@ describe("POST /api/feedback", () => {
           headers: {
             "x-forwarded-for": "203.0.113.10",
           },
-          body: JSON.stringify({
-            branchSlug: "demo-cafe",
-            type: "suggestion",
-            csatScore: 4,
-            emotionScore: 4,
-            freeText: "Seria bueno tener una fila rapida para pedidos pequenos.",
-            consentAccepted: true,
-          }),
+          body: JSON.stringify(signedPayload()),
         }),
       );
     }

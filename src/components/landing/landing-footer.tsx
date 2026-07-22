@@ -35,7 +35,7 @@ export function LandingFooter() {
           <nav aria-label="Acceso">
             <p className="text-sm font-extrabold uppercase tracking-[0.14em] text-[#89cbb4]">Acceso</p>
             <div className="mt-2.5 grid gap-2">
-              <Link href="/feedback/demo-cafe" className="text-sm font-semibold text-[#d7e7e0] hover:text-white">Probar experiencia</Link>
+              <Link href="/demo-guiada" className="text-sm font-semibold text-[#d7e7e0] hover:text-white">Probar experiencia</Link>
               <Link href="/login" className="text-sm font-semibold text-[#d7e7e0] hover:text-white">Entrar a la demo</Link>
             </div>
           </nav>

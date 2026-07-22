@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { AiUsageCostEstimate } from "@/domain/ai-usage/pricing";
+import { estimateOpenAICostFromRawUsage } from "@/domain/ai-usage/pricing";
 import type { AiAnalysis, FeedbackSubmission, FeedbackType } from "./schemas";
 import {
   aiAnalysisSchema,
@@ -27,7 +29,7 @@ const maxInputCharacters = 512;
 
 const maxRetries = 2;
 const requestTimeoutMs = 15_000;
-const defaultOpenAIAlertsModel = "gpt-4.1-mini";
+const defaultOpenAIAlertsModel = "gpt-5.4-mini";
 
 type HuggingFaceClassification = {
   label: string;
@@ -41,6 +43,8 @@ export type SentimentAnalysisResult =
       analysis: AiAnalysis;
       rawLabel: string;
       confidence: number;
+      usageEstimate?: AiUsageCostEstimate;
+      rawUsage?: unknown;
     }
   | {
       status: "disabled";
@@ -568,6 +572,10 @@ async function analyzeFeedbackWithOpenAI(
     }
 
     const body: unknown = await response.json();
+    const rawUsage = body && typeof body === "object"
+      ? (body as { usage?: unknown }).usage
+      : undefined;
+    const usageEstimate = estimateOpenAICostFromRawUsage({ model, rawUsage });
     const outputText = extractOpenAIOutputText(body);
     if (!outputText) {
       return {
@@ -593,6 +601,7 @@ async function analyzeFeedbackWithOpenAI(
       analysis: mapped.analysis,
       rawLabel: "openai_triage",
       confidence: mapped.confidence,
+      ...(usageEstimate ? { usageEstimate, rawUsage } : {}),
     };
   } catch (error) {
     return {

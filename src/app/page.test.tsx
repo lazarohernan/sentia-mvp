@@ -18,7 +18,7 @@ describe("Home", () => {
     ).toHaveAttribute("href", "/login");
     expect(
       screen.getAllByRole("link", { name: /probar experiencia/i })[0],
-    ).toHaveAttribute("href", "/feedback/demo-cafe");
+    ).toHaveAttribute("href", "/demo-guiada");
     expect(
       screen.queryByRole("link", { name: /^dashboard$/i }),
     ).not.toBeInTheDocument();

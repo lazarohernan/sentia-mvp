@@ -2,10 +2,11 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
 import { getActiveBranchesBySlug } from "@/domain/branches/repository";
-import { buildSignedQrPath } from "@/domain/branches/qr-token";
+import { buildSignedQrPath, createBranchQrToken } from "@/domain/branches/qr-token";
 import { getOrganizationSettingsById } from "@/domain/organizations/organization-settings";
 import { FeedbackScreen } from "@/app/feedback/_shared/feedback-screen";
 import { getPublicSiteHost } from "@/lib/app/public-site-host";
+import { hasQrSigningSecret } from "@/lib/security/qr-signing";
 import { hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -26,7 +27,7 @@ export default async function FeedbackPage({ params, searchParams }: FeedbackPag
     redirect(buildSignedQrPath(token));
   }
 
-  if (!hasSupabaseServiceEnv()) {
+  if (!hasSupabaseServiceEnv() || !hasQrSigningSecret()) {
     notFound();
   }
 
@@ -37,6 +38,12 @@ export default async function FeedbackPage({ params, searchParams }: FeedbackPag
   if (!branch) {
     notFound();
   }
+
+  const branchToken = createBranchQrToken({
+    branchId: branch.id,
+    branchSlug: branch.slug,
+    organizationId: branch.organization_id,
+  });
 
   const organization = await getOrganizationSettingsById(client, branch.organization_id);
   const headerStore = await headers();
@@ -50,6 +57,7 @@ export default async function FeedbackPage({ params, searchParams }: FeedbackPag
       branchName={branch.name}
       branchId={branch.id}
       branchSlug={branch.slug}
+      branchToken={branchToken}
       logoUrl={organization?.logoUrl}
       tagline={organization?.tagline}
       siteHost={siteHost}

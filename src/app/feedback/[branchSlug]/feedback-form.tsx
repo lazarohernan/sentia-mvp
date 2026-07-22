@@ -64,10 +64,20 @@ function inferFeedbackType(csatScore: number): FeedbackType {
   return "compliment";
 }
 
+export type FeedbackDemoSubmission = {
+  csatScore: number;
+  freeText: string;
+  clarificationCategory?: string;
+  clarificationDetail?: string;
+  clarificationQuestion?: string | null;
+};
+
 type FeedbackFormProps = {
   branchId?: string;
   branchSlug: string;
   branchToken?: string;
+  demoMode?: boolean;
+  onDemoComplete?: (submission: FeedbackDemoSubmission) => void;
 };
 
 type FormStatus = "idle" | "clarifying" | "submitting" | "success" | "error";
@@ -85,18 +95,26 @@ const clarificationOptions = [
 
 type ClarificationCategory = (typeof clarificationOptions)[number]["value"];
 
-export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackFormProps) {
+export function FeedbackForm({
+  branchId,
+  branchSlug,
+  branchToken,
+  demoMode = false,
+  onDemoComplete,
+}: FeedbackFormProps) {
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [clarificationQuestion, setClarificationQuestion] = useState<string | null>(null);
 
   useEffect(() => {
+    if (demoMode) return;
+
     void fetch("/api/feedback/scan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ branchSlug }),
     }).catch(() => undefined);
-  }, [branchSlug]);
+  }, [branchSlug, demoMode]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -166,6 +184,35 @@ export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackForm
 
     setStatus("submitting");
 
+    const clarificationPayload =
+      clarificationCategory || clarificationDetail
+        ? {
+            question: clarificationQuestion ?? qualityAssessment.question,
+            category: clarificationCategory || undefined,
+            detail: clarificationDetail || undefined,
+          }
+        : undefined;
+
+    if (demoMode) {
+      onDemoComplete?.({
+        csatScore,
+        freeText,
+        clarificationCategory: clarificationCategory || undefined,
+        clarificationDetail: clarificationDetail || undefined,
+        clarificationQuestion: clarificationPayload?.question ?? clarificationQuestion,
+      });
+      setStatus("success");
+      setClarificationQuestion(null);
+      form.reset();
+      return;
+    }
+
+    if (!branchId || !branchToken) {
+      setStatus("error");
+      setErrorMessage("Este enlace de feedback no es valido. Usa el QR firmado de la sucursal.");
+      return;
+    }
+
     try {
       const response = await fetch("/api/feedback", {
         method: "POST",
@@ -178,14 +225,7 @@ export function FeedbackForm({ branchId, branchSlug, branchToken }: FeedbackForm
           csatScore,
           emotionScore: csatScore,
           freeText,
-          clarification:
-            clarificationCategory || clarificationDetail
-              ? {
-                  question: clarificationQuestion ?? qualityAssessment.question,
-                  category: clarificationCategory || undefined,
-                  detail: clarificationDetail || undefined,
-                }
-              : undefined,
+          clarification: clarificationPayload,
           consentAccepted: true,
         }),
       });

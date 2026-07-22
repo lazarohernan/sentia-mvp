@@ -41,9 +41,16 @@ export function LandingMobileMenu() {
               </a>
             ))}
             <Link
-              href="/login"
+              href="/demo-guiada"
               onClick={() => setIsOpen(false)}
               className="mt-1 inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-sm font-bold text-[#0d2b25]"
+            >
+              Probar experiencia
+            </Link>
+            <Link
+              href="/login"
+              onClick={() => setIsOpen(false)}
+              className="mt-1 inline-flex h-9 items-center justify-center rounded-full px-4 text-sm font-bold text-white/85 transition hover:bg-white/10"
             >
               Entrar a la demo
             </Link>

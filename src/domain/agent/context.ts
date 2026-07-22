@@ -4,9 +4,10 @@ import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import { buildBranchReports, buildReportReadiness } from "@/domain/dashboard/report-readiness";
 import type { DashboardCommentRow } from "@/domain/dashboard/schemas";
 import { sanitizeFeedbackText } from "@/domain/feedback/record-analysis";
-import { getCategoryLabel, humanizeCategoryLabel } from "@/domain/feedback/sentiment-analysis";
+import { humanizeCategoryLabel } from "@/domain/feedback/sentiment-analysis";
 import type { Database } from "@/lib/supabase/database.types";
 import { getOrganizationSettingsById } from "@/domain/organizations/organization-settings";
+import type { AiUsageCostEstimate } from "@/domain/ai-usage/pricing";
 
 export type AgentPeriod = "7d" | "30d";
 
@@ -64,6 +65,8 @@ export type AgentOperationalReport = {
   deliveryReadiness: string;
   generatedAt: string;
   context: AgentContextSnapshot;
+  usageEstimate?: AiUsageCostEstimate;
+  rawUsage?: unknown;
 };
 
 type Client = SupabaseClient<Database>;

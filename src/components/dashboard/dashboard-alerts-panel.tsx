@@ -20,6 +20,7 @@ import { DashboardAlertCard } from "./dashboard-alert-card";
 import { DashboardAlertsEscalationSettingsPanel } from "./dashboard-alerts-escalation-settings-panel";
 import { DashboardEmptyState } from "./dashboard-empty-state";
 import { DashboardSection } from "./dashboard-section";
+import { SlaTerm } from "./sla-term";
 
 const ESCALATION_TIP_DISMISS_KEY = "perks.dashboard.alerts.escalation-tip.dismissed";
 
@@ -165,20 +166,34 @@ export function DashboardAlertsView({
           ) : null}
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            {[
-              { label: "Abiertos", value: metrics.openCount },
-              { label: "En revisión", value: metrics.inReviewCount },
-              { label: "Escalados", value: metrics.escalatedCount },
-              { label: "SLA vencido", value: metrics.slaBreachedCount },
-              { label: "Respuesta prom.", value: formatHours(metrics.avgResponseHours) },
-            ].map((metric) => (
+            {(
+              [
+                { key: "open", label: "Abiertos", value: metrics.openCount },
+                { key: "review", label: "En revisión", value: metrics.inReviewCount },
+                { key: "escalated", label: "Escalados", value: metrics.escalatedCount },
+                {
+                  key: "sla",
+                  label: null,
+                  value: metrics.slaBreachedCount,
+                },
+                {
+                  key: "avg",
+                  label: "Respuesta prom.",
+                  value: formatHours(metrics.avgResponseHours),
+                },
+              ] as const
+            ).map((metric) => (
               <article
-                key={metric.label}
+                key={metric.key}
                 className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
               >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  {metric.label}
-                </p>
+                {metric.key === "sla" ? (
+                  <SlaTerm variant="metric" />
+                ) : (
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    {metric.label}
+                  </p>
+                )}
                 <p className="mt-1 text-2xl font-semibold text-slate-950">{metric.value}</p>
               </article>
             ))}

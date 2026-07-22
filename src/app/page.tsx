@@ -57,7 +57,7 @@ export default function Home() {
               Entrar
             </Link>
             <Link
-              href="/feedback/demo-cafe"
+              href="/demo-guiada"
               className="hidden h-9 items-center justify-center gap-1.5 rounded-full bg-white px-4 text-[13px] font-bold text-[#0d2b25] shadow-[0_8px_20px_rgba(0,0,0,0.18)] transition hover:bg-[#edf7f1] xl:inline-flex"
             >
               Probar
@@ -93,7 +93,7 @@ export default function Home() {
                 style={{ animationDelay: "330ms" }}
               >
                 <Link
-                  href="/feedback/demo-cafe"
+                  href="/demo-guiada"
                   className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-[#005542] px-6 text-[0.95rem] font-bold text-white shadow-[0_18px_36px_rgba(0,85,66,0.26)] transition hover:-translate-y-0.5 hover:bg-[#004434] sm:h-12 sm:w-auto sm:px-7 sm:text-base"
                 >
                   Probar experiencia

@@ -42,17 +42,7 @@ export default async function CollaboratorPage({
   const params = await searchParams;
 
   if (!hasSupabasePublicEnv()) {
-    return (
-      <CollaboratorPortalView
-        assignedBranch={null}
-        currentUser={{ fullName: "Usuario", email: null }}
-        notifications={[]}
-        listeningEvents={[]}
-        listeningSettings={defaultListeningSettings}
-        hasActiveListeningSurvey={false}
-        initialView={normalizeView(params.view)}
-      />
-    );
+    redirect("/login?redirectTo=/colaborador");
   }
 
   const supabase = await createClient();

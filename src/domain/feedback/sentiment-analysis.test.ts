@@ -120,6 +120,13 @@ describe("analyzeFeedbackSentiment", () => {
       "fetch",
       vi.fn(async () =>
         Response.json({
+          usage: {
+            input_tokens: 1000,
+            input_tokens_details: { cached_tokens: 100 },
+            output_tokens: 200,
+            output_tokens_details: { reasoning_tokens: 25 },
+            total_tokens: 1200,
+          },
           output_text: JSON.stringify({
             sentiment: "negative",
             urgency: "critical",
@@ -157,6 +164,14 @@ describe("analyzeFeedbackSentiment", () => {
     expect(result.model).toBe("gpt-4.1-mini");
     expect(result.rawLabel).toBe("openai_triage");
     expect(result.confidence).toBe(0.86);
+    expect(result.usageEstimate?.usage).toMatchObject({
+      inputTokens: 1000,
+      cachedInputTokens: 100,
+      outputTokens: 200,
+      reasoningOutputTokens: 25,
+      totalTokens: 1200,
+    });
+    expect(result.usageEstimate?.estimatedCostUsd).toBeNull();
     expect(result.analysis).toMatchObject({
       sentiment: "negative",
       urgency: "critical",

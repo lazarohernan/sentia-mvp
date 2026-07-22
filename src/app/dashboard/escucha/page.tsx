@@ -40,15 +40,7 @@ export default async function DashboardListeningPage({
   const dateRange = getDashboardDateRange(params);
 
   if (!hasSupabasePublicEnv()) {
-    return (
-      <ListeningAnalyticsView
-        listeningEvents={[]}
-        listeningSettings={defaultListeningSettings}
-        dateRange={dateRange}
-        branches={[]}
-        selectedBranchIds={[]}
-      />
-    );
+    redirect("/login?redirectTo=/dashboard/escucha");
   }
 
   const supabase = await createClient();

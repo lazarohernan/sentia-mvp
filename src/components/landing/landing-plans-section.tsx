@@ -72,7 +72,7 @@ export function LandingPlansSection() {
                 ))}
               </ul>
               <Link
-                href="/feedback/demo-cafe"
+                href="/demo-guiada"
                 className={`mt-auto inline-flex h-10 items-center justify-center gap-2 rounded-[8px] px-4 text-sm font-extrabold transition hover:-translate-y-0.5 ${
                   index === 1
                     ? "bg-[#005542] text-white hover:bg-[#004434]"

@@ -34,7 +34,7 @@ export function LandingFinalCta() {
             <span className="inline-flex items-center gap-2"><CheckCircle2 size={17} aria-hidden="true" /> Alcance por sucursales</span>
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link href="/feedback/demo-cafe" className="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-white px-6 font-extrabold text-[#075143] transition hover:-translate-y-0.5 hover:bg-[#edf7f1]">
+            <Link href="/demo-guiada" className="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-white px-6 font-extrabold text-[#075143] transition hover:-translate-y-0.5 hover:bg-[#edf7f1]">
               Probar experiencia
               <ArrowRight size={18} aria-hidden="true" />
             </Link>

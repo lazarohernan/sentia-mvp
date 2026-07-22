@@ -14,8 +14,11 @@ export function LandingHeroMedia() {
     const layer = layerRef.current;
     if (!layer) return;
 
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mediaQuery.matches) return;
+    const mediaQuery =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : null;
+    if (mediaQuery?.matches) return;
 
     const applyParallax = () => {
       frameRef.current = 0;

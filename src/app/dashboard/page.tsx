@@ -41,7 +41,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const dateRange = getDashboardDateRange(params);
 
   if (!hasSupabasePublicEnv()) {
-    return <DashboardShell dateRange={dateRange} />;
+    redirect("/login?redirectTo=/dashboard");
   }
 
   const supabase = await createClient();

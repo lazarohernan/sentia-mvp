@@ -5,8 +5,35 @@ import { NextResponse } from "next/server";
 import { hasSupabasePublicEnv } from "./config";
 import { getSupabasePublicEnv } from "./env";
 
+const PROTECTED_PAGE_PREFIXES = [
+  "/dashboard",
+  "/colaborador",
+  "/inicio",
+  "/escucha",
+  "/auth/activar-cuenta",
+] as const;
+
+function isProtectedPage(pathname: string) {
+  return PROTECTED_PAGE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+function buildLoginRedirect(request: NextRequest, pathname: string) {
+  const loginUrl = new URL("/login", request.url);
+  loginUrl.searchParams.set("redirectTo", pathname);
+  return NextResponse.redirect(loginUrl);
+}
+
 export async function updateSession(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const protectedPage = isProtectedPage(pathname);
+
   if (!hasSupabasePublicEnv()) {
+    if (protectedPage) {
+      return buildLoginRedirect(request, pathname);
+    }
+
     return NextResponse.next({ request });
   }
 
@@ -32,7 +59,13 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getClaims();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (protectedPage && !user) {
+    return buildLoginRedirect(request, pathname);
+  }
 
   return response;
 }

@@ -9,10 +9,13 @@ import type { WorkflowStatus } from "@/domain/feedback/workflow-status";
 import { workflowStatusToLabel } from "@/domain/feedback/workflow-status";
 import type { TeamMember } from "@/domain/organizations/team";
 
+import { SlaTerm } from "./sla-term";
+
 type DashboardAlertCardProps = {
   alert: DashboardAlertItem;
   assignees: TeamMember[];
   canManage: boolean;
+  demoMode?: boolean;
   onOpenSubmission?: (submissionId: string) => void;
   onUpdated: (alertId: string, next: Partial<DashboardAlertItem>) => void;
   onRemoved: (alertId: string) => void;
@@ -42,6 +45,7 @@ export function DashboardAlertCard({
   alert,
   assignees,
   canManage,
+  demoMode = false,
   onOpenSubmission,
   onUpdated,
   onRemoved,
@@ -77,6 +81,27 @@ export function DashboardAlertCard({
     setMessage("");
 
     try {
+      if (demoMode) {
+        const assignee = assignees.find((member) => member.userId === assignedUserId);
+        if (status === "resuelto") {
+          onRemoved(alert.id);
+        } else {
+          onUpdated(alert.id, {
+            workflowStatus: status,
+            assignedUserId: assignedUserId || null,
+            assignedUserName: assignee?.fullName,
+            slaBreached: false,
+          });
+        }
+        setNote("");
+        setMessage(
+          trimmedNote
+            ? "Seguimiento actualizado en la demo."
+            : "Seguimiento actualizado en la demo.",
+        );
+        return;
+      }
+
       const response = await fetch(`/api/feedback/${alert.submissionId}/follow-up`, {
         method: "PATCH",
         credentials: "same-origin",
@@ -133,11 +158,7 @@ export function DashboardAlertCard({
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-600">
               {getAlertSourceLabel(alert.source)}
             </span>
-            {alert.slaBreached ? (
-              <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-red-700">
-                SLA vencido
-              </span>
-            ) : null}
+            {alert.slaBreached ? <SlaTerm variant="badge" /> : null}
           </div>
           <h3 className="mt-2 text-base font-semibold text-slate-950">{alert.title}</h3>
           <p className="mt-1 text-xs text-slate-500">{alert.subtitle}</p>

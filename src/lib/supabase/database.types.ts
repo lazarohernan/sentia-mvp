@@ -431,6 +431,63 @@ export interface Database {
         };
         Update: Record<string, never>;
       };
+      ai_usage_events: {
+        Row: {
+          id: string;
+          organization_id: string;
+          branch_id: string | null;
+          submission_id: string | null;
+          use_case:
+            | "feedback_triage"
+            | "operational_report"
+            | "improvement_narrative"
+            | "executive_summary"
+            | "manual_estimate";
+          provider: "openai" | "huggingface" | "internal";
+          model: string;
+          operation: string;
+          input_tokens: number;
+          cached_input_tokens: number;
+          output_tokens: number;
+          reasoning_output_tokens: number;
+          total_tokens: number;
+          estimated_cost_usd: number | null;
+          currency: "USD";
+          pricing_source: string | null;
+          pricing_effective_date: string | null;
+          raw_usage: Json;
+          occurred_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          branch_id?: string | null;
+          submission_id?: string | null;
+          use_case:
+            | "feedback_triage"
+            | "operational_report"
+            | "improvement_narrative"
+            | "executive_summary"
+            | "manual_estimate";
+          provider: "openai" | "huggingface" | "internal";
+          model: string;
+          operation: string;
+          input_tokens?: number;
+          cached_input_tokens?: number;
+          output_tokens?: number;
+          reasoning_output_tokens?: number;
+          total_tokens?: number;
+          estimated_cost_usd?: number | null;
+          currency?: "USD";
+          pricing_source?: string | null;
+          pricing_effective_date?: string | null;
+          raw_usage?: Json;
+          occurred_at?: string;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+      };
       feedback_submissions: {
         Row: {
           id: string;

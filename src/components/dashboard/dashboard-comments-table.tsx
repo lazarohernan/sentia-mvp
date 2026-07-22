@@ -56,6 +56,7 @@ type DashboardCommentsTableProps = {
   comments?: DashboardComment[];
   dateRange?: DashboardDateRange;
   canManageFollowUp?: boolean;
+  demoMode?: boolean;
   initialSelectedCommentId?: string | null;
   onCloseDetail?: () => void;
   onCommentUpdated?: (commentId: string, status: CommentStatus) => void;
@@ -1090,6 +1091,7 @@ export function DashboardCommentsTable({
   comments = [],
   dateRange,
   canManageFollowUp = false,
+  demoMode = false,
   initialSelectedCommentId = null,
   onCloseDetail,
   onCommentUpdated,
@@ -1108,7 +1110,7 @@ export function DashboardCommentsTable({
   const [activeTab, setActiveTab] = useState<ValoracionesTab>("listado");
 
   useEffect(() => {
-    if (!activeCommentId) {
+    if (!activeCommentId || demoMode) {
       return;
     }
 
@@ -1128,7 +1130,7 @@ export function DashboardCommentsTable({
       .catch(() => {
         setFollowUpActions([]);
       });
-  }, [activeCommentId]);
+  }, [activeCommentId, demoMode]);
 
   const displayedComments = comments.map((comment) => ({
     ...comment,
@@ -1157,11 +1159,14 @@ export function DashboardCommentsTable({
       return;
     }
 
-    if (!canManageFollowUp) {
+    if (!canManageFollowUp || demoMode) {
       setStatusOverrides((current) => ({
         ...current,
         [activeCommentId]: status,
       }));
+      if (demoMode) {
+        onCommentUpdated?.(activeCommentId, status);
+      }
       return;
     }
 
@@ -1196,6 +1201,24 @@ export function DashboardCommentsTable({
 
   async function saveFollowUpNote() {
     if (!activeCommentId || followUpNote.trim().length === 0) {
+      return;
+    }
+
+    if (demoMode) {
+      setFollowUpActions((current) => [
+        {
+          id: `demo-note-${Date.now()}`,
+          submissionId: activeCommentId,
+          actionType: "note",
+          previousStatus: null,
+          newStatus: null,
+          note: followUpNote.trim(),
+          actorName: "Demo",
+          createdAt: new Date().toISOString(),
+        },
+        ...current,
+      ]);
+      setFollowUpNote("");
       return;
     }
 

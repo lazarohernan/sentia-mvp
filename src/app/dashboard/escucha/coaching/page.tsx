@@ -36,14 +36,7 @@ export default async function DashboardListeningCoachingPage({
   const dateRange = getDashboardDateRange(params);
 
   if (!hasSupabasePublicEnv()) {
-    return (
-      <ListeningCoachingView
-        listeningEvents={[]}
-        dateRange={dateRange}
-        branches={[]}
-        selectedBranchIds={[]}
-      />
-    );
+    redirect("/login?redirectTo=/dashboard/escucha/coaching");
   }
 
   const supabase = await createClient();

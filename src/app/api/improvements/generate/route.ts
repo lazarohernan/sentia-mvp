@@ -15,12 +15,17 @@ import {
   upsertWeeklyDigests,
 } from "@/domain/dashboard/improvements-repository";
 import { getOrganizationByUser, getOrganizationMembershipByUser } from "@/domain/organizations/repository";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
 
 const inputSchema = z.object({
   period: z.enum(["7d", "30d"]).default("7d"),
 });
+
+function canRunAiOperations(role: string | undefined) {
+  return role === "owner" || role === "manager";
+}
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -44,6 +49,28 @@ export async function POST(request: Request) {
   }
 
   const membership = await getOrganizationMembershipByUser(supabase, user.id);
+
+  if (!canRunAiOperations(membership?.role)) {
+    return NextResponse.json(
+      { error: "No tienes permiso para generar mejoras con IA." },
+      { status: 403 },
+    );
+  }
+
+  const rateLimit = await consumeDistributedRateLimit({
+    namespace: "api:improvements:generate",
+    key: `${user.id}:${getClientIpFromHeaders(request.headers)}`,
+    limit: 10,
+    windowMs: 60 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Demasiadas solicitudes de generación. Intenta más tarde." },
+      { status: 429 },
+    );
+  }
+
   const branchIds = membership?.branchId ? [membership.branchId] : undefined;
   const serviceClient = createServiceClient();
   const dateRange = getDashboardDateRange({ period: parsed.data.period });

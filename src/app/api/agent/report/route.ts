@@ -1,16 +1,22 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { insertAiUsageEvent } from "@/domain/ai-usage/repository";
 import { buildAgentContextSnapshot } from "@/domain/agent/context";
 import { generateOperationalAgentReport } from "@/domain/agent/operational-report";
 import { insertAgentOperationalReport } from "@/domain/agent/repository";
 import { getOrganizationByUser, getOrganizationMembershipByUser } from "@/domain/organizations/repository";
+import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
 
 const generateAgentReportInputSchema = z.object({
   period: z.enum(["7d", "30d"]).default("30d"),
 });
+
+function canRunAiOperations(role: string | undefined) {
+  return role === "owner" || role === "manager";
+}
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -35,6 +41,27 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "No se encontro una organizacion para este usuario." },
       { status: 404 },
+    );
+  }
+
+  if (!canRunAiOperations(membership?.role)) {
+    return NextResponse.json(
+      { error: "No tienes permiso para generar informes con IA." },
+      { status: 403 },
+    );
+  }
+
+  const rateLimit = await consumeDistributedRateLimit({
+    namespace: "api:agent:report",
+    key: `${user.id}:${getClientIpFromHeaders(request.headers)}`,
+    limit: 10,
+    windowMs: 60 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Demasiadas solicitudes de informe. Intenta mas tarde." },
+      { status: 429 },
     );
   }
 
@@ -67,6 +94,23 @@ export async function POST(request: Request) {
       branchId: membership?.branchId ?? null,
       report,
     });
+
+    if (report.usageEstimate) {
+      try {
+        await insertAiUsageEvent(serviceClient, {
+          organizationId: organization.id,
+          branchId: membership?.branchId ?? null,
+          useCase: "operational_report",
+          provider: "openai",
+          model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
+          operation: "agents.run",
+          estimate: report.usageEstimate,
+          rawUsage: report.rawUsage,
+        });
+      } catch {
+        // Usage telemetry should not block report delivery.
+      }
+    }
 
     return NextResponse.json({ report });
   } catch (error) {

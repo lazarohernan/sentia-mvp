@@ -70,15 +70,11 @@ export const feedbackSubmissionSchema = z.object({
     .string()
     .transform(sanitizeTextInput)
     .pipe(z.string().min(2).max(120)),
-  branchId: z
-    .string()
-    .uuid()
-    .optional(),
+  branchId: z.string().uuid(),
   branchToken: z
     .string()
     .transform(sanitizeTextInput)
-    .pipe(z.string().min(16).max(220))
-    .optional(),
+    .pipe(z.string().min(16).max(220)),
   type: feedbackTypeSchema,
   npsScore: z.number().int().min(0).max(10).optional(),
   csatScore: z.number().int().min(1).max(5).optional(),

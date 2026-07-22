@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ListeningAssessmentPage() {
   if (!hasSupabasePublicEnv()) {
-    return <ListeningAssessmentView assignedBranch={null} />;
+    redirect("/login?redirectTo=/escucha");
   }
 
   const supabase = await createClient();

@@ -123,4 +123,41 @@ describe("FeedbackForm", () => {
       }),
     });
   });
+
+  it("completes in demoMode without calling the API", async () => {
+    const onDemoComplete = vi.fn();
+    vi.stubGlobal("fetch", vi.fn());
+
+    const { container } = render(
+      <FeedbackForm
+        branchId="demo-branch"
+        branchSlug="demo-cafe"
+        demoMode
+        onDemoComplete={onDemoComplete}
+      />,
+    );
+    const form = container.querySelector("form");
+    expect(form).not.toBeNull();
+
+    fireEvent.click(screen.getByDisplayValue("2"));
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: {
+        value: "La atención fue lenta y nadie me dio solución en caja.",
+      },
+    });
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.submit(form!);
+
+    await waitFor(() => {
+      expect(screen.getByText(/gracias por tu comentario/i)).toBeInTheDocument();
+    });
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(onDemoComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        csatScore: 2,
+        freeText: "La atención fue lenta y nadie me dio solución en caja.",
+      }),
+    );
+  });
 });

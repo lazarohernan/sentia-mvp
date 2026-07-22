@@ -1,3 +1,4 @@
+import { insertAiUsageEvent } from "@/domain/ai-usage/repository";
 import { insertAiAnalysis, insertFeedbackSubmission } from "@/domain/feedback/repository";
 import { analyzeFeedbackSentiment } from "@/domain/feedback/sentiment-analysis";
 import { feedbackSubmissionSchema } from "@/domain/feedback/schemas";
@@ -20,59 +21,40 @@ async function resolveFeedbackBranch(
   db: ReturnType<typeof createServiceClient>,
   payload: {
     branchSlug: string;
-    branchId?: string;
-    branchToken?: string;
+    branchId: string;
+    branchToken: string;
   },
 ): Promise<
   | { status: "ok"; branch: ResolvedBranch }
-  | { status: "not_found" | "ambiguous" | "invalid_token" }
+  | { status: "not_found" | "invalid_token" }
 > {
-  if (payload.branchId && payload.branchToken) {
-    if (!hasQrSigningSecret()) {
-      return { status: "invalid_token" };
-    }
-
-    const { data } = await db
-      .from("branches")
-      .select("*")
-      .eq("id", payload.branchId)
-      .eq("is_active", true)
-      .maybeSingle();
-    const branch = data as ResolvedBranch | null;
-
-    if (!branch) {
-      return { status: "not_found" };
-    }
-
-    const isValid = verifyBranchQrTokenSignature(payload.branchToken, {
-      branchId: branch.id,
-      branchSlug: branch.slug ?? payload.branchSlug,
-      organizationId: branch.organization_id,
-    });
-
-    if (!isValid) {
-      return { status: "invalid_token" };
-    }
-
-    return { status: "ok", branch };
+  if (!hasQrSigningSecret()) {
+    return { status: "invalid_token" };
   }
 
-  const { data, error } = await db
+  const { data } = await db
     .from("branches")
-    .select("id, name, organization_id")
-    .eq("slug", payload.branchSlug)
+    .select("*")
+    .eq("id", payload.branchId)
     .eq("is_active", true)
-    .limit(2);
+    .maybeSingle();
+  const branch = data as ResolvedBranch | null;
 
-  if (error || !data || data.length === 0) {
+  if (!branch) {
     return { status: "not_found" };
   }
 
-  if (data.length > 1) {
-    return { status: "ambiguous" };
+  const isValid = verifyBranchQrTokenSignature(payload.branchToken, {
+    branchId: branch.id,
+    branchSlug: branch.slug ?? payload.branchSlug,
+    organizationId: branch.organization_id,
+  });
+
+  if (!isValid) {
+    return { status: "invalid_token" };
   }
 
-  return { status: "ok", branch: data[0] as ResolvedBranch };
+  return { status: "ok", branch };
 }
 
 export async function POST(request: Request) {
@@ -143,16 +125,6 @@ export async function POST(request: Request) {
     );
   }
 
-  if (branchResult.status === "ambiguous") {
-    return Response.json(
-      {
-        status: "error",
-        message: "Branch slug is ambiguous. Use a signed QR link.",
-      },
-      { status: 409 },
-    );
-  }
-
   if (branchResult.status === "invalid_token") {
     return Response.json(
       {
@@ -214,6 +186,24 @@ export async function POST(request: Request) {
     });
   } catch {
     // AI persistence should not block feedback acceptance.
+  }
+
+  if (sentimentAnalysis.status === "completed" && sentimentAnalysis.usageEstimate) {
+    try {
+      await insertAiUsageEvent(db, {
+        organizationId: branch.organization_id,
+        branchId: branch.id,
+        submissionId,
+        useCase: "feedback_triage",
+        provider: "openai",
+        model: sentimentAnalysis.model,
+        operation: "responses.create",
+        estimate: sentimentAnalysis.usageEstimate,
+        rawUsage: sentimentAnalysis.rawUsage,
+      });
+    } catch {
+      // Usage telemetry should not block feedback acceptance.
+    }
   }
 
   const isRiskyFeedback =

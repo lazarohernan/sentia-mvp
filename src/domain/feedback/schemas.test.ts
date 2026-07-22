@@ -7,9 +7,11 @@ import {
 } from "./schemas";
 
 describe("feedbackSubmissionSchema", () => {
-  it("accepts a simple public QR feedback submission", () => {
+  it("accepts a signed QR feedback submission", () => {
     const result = feedbackSubmissionSchema.parse({
       branchSlug: "  cafe-centro ",
+      branchId: "11111111-1111-4111-8111-111111111111",
+      branchToken: "signed-token-abcdefghij",
       type: "complaint",
       npsScore: 4,
       csatScore: 2,
@@ -28,6 +30,8 @@ describe("feedbackSubmissionSchema", () => {
     });
 
     expect(result.branchSlug).toBe("cafe-centro");
+    expect(result.branchId).toBe("11111111-1111-4111-8111-111111111111");
+    expect(result.branchToken).toBe("signed-token-abcdefghij");
     expect(result.type).toBe("complaint");
     expect(result.freeText).toBe("La comida llego fria y nadie resolvio el problema.");
     expect(result.clarification?.category).toBe("product_quality");
@@ -35,9 +39,11 @@ describe("feedbackSubmissionSchema", () => {
     expect(result.contact?.name).toBe("Ana Lopez");
   });
 
-  it("rejects empty comments and missing consent", () => {
-    const result = feedbackSubmissionSchema.safeParse({
+  it("rejects empty comments, missing consent, or missing signed token", () => {
+    const invalidComment = feedbackSubmissionSchema.safeParse({
       branchSlug: "cafe-centro",
+      branchId: "11111111-1111-4111-8111-111111111111",
+      branchToken: "signed-token-abcdefghij",
       type: "complaint",
       npsScore: 4,
       csatScore: 2,
@@ -45,8 +51,17 @@ describe("feedbackSubmissionSchema", () => {
       freeText: "",
       consentAccepted: false,
     });
+    const missingToken = feedbackSubmissionSchema.safeParse({
+      branchSlug: "cafe-centro",
+      type: "complaint",
+      csatScore: 2,
+      emotionScore: 2,
+      freeText: "La comida llego fria y nadie resolvio el problema.",
+      consentAccepted: true,
+    });
 
-    expect(result.success).toBe(false);
+    expect(invalidComment.success).toBe(false);
+    expect(missingToken.success).toBe(false);
   });
 });
 

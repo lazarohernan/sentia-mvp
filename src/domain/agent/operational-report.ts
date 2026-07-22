@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import { Agent, run, setDefaultOpenAIClient } from "@openai/agents";
+import type { ModelResponse } from "@openai/agents-core";
 
+import { estimateOpenAICostFromRawUsage } from "@/domain/ai-usage/pricing";
 import type { AgentContextSnapshot, AgentOperationalReport } from "./context";
 
 export type OperationalAgentConfig = {
@@ -61,6 +63,7 @@ Responde solo JSON valido con este formato:
 function safeParseReport(
   value: string,
   context: AgentContextSnapshot,
+  usage?: Pick<AgentOperationalReport, "usageEstimate" | "rawUsage">,
 ): AgentOperationalReport {
   const hasKnowledgeContext = Object.values(context.knowledge).some(Boolean);
 
@@ -96,6 +99,7 @@ function safeParseReport(
             : "La base permite compartir un informe consolidado."),
       generatedAt: new Date().toISOString(),
       context,
+      ...usage,
     };
   } catch {
     return {
@@ -117,8 +121,58 @@ function safeParseReport(
             : "La base permite compartir un informe consolidado.",
       generatedAt: new Date().toISOString(),
       context,
+      ...usage,
     };
   }
+}
+
+function sumTokenDetails(
+  details: unknown,
+  key: "cached_tokens" | "reasoning_tokens",
+) {
+  if (Array.isArray(details)) {
+    return details.reduce((total, item) => total + sumTokenDetails(item, key), 0);
+  }
+
+  if (!details || typeof details !== "object") {
+    return 0;
+  }
+
+  const value = (details as Record<string, unknown>)[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function buildRawUsageFromResponses(rawResponses: ModelResponse[]) {
+  const usage = rawResponses.reduce(
+    (total, response) => {
+      total.input_tokens += response.usage?.inputTokens ?? 0;
+      total.output_tokens += response.usage?.outputTokens ?? 0;
+      total.total_tokens += response.usage?.totalTokens ?? 0;
+      total.input_tokens_details.cached_tokens += sumTokenDetails(
+        response.usage?.inputTokensDetails,
+        "cached_tokens",
+      );
+      total.output_tokens_details.reasoning_tokens += sumTokenDetails(
+        response.usage?.outputTokensDetails,
+        "reasoning_tokens",
+      );
+
+      return total;
+    },
+    {
+      input_tokens: 0,
+      output_tokens: 0,
+      total_tokens: 0,
+      input_tokens_details: { cached_tokens: 0 },
+      output_tokens_details: { reasoning_tokens: 0 },
+    },
+  );
+
+  if (usage.input_tokens === 0 && usage.output_tokens === 0) {
+    return null;
+  }
+
+  return usage;
 }
 
 export async function generateOperationalAgentReport(params: {
@@ -139,5 +193,17 @@ export async function generateOperationalAgentReport(params: {
   });
 
   const result = await run(agent, buildPrompt(params.context));
-  return safeParseReport(String(result.finalOutput ?? ""), params.context);
+  const rawUsage = buildRawUsageFromResponses(result.rawResponses);
+  const usageEstimate = rawUsage
+    ? estimateOpenAICostFromRawUsage({
+        model: params.config.openAiModel,
+        rawUsage,
+      })
+    : null;
+
+  return safeParseReport(
+    String(result.finalOutput ?? ""),
+    params.context,
+    usageEstimate ? { usageEstimate, rawUsage } : undefined,
+  );
 }

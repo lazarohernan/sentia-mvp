@@ -4,6 +4,11 @@ vi.mock("@/lib/supabase/config", () => ({
   hasSupabaseServiceEnv: vi.fn(() => true),
 }));
 
+vi.mock("@/lib/security/qr-signing", () => ({
+  hasQrSigningSecret: vi.fn(() => true),
+  getQrSigningSecret: vi.fn(() => "test-qr-signing-secret"),
+}));
+
 vi.mock("@/lib/supabase/service", () => ({
   createServiceClient: vi.fn(),
 }));
