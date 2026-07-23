@@ -175,24 +175,22 @@ export function AddTeamMemberDrawer({
             </p>
 
             {success.inviteEmailStatus === "sent" ? (
-              <div className="mt-5 rounded-lg bg-emerald-50/70 p-4">
-                <p className="text-sm font-semibold text-emerald-950">
+              <div className="mt-5 rounded-lg bg-slate-100/80 p-4">
+                <p className="text-sm font-semibold text-slate-950">
                   Invitación enviada
                 </p>
-                <p className="mt-1 text-sm leading-6 text-emerald-900/80">
-                  Enviamos el correo de activación a{" "}
-                  <span className="font-semibold">{success.email}</span>. La persona podrá crear
-                  su contraseña desde ese mensaje.
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Correo de activación enviado a{" "}
+                  <span className="font-semibold text-slate-900">{success.email}</span>.
                 </p>
               </div>
             ) : success.inviteEmailStatus === "skipped" ? (
-              <div className="mt-5 rounded-lg border-amber-100 bg-amber-50/70 p-4 text-sm leading-6 text-amber-900">
-                El colaborador fue agregado, pero el correo no se envió porque Resend no está
-                configurado en este entorno.
+              <div className="mt-5 rounded-lg bg-slate-100/80 p-4 text-sm leading-6 text-slate-600">
+                Agregado sin correo: Resend no está configurado en este entorno.
               </div>
             ) : (
-              <div className="mt-5 rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-                Esta persona ya tenía cuenta. Puede entrar en{" "}
+              <div className="mt-5 rounded-lg bg-slate-100/80 p-4 text-sm leading-6 text-slate-600">
+                Ya tenía cuenta. Puede entrar en{" "}
                 <span className="font-semibold text-slate-900">/login</span>.
               </div>
             )}

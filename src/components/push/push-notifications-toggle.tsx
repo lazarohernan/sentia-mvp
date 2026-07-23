@@ -81,10 +81,64 @@ function isLocalOrigin() {
   return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+async function waitForActiveWorker(registration: ServiceWorkerRegistration) {
+  if (registration.active) {
+    return registration;
+  }
+
+  const pending = registration.installing ?? registration.waiting;
+  if (!pending) {
+    return withTimeout(navigator.serviceWorker.ready, 6000, "push_sw_ready_timeout");
+  }
+
+  await withTimeout(
+    new Promise<void>((resolve, reject) => {
+      const onStateChange = () => {
+        if (pending.state === "activated" || registration.active) {
+          pending.removeEventListener("statechange", onStateChange);
+          resolve();
+          return;
+        }
+
+        if (pending.state === "redundant") {
+          pending.removeEventListener("statechange", onStateChange);
+          reject(new Error("push_sw_redundant"));
+        }
+      };
+
+      pending.addEventListener("statechange", onStateChange);
+      onStateChange();
+    }),
+    6000,
+    "push_sw_activate_timeout",
+  );
+
+  return registration.active ? registration : navigator.serviceWorker.ready;
+}
+
 async function ensurePushRegistration() {
-  const registration = await navigator.serviceWorker.register("/push-sw.js");
-  await navigator.serviceWorker.ready;
-  return registration;
+  const registration = await withTimeout(
+    navigator.serviceWorker.register("/push-sw.js", { scope: "/" }),
+    8000,
+    "push_sw_register_timeout",
+  );
+  return waitForActiveWorker(registration);
 }
 
 async function removeServerSubscription(endpoint: string) {
@@ -139,6 +193,13 @@ export function PushNotificationsToggle({
       }
 
       try {
+        if (Notification.permission === "denied") {
+          if (!active) return;
+          setState("blocked");
+          setDetail("Las notificaciones estan bloqueadas en el navegador.");
+          return;
+        }
+
         const registration = await ensurePushRegistration();
         const subscription = await registration.pushManager.getSubscription();
         const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
@@ -146,12 +207,6 @@ export function PushNotificationsToggle({
           subscription && hasMatchingApplicationServerKey(subscription, applicationServerKey);
 
         if (!active) return;
-
-        if (Notification.permission === "denied") {
-          setState("blocked");
-          setDetail("Las notificaciones estan bloqueadas en el navegador.");
-          return;
-        }
 
         setState(hasCurrentSubscription ? "enabled" : "ready");
         setDetail(
@@ -163,8 +218,24 @@ export function PushNotificationsToggle({
         );
       } catch {
         if (!active) return;
+        // Si el SW se cuelga (común en dev / HMR), no dejar el botón girando:
+        // permitir intentar activar o mostrar error accionable.
+        if (Notification.permission === "granted") {
+          setState("ready");
+          setDetail(
+            isLocalOrigin()
+              ? "El service worker tardo en responder. Puedes intentar Activar push de nuevo."
+              : "No se confirmo el registro push. Intenta Activar push de nuevo.",
+          );
+          return;
+        }
+
         setState("error");
-        setDetail("No se pudo inicializar el registro push.");
+        setDetail(
+          isLocalOrigin()
+            ? "Push en local quedo a medias (service worker). Recarga o prueba en Chrome, o en produccion."
+            : "No se pudo inicializar el registro push. Recarga e intenta de nuevo.",
+        );
       }
     }
 

@@ -34,10 +34,7 @@ describe("DashboardFloatingNav", () => {
       "href",
       "/dashboard#informes",
     );
-    expect(screen.getByRole("link", { name: /gestión/i })).toHaveAttribute(
-      "href",
-      "/dashboard#equipo",
-    );
+    expect(screen.queryByRole("link", { name: /gestión/i })).not.toBeInTheDocument();
     // Escucha es un botón con submenú hover (no un link directo)
     expect(
       screen.getByRole("button", { name: /escucha/i }),
@@ -48,6 +45,9 @@ describe("DashboardFloatingNav", () => {
     expect(
       screen.getByRole("button", { name: /cuenta de ana lopez/i }),
     ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /cuenta de ana lopez/i }));
+    expect(screen.getByRole("menuitem", { name: /gestión/i })).toBeInTheDocument();
   });
 
   it("oculta notificaciones sin el permiso de alertas", () => {
@@ -129,11 +129,16 @@ describe("DashboardFloatingNav", () => {
     const onViewChange = vi.fn();
 
     render(
-      <DashboardFloatingNav activeView="resumen" onViewChange={onViewChange} />,
+      <DashboardFloatingNav
+        activeView="resumen"
+        onViewChange={onViewChange}
+        currentUser={sampleUser}
+      />,
     );
 
     window.history.pushState({}, "", "/dashboard");
-    fireEvent.click(screen.getByRole("link", { name: /gestión/i }));
+    fireEvent.click(screen.getByRole("button", { name: /cuenta de ana lopez/i }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /gestión/i }));
 
     expect(onViewChange).toHaveBeenCalledWith("gestion");
     expect(window.location.pathname).toBe("/dashboard");

@@ -1,6 +1,13 @@
 "use client";
 
-import { ChevronDown, KeyRound, LogOut, Store, UserRound } from "lucide-react";
+import {
+  ChevronDown,
+  KeyRound,
+  LogOut,
+  SlidersHorizontal,
+  Store,
+  UserRound,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -17,6 +24,7 @@ type DashboardUserMenuProps = {
   organizationName?: string;
   canManageBusinessProfile?: boolean;
   onOpenBusinessProfile?: () => void;
+  onOpenGestion?: () => void;
   onOpenUserProfile?: () => void;
   onRequestPasswordReset?: () => void;
   isPasswordResetting?: boolean;
@@ -44,6 +52,7 @@ export function DashboardUserMenu({
   organizationName,
   canManageBusinessProfile = false,
   onOpenBusinessProfile,
+  onOpenGestion,
   onOpenUserProfile,
   onRequestPasswordReset,
   isPasswordResetting = false,
@@ -181,6 +190,30 @@ export function DashboardUserMenu({
                       Solo lectura
                     </span>
                   ) : null}
+                </span>
+              </button>
+            ) : null}
+
+            {onOpenGestion ? (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenGestion();
+                }}
+                className={menuItemClass}
+              >
+                <span className={menuIconClass}>
+                  <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-slate-950">
+                    Gestión
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-500">
+                    Sucursales, equipo y configuración
+                  </span>
                 </span>
               </button>
             ) : null}

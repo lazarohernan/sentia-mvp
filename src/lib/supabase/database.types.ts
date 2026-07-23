@@ -163,6 +163,29 @@ export interface Database {
           updated_at?: string;
         };
       };
+      listening_coaching_actions: {
+        Row: {
+          organization_id: string;
+          subject_user_id: string;
+          author_user_id: string;
+          action_text: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          organization_id: string;
+          subject_user_id: string;
+          author_user_id: string;
+          action_text: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          author_user_id?: string;
+          action_text?: string;
+          updated_at?: string;
+        };
+      };
       branches: {
         Row: {
           id: string;
@@ -445,7 +468,8 @@ export interface Database {
             | "operational_report"
             | "improvement_narrative"
             | "executive_summary"
-            | "manual_estimate";
+            | "manual_estimate"
+            | "listening_coaching_prep";
           provider: "openai" | "huggingface" | "internal";
           model: string;
           operation: string;
@@ -472,7 +496,8 @@ export interface Database {
             | "operational_report"
             | "improvement_narrative"
             | "executive_summary"
-            | "manual_estimate";
+            | "manual_estimate"
+            | "listening_coaching_prep";
           provider: "openai" | "huggingface" | "internal";
           model: string;
           operation: string;

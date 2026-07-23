@@ -6,6 +6,9 @@ import { getUserProfileById } from "@/domain/auth/profile";
 import { getBranchesByOrganization } from "@/domain/branches/repository";
 import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import { getListeningEventsByOrganization } from "@/domain/listening/repository";
+import { getNotificationsForOrganization } from "@/domain/notifications/repository";
+import { resolveMemberAccess } from "@/domain/organizations/member-access";
+import { getPermissionProfileById } from "@/domain/organizations/permission-profiles";
 import {
   getOrganizationByUser,
   getOrganizationMembershipByUser,
@@ -74,6 +77,8 @@ export default async function DashboardListeningCoachingPage({
         dateRange,
       )
     : [];
+  const canManageListening =
+    membership?.role === "owner" || membership?.role === "manager";
   const currentUser: DashboardCurrentUser = {
     fullName:
       profile?.fullName ??
@@ -83,6 +88,33 @@ export default async function DashboardListeningCoachingPage({
     email: user.email ?? null,
   };
 
+  const memberPermissionProfile =
+    membership?.organizationRoleId && organization
+      ? await getPermissionProfileById(supabase, {
+          organizationId: organization.id,
+          organizationRoleId: membership.organizationRoleId,
+        })
+      : null;
+
+  const memberAccess = membership
+    ? resolveMemberAccess({
+        role: membership.role,
+        profile: memberPermissionProfile,
+        participatesInListening: membership.participatesInListening,
+      })
+    : null;
+
+  const canViewNotifications = Boolean(memberAccess?.canAccessDashboard);
+  const notifications =
+    canViewNotifications && organization
+      ? await getNotificationsForOrganization(supabase, organization.id, {
+          startIso: dateRange.startIso,
+          endIso: dateRange.endIso,
+          branchIds: queryBranchIds,
+          limit: 20,
+        })
+      : [];
+
   return (
     <ListeningCoachingView
       listeningEvents={listeningEvents}
@@ -91,6 +123,9 @@ export default async function DashboardListeningCoachingPage({
       branches={scopedBranches}
       selectedBranchIds={selectedBranchIds}
       lockedBranchScope={Boolean(membership?.branchId)}
+      canManageListening={canManageListening}
+      canViewNotifications={canViewNotifications}
+      notifications={notifications}
     />
   );
 }

@@ -4,8 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import { DashboardUserMenu } from "./dashboard-user-menu";
 
 describe("DashboardUserMenu", () => {
-  it("opens a popover with business profile and sign out actions", () => {
+  it("opens a popover with business profile, gestion and sign out actions", () => {
     const onOpenBusinessProfile = vi.fn();
+    const onOpenGestion = vi.fn();
 
     render(
       <DashboardUserMenu
@@ -16,6 +17,7 @@ describe("DashboardUserMenu", () => {
         organizationName="Cafe Central"
         canManageBusinessProfile
         onOpenBusinessProfile={onOpenBusinessProfile}
+        onOpenGestion={onOpenGestion}
       />,
     );
 
@@ -28,5 +30,9 @@ describe("DashboardUserMenu", () => {
     ).toHaveAttribute("type", "submit");
     fireEvent.click(screen.getByRole("menuitem", { name: /perfil del negocio/i }));
     expect(onOpenBusinessProfile).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /cuenta de ana lopez/i }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /gestión/i }));
+    expect(onOpenGestion).toHaveBeenCalledTimes(1);
   });
 });

@@ -9,7 +9,6 @@ import {
   Home,
   FileText,
   MessageSquareText,
-  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -71,12 +70,6 @@ const navItems = [
     href: "/dashboard/escucha",
     view: "escucha",
     icon: Ear,
-  },
-  {
-    label: "Gestión",
-    href: "/dashboard#equipo",
-    view: "gestion",
-    icon: SlidersHorizontal,
   },
 ] satisfies Array<{
   label: string;
@@ -355,6 +348,21 @@ export function DashboardFloatingNav({
     event.preventDefault();
     window.history.pushState({}, "", href);
     onViewChange(view);
+  }
+
+  function openGestion() {
+    const href = "/dashboard#equipo";
+    const targetUrl = new URL(href, window.location.origin);
+
+    if (targetUrl.pathname === window.location.pathname) {
+      window.history.pushState({}, "", href);
+      onViewChange("gestion");
+      return;
+    }
+
+    startTransition(() => {
+      router.push(href);
+    });
   }
 
   return (
@@ -706,6 +714,7 @@ export function DashboardFloatingNav({
               organizationName={organizationName}
               canManageBusinessProfile={canManageBusinessProfile}
               onOpenBusinessProfile={onOpenBusinessProfile}
+              onOpenGestion={openGestion}
             />
           ) : (
             <form action={signOutAction}>

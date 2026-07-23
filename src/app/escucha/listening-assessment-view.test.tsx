@@ -18,6 +18,20 @@ describe("ListeningAssessmentView", () => {
     vi.unstubAllGlobals();
   });
 
+  it("shows a back link to the listening dashboard", () => {
+    render(
+      <ListeningAssessmentView
+        assignedBranch={assignedBranch}
+        organizationName="Empresa Demo"
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: /volver/i })).toHaveAttribute(
+      "href",
+      "/dashboard/escucha",
+    );
+  });
+
   it("saves the selected listening level and replaces the form with a thank-you state", async () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       expect(JSON.parse(String(init?.body))).toEqual({

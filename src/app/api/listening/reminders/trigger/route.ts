@@ -3,8 +3,12 @@ import { NextResponse } from "next/server";
 import { triggerListeningSurveyForOrganization } from "@/domain/listening/reminder-trigger";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
 import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
-import { hasSupabasePublicEnv } from "@/lib/supabase/config";
+import {
+  hasSupabasePublicEnv,
+  hasSupabaseServiceEnv,
+} from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 function canTriggerSurvey(role: string) {
   return role === "owner" || role === "manager";
@@ -29,6 +33,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Supabase no esta configurado." }, { status: 503 });
   }
 
+  if (!hasSupabaseServiceEnv()) {
+    return NextResponse.json(
+      { error: "Supabase service role no esta configurado." },
+      { status: 503 },
+    );
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -48,13 +59,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await triggerListeningSurveyForOrganization(supabase, {
-      organizationId: membership.organizationId,
-      actorUserId: user.id,
-    });
+    // Service role: el SELECT tras INSERT falla con el client de usuario porque
+    // RLS solo deja leer notificaciones donde recipient_user_id = auth.uid().
+    const result = await triggerListeningSurveyForOrganization(
+      createServiceClient(),
+      {
+        organizationId: membership.organizationId,
+        actorUserId: user.id,
+      },
+    );
 
     return NextResponse.json(result);
-  } catch {
+  } catch (error) {
+    console.error("listening_survey_trigger_failed", error);
     return NextResponse.json(
       { error: "No se pudo enviar la encuesta de escucha." },
       { status: 500 },

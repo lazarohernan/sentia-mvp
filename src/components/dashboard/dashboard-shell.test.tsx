@@ -420,11 +420,19 @@ describe("DashboardShell", () => {
   });
 
   it("changes dashboard content when a menu item is clicked", () => {
-    render(<DashboardShell />);
+    render(
+      <DashboardShell
+        currentUser={{
+          fullName: "Ana Lopez",
+          email: "ana@empresa.com",
+        }}
+      />,
+    );
 
     expect(screen.getByRole("heading", { name: "Resumen operativo" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("link", { name: /gestión/i }));
+    fireEvent.click(screen.getByRole("button", { name: /cuenta de ana lopez/i }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /gestión/i }));
 
     expect(screen.getByRole("heading", { name: "Gestión" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Equipo" })).toBeInTheDocument();

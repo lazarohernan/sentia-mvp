@@ -10,6 +10,9 @@ import {
   defaultListeningSettings,
   getListeningSettingsByOrganization,
 } from "@/domain/listening/settings";
+import { getNotificationsForOrganization } from "@/domain/notifications/repository";
+import { resolveMemberAccess } from "@/domain/organizations/member-access";
+import { getPermissionProfileById } from "@/domain/organizations/permission-profiles";
 import {
   getOrganizationByUser,
   getOrganizationMembershipByUser,
@@ -92,12 +95,41 @@ export default async function DashboardListeningPage({
     email: user.email ?? null,
   };
 
+  const memberPermissionProfile =
+    membership?.organizationRoleId && organization
+      ? await getPermissionProfileById(supabase, {
+          organizationId: organization.id,
+          organizationRoleId: membership.organizationRoleId,
+        })
+      : null;
+
+  const memberAccess = membership
+    ? resolveMemberAccess({
+        role: membership.role,
+        profile: memberPermissionProfile,
+        participatesInListening: membership.participatesInListening,
+      })
+    : null;
+
+  const canViewNotifications = Boolean(memberAccess?.canAccessDashboard);
+  const notifications =
+    canViewNotifications && organization
+      ? await getNotificationsForOrganization(supabase, organization.id, {
+          startIso: dateRange.startIso,
+          endIso: dateRange.endIso,
+          branchIds: queryBranchIds,
+          limit: 20,
+        })
+      : [];
+
   return (
     <ListeningAnalyticsView
       listeningEvents={listeningEvents}
       currentUser={currentUser}
       listeningSettings={listeningSettings}
       canManageListening={canManageListening}
+      canViewNotifications={canViewNotifications}
+      notifications={notifications}
       dateRange={dateRange}
       branches={scopedBranches}
       selectedBranchIds={selectedBranchIds}

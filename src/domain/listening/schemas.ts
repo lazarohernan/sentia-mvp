@@ -61,3 +61,36 @@ export const listeningLevelReflectionPrompts: Record<
   generative_dialogue:
     "¿Hubo algún momento donde la conversación abrió una idea o decisión nueva? ¿Qué surgió entre ustedes?",
 };
+
+/** Preguntas privadas para el gerente (no se envían al colaborador). */
+export const listeningCoachingManagerPrompts: Record<
+  z.infer<typeof listeningLevelSchema>,
+  string[]
+> = {
+  download: [
+    "¿Qué situación del turno te empujó a responder en automático?",
+    "Si pudieras repetir una conversación, ¿qué harías distinto la próxima vez?",
+  ],
+  debate: [
+    "¿En qué momento sentiste que defendías tu punto más que entender el del otro?",
+    "¿Qué idea distinta a la tuya valdría la pena explorar con calma?",
+  ],
+  empathetic_listening: [
+    "¿Qué te ayudó a entender cómo se sentía la otra persona?",
+    "¿Cómo podrías repetir ese tipo de escucha en un turno más difícil?",
+  ],
+  generative_dialogue: [
+    "¿Qué surgió nuevo en esa conversación que no estaba al inicio?",
+    "¿Cómo podrías invitar a más diálogos así con el equipo?",
+  ],
+};
+
+export const upsertListeningCoachingActionSchema = z.object({
+  subjectUserId: z.string().uuid(),
+  actionText: z
+    .string()
+    .transform((value) => sanitizeOptionalTextInput(value) ?? "")
+    .refine((value) => value.length >= 1 && value.length <= 500, {
+      message: "Escribe una acción de 1 a 500 caracteres.",
+    }),
+});

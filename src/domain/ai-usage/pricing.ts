@@ -3,7 +3,8 @@ export type AiUseCase =
   | "operational_report"
   | "improvement_narrative"
   | "executive_summary"
-  | "manual_estimate";
+  | "manual_estimate"
+  | "listening_coaching_prep";
 
 export type AiTokenUsage = {
   inputTokens: number;

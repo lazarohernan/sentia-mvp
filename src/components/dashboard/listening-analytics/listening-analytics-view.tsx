@@ -27,6 +27,7 @@ import {
 import { DashboardDateFilter } from "@/components/dashboard/dashboard-date-filter";
 import type { Branch } from "@/domain/branches/schemas";
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
+import type { DashboardNotification } from "@/domain/dashboard/schemas";
 import {
   getListeningAverageSummary,
   getListeningDailySummary,
@@ -50,6 +51,8 @@ type ListeningAnalyticsViewProps = {
   currentUser?: DashboardCurrentUser;
   listeningSettings: ListeningSettings;
   canManageListening?: boolean;
+  canViewNotifications?: boolean;
+  notifications?: DashboardNotification[];
   dateRange: DashboardDateRange;
   branches: Branch[];
   selectedBranchIds: string[];
@@ -174,6 +177,8 @@ export function ListeningAnalyticsView({
   currentUser,
   listeningSettings,
   canManageListening = false,
+  canViewNotifications = false,
+  notifications = [],
   dateRange,
   branches,
   selectedBranchIds,
@@ -199,6 +204,8 @@ export function ListeningAnalyticsView({
         activeView="escucha"
         onViewChange={() => {}}
         currentUser={currentUser}
+        canViewNotifications={canViewNotifications}
+        notifications={canViewNotifications ? notifications : []}
         listeningSubNav={{
           activeTab: "analytics",
           analyticsHref: buildListeningSectionHref(

@@ -1,10 +1,12 @@
 "use client";
 
 import {
+  ArrowLeft,
   Loader2,
   Save,
   Smile,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import type { Branch } from "@/domain/branches/schemas";
@@ -18,6 +20,7 @@ import type { ListeningEventRow } from "@/domain/listening/schemas";
 type ListeningAssessmentViewProps = {
   assignedBranch: Branch | null;
   organizationName?: string;
+  backHref?: string;
 };
 
 type LevelKey = ListeningEventRow["level"];
@@ -57,6 +60,7 @@ const levels: Array<{
 export function ListeningAssessmentView({
   assignedBranch,
   organizationName,
+  backHref = "/dashboard/escucha",
 }: ListeningAssessmentViewProps) {
   const [selectedLevel, setSelectedLevel] = useState<LevelKey | null>(null);
   const [reflection, setReflection] = useState("");
@@ -67,6 +71,16 @@ export function ListeningAssessmentView({
   const selectedReflectionPrompt = selectedLevel
     ? listeningLevelReflectionPrompts[selectedLevel]
     : "Elige un nivel a la izquierda y te proponemos una pregunta para guiar tu reflexión.";
+
+  const backLink = (
+    <Link
+      href={backHref}
+      className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950"
+    >
+      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+      Volver
+    </Link>
+  );
 
   async function handleSubmit() {
     if (!selectedLevel || !assignedBranch) {
@@ -112,6 +126,7 @@ export function ListeningAssessmentView({
               {organizationName ?? "Tu organización"}
             </p>
           </nav>
+          <div className="pt-4">{backLink}</div>
 
           <div className="flex flex-1 items-center justify-center py-16">
             <section className="w-full text-center">
@@ -124,6 +139,7 @@ export function ListeningAssessmentView({
               <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600">
                 Tu registro de escucha quedó guardado para este turno.
               </p>
+              <div className="mt-6 flex justify-center">{backLink}</div>
             </section>
           </div>
         </section>
@@ -141,8 +157,9 @@ export function ListeningAssessmentView({
             {organizationName ?? "Tu organización"}
           </p>
         </nav>
+        <div className="pt-4">{backLink}</div>
 
-        <header className="flex flex-col gap-5 py-8 lg:flex-row lg:items-end lg:justify-between">
+        <header className="flex flex-col gap-5 py-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Niveles de escucha
