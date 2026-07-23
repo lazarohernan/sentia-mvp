@@ -74,44 +74,30 @@ export function DashboardExecutiveHeader({
   }
 
   return (
-    <header className="mb-6">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-normal text-slate-950">
-            Dashboard
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Lectura ejecutiva para detectar riesgo, tendencia y puntos de
-            accion.
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="inline-flex h-8 items-center rounded-full bg-slate-950 px-3 text-xs font-semibold text-white">
-              {scopeLabel}
-            </span>
-            <span className="text-sm font-medium text-slate-500">
-              {scopeDetail}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <DashboardDateFilter
-            dateRange={activeDateRange}
-            selectedBranchId={selectedBranchId}
-          />
-          <Dropdown
-            label="Filtrar por sucursal"
-            value={selectedBranchId ?? ""}
-            onChange={handleBranchChange}
-            options={branchOptions}
-            placeholder={lockedBranchScope ? "Sucursal asignada" : "Sucursal"}
-            menuAlign="right"
-            menuWidthClassName="w-[min(18rem,calc(100vw-2rem))]"
-            disabled={lockedBranchScope || isPending}
-            leadingIcon={Filter}
-          />
-        </div>
+    <div className="flex flex-col items-stretch gap-3 sm:items-end">
+      <div className="flex flex-wrap gap-2 sm:justify-end">
+        <DashboardDateFilter
+          dateRange={activeDateRange}
+          selectedBranchId={selectedBranchId}
+        />
+        <Dropdown
+          label="Filtrar por sucursal"
+          value={selectedBranchId ?? ""}
+          onChange={handleBranchChange}
+          options={branchOptions}
+          placeholder={lockedBranchScope ? "Sucursal asignada" : "Sucursal"}
+          menuAlign="right"
+          menuWidthClassName="w-[min(18rem,calc(100vw-2rem))]"
+          disabled={lockedBranchScope || isPending}
+          leadingIcon={Filter}
+        />
       </div>
-    </header>
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        <span className="inline-flex h-8 items-center rounded-full bg-slate-950 px-3 text-xs font-semibold text-white">
+          {scopeLabel}
+        </span>
+        <span className="text-sm font-medium text-slate-500">{scopeDetail}</span>
+      </div>
+    </div>
   );
 }

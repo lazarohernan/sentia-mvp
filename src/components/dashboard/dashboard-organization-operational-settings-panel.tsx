@@ -126,7 +126,7 @@ function OrganizationOperationalSettingsForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[1.25rem] border border-slate-200 bg-white"
+      className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
     >
       <div className="border-b border-slate-100 px-5 py-4">
         <p className="text-sm font-semibold text-emerald-800">Operacion del negocio</p>
@@ -146,7 +146,7 @@ function OrganizationOperationalSettingsForm({
             <p className="mt-1 text-xs leading-5 text-slate-500">
               Si lo dejas vacio, el sistema intentara detectarlos automaticamente.
             </p>
-            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl bg-white px-4 py-3">
               <ClipboardList
                 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
                 aria-hidden="true"
@@ -166,7 +166,7 @@ function OrganizationOperationalSettingsForm({
             <span className="text-sm font-semibold text-slate-700">
               Prioridades de servicio
             </span>
-            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl bg-white px-4 py-3">
               <ShieldCheck
                 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
                 aria-hidden="true"
@@ -186,7 +186,7 @@ function OrganizationOperationalSettingsForm({
             <span className="text-sm font-semibold text-slate-700">
               Politica de compensacion
             </span>
-            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl bg-white px-4 py-3">
               <Building2
                 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
                 aria-hidden="true"
@@ -204,7 +204,7 @@ function OrganizationOperationalSettingsForm({
 
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Tono de follow-up</span>
-            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl bg-white px-4 py-3">
               <MessageSquareQuote
                 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
                 aria-hidden="true"
@@ -224,7 +224,7 @@ function OrganizationOperationalSettingsForm({
             <span className="text-sm font-semibold text-slate-700">
               Notas operativas para IA
             </span>
-            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl bg-white px-4 py-3">
               <Sparkles
                 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
                 aria-hidden="true"
@@ -242,13 +242,13 @@ function OrganizationOperationalSettingsForm({
         </div>
 
         {success ? (
-          <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
             {success}
           </p>
         ) : null}
 
         {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </p>
         ) : null}
@@ -295,7 +295,7 @@ export function DashboardOrganizationOperationalSettingsPanel({
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[1.25rem] border border-slate-200 bg-white">
+      <section className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         <div className="border-b border-slate-100 px-5 py-4">
           <p className="text-sm font-semibold text-emerald-800">Notificaciones</p>
           <h3 className="mt-1 text-xl font-semibold text-slate-950">

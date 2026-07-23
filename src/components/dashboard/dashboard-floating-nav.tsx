@@ -30,10 +30,13 @@ import { createPortal } from "react-dom";
 import { signOutAction } from "@/app/auth/actions";
 import type { DashboardNotification } from "@/domain/dashboard/schemas";
 import { PushNotificationsToggle } from "@/components/push/push-notifications-toggle";
+import { DashboardNotificationsDrawer } from "./dashboard-notifications-drawer";
 import {
   DashboardUserMenu,
   type DashboardCurrentUser,
 } from "./dashboard-user-menu";
+
+const POPOVER_NOTIFICATION_LIMIT = 5;
 
 export type DashboardNavView =
   | "resumen"
@@ -89,6 +92,7 @@ type DashboardFloatingNavProps = {
   onViewChange: (view: DashboardNavView) => void;
   onNotificationNavigate?: (href: string) => void;
   notifications?: DashboardNotification[];
+  canViewNotifications?: boolean;
   currentUser?: DashboardCurrentUser;
   organizationName?: string;
   canManageBusinessProfile?: boolean;
@@ -134,6 +138,7 @@ export function DashboardFloatingNav({
   onViewChange,
   onNotificationNavigate,
   notifications = emptyNotifications,
+  canViewNotifications = false,
   currentUser,
   organizationName,
   canManageBusinessProfile,
@@ -146,7 +151,13 @@ export function DashboardFloatingNav({
 
   // ── Notificaciones ────────────────────────────────────────────────────────
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isNotificationsDrawerOpen, setIsNotificationsDrawerOpen] =
+    useState(false);
   const notificationsRef = useRef<HTMLDivElement | null>(null);
+  const previewNotifications = visibleNotifications.slice(
+    0,
+    POPOVER_NOTIFICATION_LIMIT,
+  );
 
   // ── Submenú Escucha ───────────────────────────────────────────────────────
   const [isListeningOpen, setIsListeningOpen] = useState(false);
@@ -183,6 +194,25 @@ export function DashboardFloatingNav({
     } catch {
       setVisibleNotifications(previousNotifications);
     }
+  }
+
+  function handleDrawerDeleted(deletedIds: string[]) {
+    if (deletedIds.length === 0) {
+      setVisibleNotifications([]);
+      return;
+    }
+
+    const deletedSet = new Set(deletedIds);
+    setVisibleNotifications((currentNotifications) =>
+      currentNotifications.filter(
+        (notification) => !deletedSet.has(notification.id),
+      ),
+    );
+  }
+
+  function openNotificationsDrawer() {
+    setIsNotificationsOpen(false);
+    setIsNotificationsDrawerOpen(true);
   }
 
   // ── Helpers para abrir/cerrar el submenú ─────────────────────────────────
@@ -262,6 +292,7 @@ export function DashboardFloatingNav({
   useEffect(() => {
     function handlePointerDown(event: globalThis.MouseEvent) {
       if (
+        !isNotificationsDrawerOpen &&
         notificationsRef.current &&
         !notificationsRef.current.contains(event.target as Node)
       ) {
@@ -289,7 +320,7 @@ export function DashboardFloatingNav({
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isListeningOpen, closeListeningImmediate]);
+  }, [isListeningOpen, isNotificationsDrawerOpen, closeListeningImmediate]);
 
   // Teclado en el trigger: ↓, Enter, Space abren el menú y mueven foco
   function handleListeningTriggerKeyDown(
@@ -329,7 +360,7 @@ export function DashboardFloatingNav({
   return (
     <nav
       aria-label="Navegacion principal"
-      className="fixed inset-x-0 top-4 z-50 mx-auto w-[calc(100%-2rem)] max-w-6xl rounded-full border border-white/75 bg-[rgb(255_255_255/0.78)] px-2.5 py-2 shadow-float ring-1 ring-[rgb(2_44_34/0.06)] backdrop-blur-2xl"
+      className="fixed inset-x-0 top-4 z-50 mx-auto w-[calc(100%-2rem)] max-w-6xl rounded-full bg-[rgb(255_255_255/0.78)] px-2.5 py-2 shadow-float backdrop-blur-2xl"
     >
       <div className="flex items-center justify-between gap-3">
         <Link
@@ -396,7 +427,7 @@ export function DashboardFloatingNav({
                     className={[
                       "flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-full px-3 text-sm font-medium transition",
                       isActive
-                        ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
+                        ? "bg-emerald-800 text-white shadow-emerald-900/20"
                         : "text-slate-600 hover:bg-white hover:text-emerald-900 hover:shadow-sm",
                     ].join(" ")}
                   >
@@ -426,7 +457,7 @@ export function DashboardFloatingNav({
                           style={{ top: menuPos.top, left: menuPos.left }}
                           onMouseEnter={cancelClose}
                           onMouseLeave={scheduleClose}
-                          className="fixed z-60 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white/95 p-1.5 shadow-[0_18px_50px_rgba(15,23,42,0.16)] ring-1 ring-black/5 backdrop-blur-xl"
+                          className="fixed z-60 w-52 overflow-hidden rounded-2xl bg-white p-1.5 backdrop-blur-xl shadow-[0_18px_60px_rgba(15,23,42,0.16)]"
                         >
                           {listeningOptions.map((subItem, idx) => {
                             const SubIcon = subItem.icon;
@@ -501,7 +532,7 @@ export function DashboardFloatingNav({
                   className={[
                     "flex h-9 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-medium transition",
                     isActive
-                      ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
+                      ? "bg-emerald-800 text-white shadow-emerald-900/20"
                       : "text-slate-600 hover:bg-white hover:text-emerald-900 hover:shadow-sm",
                   ].join(" ")}
                 >
@@ -515,6 +546,7 @@ export function DashboardFloatingNav({
 
         {/* ── Zona derecha: notificaciones + usuario ── */}
         <div className="flex shrink-0 items-center gap-1">
+          {canViewNotifications ? (
           <div className="relative" ref={notificationsRef}>
             <button
               type="button"
@@ -549,16 +581,16 @@ export function DashboardFloatingNav({
               <div
                 role="dialog"
                 aria-label="Panel de notificaciones"
-                className="absolute right-0 top-12 w-88 overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-[0_22px_60px_rgba(15,23,42,0.18)] ring-1 ring-black/5 backdrop-blur-xl"
+                className="absolute right-0 top-12 flex w-88 max-h-[min(32rem,70vh)] flex-col overflow-hidden rounded-3xl bg-white backdrop-blur-xl shadow-[0_18px_60px_rgba(15,23,42,0.16)]"
               >
-                <div className="border-b border-slate-100 px-5 py-4">
+                <div className="shrink-0 border-b border-slate-100 px-5 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-slate-950">
                         Notificaciones
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
-                        Señales recientes para seguimiento operativo.
+                        Últimas señales para seguimiento operativo.
                       </p>
                     </div>
                     <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-800">
@@ -570,10 +602,10 @@ export function DashboardFloatingNav({
                   </div>
                 </div>
 
-                <div className="max-h-104 overflow-y-auto p-2">
+                <div className="min-h-0 flex-1 overflow-y-auto p-2">
                   <PushNotificationsToggle hideWhenEnabled />
 
-                  {visibleNotifications.length === 0 ? (
+                  {previewNotifications.length === 0 ? (
                     <div className="px-3 py-8 text-center">
                       <p className="text-sm font-semibold text-slate-900">
                         Sin novedades para gerencia
@@ -583,7 +615,7 @@ export function DashboardFloatingNav({
                       </p>
                     </div>
                   ) : (
-                    visibleNotifications.map((notification) => {
+                    previewNotifications.map((notification) => {
                       const toneClass =
                         notification.tone === "danger"
                           ? "bg-red-500"
@@ -650,9 +682,23 @@ export function DashboardFloatingNav({
                     })
                   )}
                 </div>
+
+                <div className="sticky bottom-0 shrink-0 border-t border-slate-100 bg-white/95 px-3 py-3 backdrop-blur">
+                  <button
+                    type="button"
+                    onClick={openNotificationsDrawer}
+                    className="flex w-full items-center justify-center rounded-full bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-900"
+                  >
+                    Ver todas
+                    {visibleNotifications.length > POPOVER_NOTIFICATION_LIMIT
+                      ? ` (${visibleNotifications.length})`
+                      : null}
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>
+          ) : null}
 
           {currentUser ? (
             <DashboardUserMenu
@@ -674,6 +720,20 @@ export function DashboardFloatingNav({
           )}
         </div>
       </div>
+
+      {/*
+        Drawer con portal a document.body (ver dashboard-notifications-drawer).
+        No renderizar overlays fixed aquí sin portal: el nav usa backdrop-blur
+        y crea un containing block que atrapa position:fixed.
+      */}
+      {canViewNotifications ? (
+        <DashboardNotificationsDrawer
+          open={isNotificationsDrawerOpen}
+          onClose={() => setIsNotificationsDrawerOpen(false)}
+          onNotificationNavigate={onNotificationNavigate}
+          onDeleted={handleDrawerDeleted}
+        />
+      ) : null}
     </nav>
   );
 }

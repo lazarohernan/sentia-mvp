@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
   const { supabase, organization, membership, userId } = authResult;
 
-  if (membership?.role === "collaborator") {
+  if (membership?.participatesInListening) {
     return NextResponse.json(
       { error: "Usa el portal de colaborador para registrar escucha." },
       { status: 403 },

@@ -240,7 +240,7 @@ function CsatHealthVerticalBars({
                   <div
                     data-testid={`csat-health-bar-${zone}`}
                     className={[
-                      "absolute bottom-0 left-1/2 -translate-x-1/2 rounded-t-lg shadow-sm",
+                      "absolute bottom-0 left-1/2 -translate-x-1/2 rounded-t-lg",
                       tokens.barWidth,
                       healthZoneStyles[zone].barClassName,
                     ].join(" ")}
@@ -284,7 +284,7 @@ function CsatHealthEmptyBars({ size = "default" }: { size?: CsatHealthChartSize 
       {healthSegments.map((zone) => (
         <div key={zone} className="flex flex-col items-center">
           <div
-            className={`w-full rounded-lg border border-dashed border-slate-200 bg-slate-50 ${tokens.trackHeight}`}
+            className={`w-full rounded-lg bg-slate-50 ${tokens.trackHeight}`}
           />
           <p className="mt-2 text-[11px] text-slate-400">
             Notas {healthZoneCopy[zone].scoreRange}

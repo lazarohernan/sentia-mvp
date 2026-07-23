@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { getHomePathForRole } from "@/domain/auth/redirects";
+import { resolveHomePathForMembership } from "@/domain/auth/resolve-home-path";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -22,5 +22,5 @@ export default async function InicioPage() {
   }
 
   const membership = await getOrganizationMembershipByUser(supabase, user.id);
-  redirect(getHomePathForRole(membership?.role));
+  redirect(await resolveHomePathForMembership(supabase, membership));
 }

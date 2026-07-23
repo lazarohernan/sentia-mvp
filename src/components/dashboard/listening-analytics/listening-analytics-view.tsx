@@ -132,7 +132,7 @@ function ListeningChartTooltip({ active, payload, label }: ChartTooltipProps) {
   const total = payload.reduce((sum, item) => sum + Number(item.value ?? 0), 0);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-[0_12px_36px_rgba(15,23,42,0.16)]">
+    <div className="rounded-xl bg-white px-3 py-2">
       <p className="text-xs font-semibold text-slate-500">{label}</p>
       <p className="mt-1 text-sm font-semibold text-slate-950">
         {total} registro{total === 1 ? "" : "s"}
@@ -217,7 +217,7 @@ export function ListeningAnalyticsView({
       <section className="mx-auto flex w-full max-w-[92rem] flex-1 flex-col px-4 pb-4 pt-28 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-normal text-slate-950">
+            <h1 className="text-2xl font-bold tracking-normal text-slate-950">
               Analítica de escucha
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
@@ -242,7 +242,7 @@ export function ListeningAnalyticsView({
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 <Settings2 className="h-4 w-4" aria-hidden="true" />
                 Configurar
@@ -252,7 +252,7 @@ export function ListeningAnalyticsView({
               href="/escucha"
               aria-label="Abrir evaluación"
               title="Abrir evaluación"
-              className="inline-flex size-10 items-center justify-center rounded-full bg-emerald-800 text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900"
+              className="inline-flex size-10 items-center justify-center rounded-full bg-emerald-800 text-white shadow-emerald-900/20 transition hover:bg-emerald-900"
             >
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
@@ -293,7 +293,7 @@ export function ListeningAnalyticsView({
             return (
               <article
                 key={metric.label}
-                className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+                className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -314,7 +314,7 @@ export function ListeningAnalyticsView({
           })}
         </div>
 
-        <section className="mt-6 rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+        <section className="mt-6 rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
           <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">
@@ -332,7 +332,7 @@ export function ListeningAnalyticsView({
               <button
                 type="button"
                 onClick={() => setIsInfoOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
               >
                 <Info className="h-3.5 w-3.5" aria-hidden="true" />
                 Información
@@ -394,7 +394,7 @@ export function ListeningAnalyticsView({
         </section>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-2">
-          <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+          <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
             <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-950">
@@ -439,7 +439,7 @@ export function ListeningAnalyticsView({
             </div>
           </section>
 
-          <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+          <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
             <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-950">
@@ -515,12 +515,12 @@ export function ListeningAnalyticsView({
             role="dialog"
             aria-modal="true"
             aria-labelledby="listening-settings-title"
-            className="relative max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[1.35rem] bg-white shadow-2xl"
+            className="relative max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[1.35rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
           >
             <button
               type="button"
               onClick={() => setIsSettingsOpen(false)}
-              className="absolute right-4 top-4 z-10 inline-flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50"
+              className="absolute right-4 top-4 z-10 inline-flex size-10 items-center justify-center rounded-full bg-white text-slate-500 transition hover:bg-slate-50"
             >
               <X className="h-5 w-5" aria-hidden="true" />
               <span className="sr-only">Cerrar</span>
@@ -549,12 +549,12 @@ export function ListeningAnalyticsView({
             role="dialog"
             aria-modal="true"
             aria-labelledby="listening-info-title"
-            className="relative w-full max-w-2xl rounded-[1.35rem] bg-white p-6 shadow-2xl"
+            className="relative w-full max-w-2xl rounded-[1.35rem] bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
           >
             <button
               type="button"
               onClick={() => setIsInfoOpen(false)}
-              className="absolute right-4 top-4 inline-flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50"
+              className="absolute right-4 top-4 inline-flex size-10 items-center justify-center rounded-full bg-white text-slate-500 transition hover:bg-slate-50"
             >
               <X className="h-5 w-5" aria-hidden="true" />
               <span className="sr-only">Cerrar</span>

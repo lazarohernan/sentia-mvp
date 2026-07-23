@@ -169,7 +169,7 @@ function OrganizationProfileForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[1.25rem] border border-slate-200 bg-white"
+      className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
     >
       {showHeader ? (
         <div className="border-b border-slate-100 px-5 py-4">
@@ -185,9 +185,9 @@ function OrganizationProfileForm({
       ) : null}
 
       <div className="space-y-6 p-5">
-        <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] p-4">
+        <div className="rounded-xl bg-[#f7f8f4] p-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -218,7 +218,7 @@ function OrganizationProfileForm({
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploadingLogo}
-                    className="mt-3 inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-3 inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isUploadingLogo ? (
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -268,13 +268,13 @@ function OrganizationProfileForm({
               disabled={!canManage}
               rows={4}
               placeholder="Cuenta brevemente que hace tu negocio"
-              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50"
+              className="mt-2 w-full rounded-xl bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50"
             />
           </label>
 
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Correo de contacto</span>
-            <div className="mt-2 flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4">
+            <div className="mt-2 flex h-12 items-center gap-3 rounded-xl bg-white px-4">
               <Mail className="h-4 w-4 text-slate-400" aria-hidden="true" />
               <input
                 value={contactEmail}
@@ -289,7 +289,7 @@ function OrganizationProfileForm({
 
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Telefono</span>
-            <div className="mt-2 flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4">
+            <div className="mt-2 flex h-12 items-center gap-3 rounded-xl bg-white px-4">
               <Phone className="h-4 w-4 text-slate-400" aria-hidden="true" />
               <input
                 value={contactPhone}
@@ -303,7 +303,7 @@ function OrganizationProfileForm({
 
           <label className="block md:col-span-2">
             <span className="text-sm font-semibold text-slate-700">Sitio web</span>
-            <div className="mt-2 flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4">
+            <div className="mt-2 flex h-12 items-center gap-3 rounded-xl bg-white px-4">
               <Globe className="h-4 w-4 text-slate-400" aria-hidden="true" />
               <input
                 value={websiteUrl}
@@ -317,7 +317,7 @@ function OrganizationProfileForm({
 
           <label className="block md:col-span-2">
             <span className="text-sm font-semibold text-slate-700">Direccion principal</span>
-            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="mt-2 flex min-h-12 items-start gap-3 rounded-xl bg-white px-4 py-3">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
               <textarea
                 value={address}
@@ -332,13 +332,13 @@ function OrganizationProfileForm({
         </div>
 
         {success ? (
-          <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
             {success}
           </p>
         ) : null}
 
         {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
           </p>
         ) : null}

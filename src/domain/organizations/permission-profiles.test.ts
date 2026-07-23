@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   createPermissionProfileInputSchema,
   inferMemberRoleFromPermissionProfile,
+  memberHasBusinessAccess,
+  resolveMemberPermissions,
   updatePermissionProfileInputSchema,
 } from "./permission-profiles";
 
@@ -12,7 +14,7 @@ describe("inferMemberRoleFromPermissionProfile", () => {
       inferMemberRoleFromPermissionProfile({
         id: "role-1",
         name: "Colaborador",
-        permissions: ["listening"],
+        permissions: ["summary", "comments"],
       }),
     ).toBe("collaborator");
   });
@@ -56,5 +58,53 @@ describe("updatePermissionProfileInputSchema", () => {
         permissions: ["summary", "alerts"],
       }).name,
     ).toBe("Encargado de turno");
+  });
+});
+
+describe("resolveMemberPermissions", () => {
+  it("gives owners full access", () => {
+    expect(
+      resolveMemberPermissions({
+        role: "owner",
+        profile: null,
+      }),
+    ).toContain("alerts");
+  });
+
+  it("uses the assigned profile for collaborators", () => {
+    expect(
+      resolveMemberPermissions({
+        role: "collaborator",
+        profile: {
+          id: "role-1",
+          name: "Operaciones",
+          permissions: ["summary", "comments"],
+        },
+      }),
+    ).toEqual(["summary", "comments"]);
+  });
+
+  it("gives business access with any dashboard permission", () => {
+    expect(
+      memberHasBusinessAccess({
+        role: "collaborator",
+        profile: {
+          id: "role-1",
+          name: "Operaciones",
+          permissions: ["summary"],
+        },
+      }),
+    ).toBe(true);
+
+    expect(
+      memberHasBusinessAccess({
+        role: "collaborator",
+        profile: {
+          id: "role-2",
+          name: "Sin permisos",
+          permissions: [],
+        },
+      }),
+    ).toBe(false);
   });
 });

@@ -15,6 +15,8 @@ import {
   getActiveListeningSurveyNotificationForUser,
   getNotificationsForUser,
 } from "@/domain/notifications/repository";
+import { resolveMemberAccess } from "@/domain/organizations/member-access";
+import { getPermissionProfileById } from "@/domain/organizations/permission-profiles";
 import {
   getOrganizationByUser,
   getOrganizationMembershipByUser,
@@ -64,8 +66,21 @@ export default async function CollaboratorPage({
     redirect("/login");
   }
 
-  if (membership.role !== "collaborator") {
-    redirect("/dashboard");
+  const memberProfile = membership.organizationRoleId
+    ? await getPermissionProfileById(supabase, {
+        organizationId: organization.id,
+        organizationRoleId: membership.organizationRoleId,
+      })
+    : null;
+
+  const access = resolveMemberAccess({
+    role: membership.role,
+    profile: memberProfile,
+    participatesInListening: membership.participatesInListening,
+  });
+
+  if (!access.canAccessCollaboratorPortal) {
+    redirect(access.canAccessDashboard ? "/dashboard" : "/login");
   }
 
   const activeBranches = (await getBranchesByOrganization(supabase, organization.id)).filter(

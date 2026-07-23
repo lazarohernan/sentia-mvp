@@ -25,6 +25,7 @@ describe("AddTeamMemberDrawer", () => {
         expect.objectContaining({
           role: "manager",
           organizationRoleId: "22222222-2222-4222-8222-222222222222",
+          participatesInListening: false,
         }),
       );
 
@@ -38,6 +39,7 @@ describe("AddTeamMemberDrawer", () => {
             email: "ana@empresa.com",
             role: "manager",
             roleLabel: "Gerente",
+            participatesInListening: false,
             joinedAt: "2026-05-01T10:00:00.000Z",
             accountStatus: "pending_activation",
           },
@@ -131,6 +133,7 @@ describe("AddTeamMemberDrawer", () => {
     fireEvent.change(screen.getByLabelText("Correo electronico"), {
       target: { value: "ana@empresa.com" },
     });
+    fireEvent.click(screen.getByRole("switch", { name: /participa en escucha/i }));
     fireEvent.click(screen.getByRole("button", { name: "Agregar colaborador" }));
 
     await waitFor(() => {

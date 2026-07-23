@@ -36,7 +36,12 @@ export async function POST(request: Request) {
 
   const membership = await getOrganizationMembershipByUser(supabase, user.id);
 
-  if (!membership || membership.role !== "collaborator") {
+  if (
+    !membership ||
+    !membership.participatesInListening ||
+    membership.role === "owner" ||
+    membership.role === "manager"
+  ) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 

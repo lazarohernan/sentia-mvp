@@ -81,6 +81,7 @@ function mockFetchWithPermissionProfile(
         permissionProfileId: "profile-1",
         permissionProfileName: "Gerente de tienda",
         role: "collaborator",
+        participatesInListening: true,
       });
     }
 
@@ -118,9 +119,8 @@ describe("DashboardShell", () => {
   it("renders the executive dashboard as its own view by default", async () => {
     render(<DashboardShell />);
 
-    expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Resumen operativo" })).toBeInTheDocument();
     expect(screen.getByText("Resumen operativo sin datos")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Resumen" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Valoraciones" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Resolver alerta" })).not.toBeInTheDocument();
     expect(screen.queryByText("1,248")).not.toBeInTheDocument();
@@ -135,9 +135,8 @@ describe("DashboardShell", () => {
       expect(screen.getByRole("heading", { name: "Valoraciones" })).toBeInTheDocument();
     });
 
-    expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Resumen operativo" })).not.toBeInTheDocument();
     expect(screen.queryByText("Resumen operativo sin datos")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Resumen" })).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText("Buscar valoración")).not.toBeInTheDocument();
     expect(screen.getByText("Sin valoraciones registradas")).toBeInTheDocument();
   });
@@ -288,7 +287,7 @@ describe("DashboardShell", () => {
     expect(screen.getByText("Entrega del informe")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ver informe" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Preparar correo" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Dashboard" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Resumen operativo" })).not.toBeInTheDocument();
   });
 
   it("allows closing the report readiness note", async () => {
@@ -423,19 +422,20 @@ describe("DashboardShell", () => {
   it("changes dashboard content when a menu item is clicked", () => {
     render(<DashboardShell />);
 
-    expect(screen.getByRole("heading", { name: "Resumen" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Resumen operativo" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("link", { name: /gestión/i }));
 
     expect(screen.getByRole("heading", { name: "Gestión" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Equipo" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Resumen" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Resumen operativo" })).not.toBeInTheDocument();
     expect(window.location.hash).toBe("#equipo");
   }, 15_000);
 
   it("opens the notifications panel with server notifications", () => {
     render(
       <DashboardShell
+        canViewNotifications
         dashboardData={buildShellDashboardData({
           notifications: [
             {
@@ -542,6 +542,7 @@ describe("DashboardShell", () => {
             email: "ana@empresa.com",
             role: "collaborator",
             roleLabel: "Colaborador",
+            participatesInListening: true,
             joinedAt: "2026-05-01T10:00:00.000Z",
             accountStatus: "active",
           },
@@ -577,7 +578,9 @@ describe("DashboardShell", () => {
 
     await waitFor(() => {
       expect(screen.getAllByText("Gerente de tienda").length).toBeGreaterThan(0);
-      expect(screen.getByText("Resumen, Valoraciones")).toBeInTheDocument();
+      expect(
+        screen.getByText(/permisos:\s*resumen,\s*valoraciones/i),
+      ).toBeInTheDocument();
     });
   });
 

@@ -77,27 +77,30 @@ export async function PATCH(request: Request, { params }: TeamMemberRouteProps) 
   }
 
   const serviceClient = createServiceClient();
-  const permissionProfile = parsed.data.organizationRoleId
-    ? await getPermissionProfileById(serviceClient, {
-        organizationId: membership.organizationId,
-        organizationRoleId: parsed.data.organizationRoleId,
-      })
-    : null;
 
-  if (parsed.data.organizationRoleId && !permissionProfile) {
-    return NextResponse.json(
-      { error: "El rol seleccionado no pertenece a la organizacion." },
-      { status: 400 },
-    );
-  }
+  if (parsed.data.organizationRoleId !== undefined) {
+    const permissionProfile = parsed.data.organizationRoleId
+      ? await getPermissionProfileById(serviceClient, {
+          organizationId: membership.organizationId,
+          organizationRoleId: parsed.data.organizationRoleId,
+        })
+      : null;
 
-  const targetRole = inferMemberRoleFromPermissionProfile(permissionProfile);
+    if (parsed.data.organizationRoleId && !permissionProfile) {
+      return NextResponse.json(
+        { error: "El rol seleccionado no pertenece a la organizacion." },
+        { status: 400 },
+      );
+    }
 
-  if (!canAssignRole(membership.role, targetRole)) {
-    return NextResponse.json(
-      { error: "No puedes asignar ese rol con tu cuenta." },
-      { status: 403 },
-    );
+    const targetRole = inferMemberRoleFromPermissionProfile(permissionProfile);
+
+    if (!canAssignRole(membership.role, targetRole)) {
+      return NextResponse.json(
+        { error: "No puedes asignar ese rol con tu cuenta." },
+        { status: 403 },
+      );
+    }
   }
 
   try {
@@ -105,13 +108,18 @@ export async function PATCH(request: Request, { params }: TeamMemberRouteProps) 
       organizationId: membership.organizationId,
       targetUserId,
       organizationRoleId: parsed.data.organizationRoleId,
+      participatesInListening: parsed.data.participatesInListening,
     });
 
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error desconocido";
 
-    if (message.includes("no pertenece")) {
+    if (
+      message.includes("no pertenece") ||
+      message.includes("permisos de plataforma") ||
+      message.includes("Escucha")
+    ) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
 

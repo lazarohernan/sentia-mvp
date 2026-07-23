@@ -25,7 +25,9 @@ export type OrganizationMembership = {
   userId: string;
   organizationId: string;
   branchId: string | null;
+  organizationRoleId: string | null;
   role: MemberRole;
+  participatesInListening: boolean;
   createdAt: string;
   branch: Branch | null;
 };
@@ -34,7 +36,9 @@ type OrganizationMembershipRow = {
   user_id: string;
   organization_id: string;
   branch_id: string | null;
+  organization_role_id: string | null;
   role: MemberRole;
+  participates_in_listening: boolean | null;
   created_at: string;
   branches: Branch | null;
 };
@@ -45,7 +49,9 @@ export async function getOrganizationMembershipByUser(
 ): Promise<OrganizationMembership | null> {
   const { data, error } = await client
     .from("organization_members")
-    .select("user_id, organization_id, branch_id, role, created_at, branches(*)")
+    .select(
+      "user_id, organization_id, branch_id, organization_role_id, role, participates_in_listening, created_at, branches(*)",
+    )
     .eq("user_id", userId)
     .limit(1);
 
@@ -56,7 +62,9 @@ export async function getOrganizationMembershipByUser(
     userId: membership.user_id,
     organizationId: membership.organization_id,
     branchId: membership.branch_id,
+    organizationRoleId: membership.organization_role_id,
     role: membership.role,
+    participatesInListening: Boolean(membership.participates_in_listening),
     createdAt: membership.created_at,
     branch: membership.branches,
   };

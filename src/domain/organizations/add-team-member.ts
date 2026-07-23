@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
+import { assertMemberHasValidAccess } from "./member-access";
 import type { CreateTeamMemberInput } from "./member-schemas";
 import { createInviteActivationLink } from "./invite-link";
 import { getPermissionProfileById } from "./permission-profiles";
@@ -233,6 +234,12 @@ export async function addTeamMember(
     throw new Error("El rol seleccionado no pertenece a la organizacion.");
   }
 
+  assertMemberHasValidAccess({
+    role: params.input.role,
+    profile: permissionProfile,
+    participatesInListening: params.input.participatesInListening,
+  });
+
   const { userId, inviteLink } = await resolveAuthUserId(client, {
     email: params.input.email,
     fullName: params.input.fullName,
@@ -241,15 +248,24 @@ export async function addTeamMember(
 
   await ensureProfile(client, userId, params.input.fullName);
 
-  const { data: existingMember } = await client
+  const { data: existingMemberData } = await client
     .from("organization_members")
-    .select("role")
-    .eq("organization_id", params.organizationId)
+    .select("role, organization_id")
     .eq("user_id", userId)
     .maybeSingle();
 
+  const existingMember = existingMemberData as {
+    role: string;
+    organization_id: string;
+  } | null;
+
   if (existingMember) {
-    throw new Error("Este usuario ya pertenece al equipo.");
+    if (existingMember.organization_id === params.organizationId) {
+      throw new Error("Este usuario ya pertenece al equipo.");
+    }
+    throw new Error(
+      "Este usuario ya pertenece a otro negocio. En Perks cada cuenta solo puede estar en un negocio.",
+    );
   }
 
   const { error: insertError } = await client.from("organization_members").insert({
@@ -258,16 +274,22 @@ export async function addTeamMember(
     role: params.input.role,
     branch_id: params.input.branchId ?? null,
     organization_role_id: permissionProfile?.id ?? null,
+    participates_in_listening: params.input.participatesInListening,
   } as never);
 
   if (insertError) {
+    if (insertError.code === "23505") {
+      throw new Error(
+        "Este usuario ya pertenece a otro negocio. En Perks cada cuenta solo puede estar en un negocio.",
+      );
+    }
     throw new Error(`No se pudo agregar al equipo: ${insertError.message}`);
   }
 
   const { data, error } = await client
     .from("organization_members")
     .select(
-      "user_id, branch_id, organization_role_id, role, created_at, profiles(full_name), branches(name), organization_roles(name)",
+      "user_id, branch_id, organization_role_id, role, participates_in_listening, created_at, profiles(full_name), branches(name), organization_roles(name)",
     )
     .eq("organization_id", params.organizationId)
     .eq("user_id", userId)
@@ -282,6 +304,7 @@ export async function addTeamMember(
     branch_id: string | null;
     organization_role_id: string | null;
     role: MemberRole;
+    participates_in_listening: boolean;
     created_at: string;
     profiles: { full_name: string } | null;
     branches: { name: string } | null;
@@ -299,6 +322,7 @@ export async function addTeamMember(
       roleLabel: roleLabels[row.role],
       permissionProfileId: row.organization_role_id,
       permissionProfileName: row.organization_roles?.name ?? null,
+      participatesInListening: Boolean(row.participates_in_listening),
       joinedAt: row.created_at,
       accountStatus: inviteLink ? "pending_activation" : "active",
     },

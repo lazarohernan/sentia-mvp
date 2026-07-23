@@ -9,7 +9,11 @@ import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import { getDashboardSummaryData } from "@/domain/dashboard/repository";
 import { getListeningEventsByOrganization } from "@/domain/listening/repository";
 import { getOrganizationSettingsById } from "@/domain/organizations/organization-settings";
-import { getPermissionProfilesByOrganization } from "@/domain/organizations/permission-profiles";
+import { resolveMemberAccess } from "@/domain/organizations/member-access";
+import {
+  getPermissionProfileById,
+  getPermissionProfilesByOrganization,
+} from "@/domain/organizations/permission-profiles";
 import {
   getOrganizationByUser,
   getOrganizationMembershipByUser,
@@ -128,6 +132,35 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       ? params.reportPeriod
       : undefined;
 
+  const memberPermissionProfile =
+    membership?.organizationRoleId && organization
+      ? await getPermissionProfileById(supabase, {
+          organizationId: organization.id,
+          organizationRoleId: membership.organizationRoleId,
+        })
+      : null;
+
+  const memberAccess = membership
+    ? resolveMemberAccess({
+        role: membership.role,
+        profile: memberPermissionProfile,
+        participatesInListening: membership.participatesInListening,
+      })
+    : null;
+
+  if (memberAccess && !memberAccess.canAccessDashboard) {
+    redirect(
+      memberAccess.canAccessCollaboratorPortal ? "/colaborador" : "/login",
+    );
+  }
+
+  const canViewNotifications = Boolean(memberAccess?.canAccessDashboard);
+
+  const visibleDashboardData =
+    dashboardData && !canViewNotifications
+      ? { ...dashboardData, notifications: [] }
+      : dashboardData;
+
   return (
     <DashboardShell
       organizationName={organizationSettings?.name ?? organization?.name}
@@ -140,6 +173,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       canManageTeam={
         membership?.role === "owner" || membership?.role === "manager"
       }
+      canViewNotifications={canViewNotifications}
       actorRole={
         membership?.role === "owner" || membership?.role === "manager"
           ? membership.role
@@ -148,7 +182,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       currentUserId={user.id}
       currentUser={currentUser}
       listeningEvents={listeningEvents}
-      dashboardData={dashboardData}
+      dashboardData={visibleDashboardData}
       latestAgentReport={latestAgentReport ?? undefined}
       dateRange={dateRange}
       informesReportPeriod={informesReportPeriod}

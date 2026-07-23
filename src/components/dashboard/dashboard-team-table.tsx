@@ -27,8 +27,8 @@ const roleStyles: Record<TeamMember["role"], string> = {
 };
 
 const statusStyles = {
-  active: "bg-emerald-50 text-emerald-800",
-  pending_activation: "bg-amber-50 text-amber-800",
+  active: "text-emerald-700",
+  pending_activation: "text-amber-700",
 } as const;
 
 const statusLabels = {
@@ -49,25 +49,25 @@ function TeamSummary({ members }: { members: TeamMember[] }) {
 
   return (
     <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <div className="rounded-2xl border border-slate-100 bg-[#f7f8f4] p-4">
+      <div className="rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
           Colaboradores
         </p>
         <p className="mt-2 text-2xl font-semibold text-slate-950">{members.length}</p>
       </div>
-      <div className="rounded-2xl border border-slate-100 bg-[#f7f8f4] p-4">
+      <div className="rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
           Con sucursal
         </p>
         <p className="mt-2 text-2xl font-semibold text-slate-950">{assignedCount}</p>
       </div>
-      <div className="rounded-2xl border border-slate-100 bg-[#f7f8f4] p-4">
+      <div className="rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
           Gerentes
         </p>
         <p className="mt-2 text-2xl font-semibold text-slate-950">{managerCount}</p>
       </div>
-      <div className="rounded-2xl border border-slate-100 bg-[#f7f8f4] p-4">
+      <div className="rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
           Pendientes
         </p>
@@ -113,6 +113,11 @@ function buildColumns(): Array<DashboardDataTableColumn<TeamMember>> {
             <p className="text-xs font-medium text-slate-500">
               {member.permissionProfileName}
             </p>
+          ) : (
+            <p className="text-xs font-medium text-slate-400">Sin plataforma</p>
+          )}
+          {member.participatesInListening ? (
+            <p className="text-xs font-medium text-slate-700">Escucha</p>
           ) : null}
         </div>
       ),
@@ -133,7 +138,7 @@ function buildColumns(): Array<DashboardDataTableColumn<TeamMember>> {
       cell: (member) => (
         <span
           className={[
-            "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+            "text-xs font-semibold",
             statusStyles[member.accountStatus],
           ].join(" ")}
         >

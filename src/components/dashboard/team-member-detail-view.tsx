@@ -24,8 +24,8 @@ type TeamMemberDetailViewProps = {
 };
 
 const statusStyles = {
-  active: "bg-emerald-50 text-emerald-800",
-  pending_activation: "bg-amber-50 text-amber-800",
+  active: "text-emerald-700",
+  pending_activation: "text-amber-700",
 } as const;
 
 const statusLabels = {
@@ -127,9 +127,10 @@ export function TeamMemberDetailView({
     }
   }
 
-  async function handlePermissionProfileChange(profileId: string) {
-    const profile = permissionProfiles.find((item) => item.id === profileId) ?? null;
-
+  async function patchMemberAccess(payload: {
+    organizationRoleId?: string | null;
+    participatesInListening?: boolean;
+  }) {
     setRoleError("");
     setIsRoleSaving(true);
 
@@ -138,19 +139,18 @@ export function TeamMemberDetailView({
         method: "PATCH",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organizationRoleId: profile?.id ?? null,
-        }),
+        body: JSON.stringify(payload),
       });
       const body = (await response.json()) as {
         permissionProfileId?: string | null;
         permissionProfileName?: string | null;
         role?: TeamMember["role"];
+        participatesInListening?: boolean;
         error?: string;
       };
 
       if (!response.ok || !body.role) {
-        setRoleError(body.error ?? "No se pudo actualizar el rol.");
+        setRoleError(body.error ?? "No se pudo actualizar el acceso.");
         return;
       }
 
@@ -165,12 +165,27 @@ export function TeamMemberDetailView({
               : member.roleLabel,
         permissionProfileId: body.permissionProfileId ?? null,
         permissionProfileName: body.permissionProfileName ?? null,
+        participatesInListening:
+          body.participatesInListening ?? member.participatesInListening,
       });
     } catch {
       setRoleError("No se pudo conectar con el servidor.");
     } finally {
       setIsRoleSaving(false);
     }
+  }
+
+  async function handlePermissionProfileChange(profileId: string) {
+    const profile = permissionProfiles.find((item) => item.id === profileId) ?? null;
+    await patchMemberAccess({
+      organizationRoleId: profile?.id ?? null,
+    });
+  }
+
+  async function handleListeningToggle() {
+    await patchMemberAccess({
+      participatesInListening: !member.participatesInListening,
+    });
   }
 
   const canResend =
@@ -211,12 +226,12 @@ export function TeamMemberDetailView({
   }
 
   return (
-    <section className="rounded-[1.25rem] border border-slate-200 bg-white">
+    <section className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
       <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+          className="inline-flex size-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-50"
           aria-label="Volver al equipo"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
@@ -229,7 +244,7 @@ export function TeamMemberDetailView({
 
       <div className="space-y-5 p-5">
         <dl className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] p-4">
+          <div className="rounded-xl bg-[#f7f8f4] p-4">
             <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
               Rol
             </dt>
@@ -237,14 +252,14 @@ export function TeamMemberDetailView({
               {member.permissionProfileName ?? member.roleLabel}
             </dd>
           </div>
-          <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] p-4">
+          <div className="rounded-xl bg-[#f7f8f4] p-4">
             <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
               Estado
             </dt>
             <dd className="mt-2">
               <span
                 className={[
-                  "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+                  "text-sm font-semibold",
                   statusStyles[member.accountStatus],
                 ].join(" ")}
               >
@@ -252,7 +267,7 @@ export function TeamMemberDetailView({
               </span>
             </dd>
           </div>
-          <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] p-4 sm:col-span-2">
+          <div className="rounded-xl bg-[#f7f8f4] p-4 sm:col-span-2">
             <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
               Correo
             </dt>
@@ -261,7 +276,7 @@ export function TeamMemberDetailView({
               {member.email ?? "No disponible"}
             </dd>
           </div>
-          <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] p-4 sm:col-span-2">
+          <div className="rounded-xl bg-[#f7f8f4] p-4 sm:col-span-2">
             <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
               Sucursal
             </dt>
@@ -270,7 +285,7 @@ export function TeamMemberDetailView({
               {member.branchName ?? "Sin sucursal asignada"}
             </dd>
           </div>
-          <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] p-4 sm:col-span-2">
+          <div className="rounded-xl bg-[#f7f8f4] p-4 sm:col-span-2">
             <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
               En el equipo desde
             </dt>
@@ -281,19 +296,50 @@ export function TeamMemberDetailView({
         </dl>
 
         {canManageTeam ? (
-          <section className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
-            <label className="block">
-              <span className="text-sm font-semibold text-emerald-950">
-                Rol
+          <section className="space-y-4 border border-slate-200 p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  Participa en Escucha
+                </p>
+                <p className="mt-1.5 text-sm leading-6 text-slate-700">
+                  Si solo activas esto, no necesita rol. Entra al portal para
+                  evaluarse.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={member.participatesInListening}
+                aria-label="Participa en Escucha"
+                disabled={isRoleSaving}
+                onClick={() => void handleListeningToggle()}
+                className={[
+                  "relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition disabled:opacity-50",
+                  member.participatesInListening ? "bg-emerald-800" : "bg-slate-300",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "absolute top-0.5 size-5 rounded-full bg-white transition",
+                    member.participatesInListening ? "left-5" : "left-0.5",
+                  ].join(" ")}
+                />
+              </button>
+            </div>
+
+            <label className="block border-t border-slate-200 pt-4">
+              <span className="text-sm font-semibold text-slate-900">
+                Rol de plataforma
               </span>
               <select
                 value={member.permissionProfileId ?? ""}
                 onChange={(event) => handlePermissionProfileChange(event.target.value)}
                 disabled={isRoleSaving}
                 aria-label="Rol"
-                className="mt-2 h-11 w-full rounded-xl border border-emerald-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                className="field-control mt-2 h-11 w-full bg-white px-3 text-sm font-medium text-slate-800"
               >
-                <option value="">Sin rol asignado</option>
+                <option value="">Sin acceso a la plataforma</option>
                 {assignablePermissionProfiles.map((profile) => (
                   <option key={profile.id} value={profile.id}>
                     {profile.name}
@@ -302,31 +348,24 @@ export function TeamMemberDetailView({
               </select>
             </label>
 
-            {roleError ? (
-              <p className="mt-3 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-red-700">
-                {roleError}
-              </p>
-            ) : null}
-
             {selectedProfile ? (
-              <div className="mt-3 rounded-lg border border-emerald-100 bg-white px-3 py-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">
-                  Permisos asignados
-                </p>
-                <p className="mt-1 text-sm leading-6 text-slate-700">
-                  {getPermissionLabels(selectedProfile.permissions).join(", ")}
-                </p>
-              </div>
+              <p className="text-sm leading-6 text-slate-700">
+                Permisos: {getPermissionLabels(selectedProfile.permissions).join(", ")}
+              </p>
             ) : (
-              <p className="mt-2 text-sm leading-6 text-emerald-950/70">
-                Crea roles en Gestion &gt; Permisos para asignarlos aqui.
+              <p className="text-sm leading-6 text-slate-700">
+                Opcional. Solo si también debe ver el dashboard.
               </p>
             )}
+
+            {roleError ? (
+              <p className="text-sm text-red-700">{roleError}</p>
+            ) : null}
           </section>
         ) : null}
 
         {member.accountStatus === "pending_activation" && canManageTeam ? (
-          <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-4">
+          <div className="rounded-xl bg-amber-50/70 p-4">
             <p className="text-sm font-semibold text-amber-950">Activacion pendiente</p>
             <p className="mt-1 text-sm leading-6 text-amber-900/80">
               Este colaborador aún no entra por primera vez. Puedes reenviar la invitación por
@@ -334,13 +373,13 @@ export function TeamMemberDetailView({
             </p>
 
             {success ? (
-              <p className="mt-3 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm text-emerald-800">
+              <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm text-emerald-800">
                 {success}
               </p>
             ) : null}
 
             {error ? (
-              <p className="mt-3 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-red-700">
+              <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm text-red-700">
                 {error}
                 {cooldownSeconds > 0 ? ` Podras reenviar en ${formatCooldown(cooldownSeconds)}.` : ""}
               </p>
@@ -365,7 +404,7 @@ export function TeamMemberDetailView({
         ) : null}
 
         {canDelete ? (
-          <div className="rounded-xl border border-red-100 bg-red-50/60 p-4">
+          <div className="rounded-xl bg-red-50/60 p-4">
             <p className="text-sm font-semibold text-red-950">Zona de riesgo</p>
             <p className="mt-1 text-sm leading-6 text-red-900/80">
               Al eliminar a {member.fullName}, perdera acceso a la organizacion. Esta accion no se
@@ -373,7 +412,7 @@ export function TeamMemberDetailView({
             </p>
 
             {deleteError ? (
-              <p className="mt-3 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-red-700">
+              <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm text-red-700">
                 {deleteError}
               </p>
             ) : null}
@@ -385,7 +424,7 @@ export function TeamMemberDetailView({
                 setShowDeleteConfirm(true);
               }}
               disabled={isDeleting}
-              className="mt-4 inline-flex h-11 items-center gap-2 rounded-full border border-red-200 bg-white px-5 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
               Eliminar colaborador
@@ -414,7 +453,7 @@ export function TeamMemberDetailView({
             aria-modal="true"
             aria-labelledby="delete-member-title"
             aria-describedby="delete-member-description"
-            className="relative w-full max-w-md rounded-[1.25rem] border border-slate-200 bg-white p-6 shadow-2xl"
+            className="relative w-full max-w-md rounded-[1.25rem] bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
           >
             <p className="text-sm font-semibold text-red-700">Advertencia</p>
             <h3 id="delete-member-title" className="mt-2 text-xl font-semibold text-slate-950">
@@ -426,7 +465,7 @@ export function TeamMemberDetailView({
             </p>
 
             {deleteError ? (
-              <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
                 {deleteError}
               </p>
             ) : null}
@@ -436,7 +475,7 @@ export function TeamMemberDetailView({
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cancelar
               </button>

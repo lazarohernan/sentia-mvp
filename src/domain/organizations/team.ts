@@ -18,6 +18,7 @@ export type TeamMember = {
   roleLabel: string;
   permissionProfileId?: string | null;
   permissionProfileName?: string | null;
+  participatesInListening: boolean;
   joinedAt: string;
   accountStatus: TeamMemberAccountStatus;
 };
@@ -35,6 +36,7 @@ type TeamMemberRow = {
   branch_id: string | null;
   organization_role_id: string | null;
   role: MemberRole;
+  participates_in_listening: boolean | null;
   created_at: string;
   profiles: {
     full_name: string;
@@ -58,6 +60,7 @@ function mapTeamMemberRow(member: TeamMemberRow): TeamMember {
     roleLabel: roleLabels[member.role],
     permissionProfileId: member.organization_role_id,
     permissionProfileName: member.organization_roles?.name ?? null,
+    participatesInListening: Boolean(member.participates_in_listening),
     joinedAt: member.created_at,
     accountStatus: "active",
   };
@@ -70,7 +73,7 @@ export async function getTeamMembersByOrganization(
   const { data, error } = await client
     .from("organization_members")
     .select(
-      "user_id, branch_id, organization_role_id, role, created_at, profiles(full_name), branches(name), organization_roles(name)",
+      "user_id, branch_id, organization_role_id, role, participates_in_listening, created_at, profiles(full_name), branches(name), organization_roles(name)",
     )
     .eq("organization_id", organizationId)
     .neq("role", "owner")

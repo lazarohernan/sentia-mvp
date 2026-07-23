@@ -56,7 +56,7 @@ export function ListeningCoachingView({
       <section className="mx-auto flex w-full max-w-[92rem] flex-1 flex-col px-4 pb-4 pt-28 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-normal text-slate-950">
+            <h1 className="text-2xl font-bold tracking-normal text-slate-950">
               Coaching de escucha
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
@@ -80,7 +80,7 @@ export function ListeningCoachingView({
           </div>
         </header>
 
-        <section className="mt-8 overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+        <section className="mt-8 overflow-hidden rounded-[1.35rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
           <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">
@@ -176,7 +176,7 @@ export function ListeningCoachingView({
           )}
         </section>
 
-        <section className="mt-6 rounded-[1.35rem] border border-emerald-100 bg-emerald-50 p-5">
+        <section className="mt-6 rounded-[1.35rem] bg-emerald-50 p-5">
           <div className="flex items-start gap-3">
             <MessageSquareText className="mt-1 h-5 w-5 shrink-0 text-emerald-800" aria-hidden="true" />
             <div>

@@ -98,6 +98,7 @@ export type DashboardNotification = {
   title: string;
   detail: string;
   time: string;
+  createdAtIso?: string;
   href: string;
   unread: boolean;
   tone: "success" | "warning" | "danger";

@@ -19,7 +19,7 @@ function NarrativeText({ text }: { text: string }) {
           return (
             <span
               key={i}
-              className="mx-0.5 my-1 inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-1 text-[0.78rem] font-semibold leading-none text-slate-800 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+              className="mx-0.5 my-1 inline-flex items-center rounded-md bg-white px-2 py-1 text-[0.78rem] font-semibold leading-none text-slate-800"
             >
               {match[1]}
             </span>
@@ -42,7 +42,7 @@ const urgencyStyles: Record<ImprovementNarrative["urgency"], string> = {
 function UrgencyBadge({ urgency }: { urgency: ImprovementNarrative["urgency"] }) {
   return (
     <span
-      className={`shrink-0 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.72rem] font-semibold capitalize ${urgencyStyles[urgency]}`}
+      className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.72rem] font-semibold capitalize ${urgencyStyles[urgency]}`}
     >
       {urgency}
     </span>
@@ -67,8 +67,8 @@ function BranchCard({
       className={[
         "shrink-0 rounded-xl px-3.5 py-2 text-sm font-semibold transition whitespace-nowrap",
         active
-          ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
-          : "border border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800",
+          ? "bg-emerald-800 text-white shadow-emerald-900/20"
+          : "bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 shadow-[0_14px_40px_rgba(15,23,42,0.06)]",
       ].join(" ")}
     >
       {name}
@@ -103,7 +103,7 @@ function BranchCarousel({
         <button
           type="button"
           onClick={() => scroll("left")}
-          className="shrink-0 rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 transition hover:bg-slate-50"
+          className="shrink-0 rounded-lg bg-white p-1.5 text-slate-500 transition hover:bg-slate-50"
           aria-label="Anterior"
         >
           <ChevronLeft size={15} />
@@ -128,7 +128,7 @@ function BranchCarousel({
         <button
           type="button"
           onClick={() => scroll("right")}
-          className="shrink-0 rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 transition hover:bg-slate-50"
+          className="shrink-0 rounded-lg bg-white p-1.5 text-slate-500 transition hover:bg-slate-50"
           aria-label="Siguiente"
         >
           <ChevronRight size={15} />
@@ -142,7 +142,7 @@ function BranchCarousel({
 
 function NarrativeCard({ narrative }: { narrative: ImprovementNarrative }) {
   return (
-    <div className="rounded-[1.15rem] border border-slate-200 bg-white p-5">
+    <div className="rounded-[1.15rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
       <div className="mb-5 flex items-start justify-between gap-4">
         <h4 className="text-base font-semibold leading-snug text-slate-950">
           {narrative.title}
@@ -212,7 +212,7 @@ export function DashboardImprovementPlans({
 
   if (branchNames.length === 0) {
     return (
-      <div className="rounded-[1.35rem] border border-dashed border-slate-200 bg-white p-6 text-sm leading-6 text-slate-500">
+      <div className="rounded-[1.35rem] bg-white p-6 text-sm leading-6 text-slate-500 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         Aún no hay suficiente base para generar un plan de mejora por sucursal.
       </div>
     );
@@ -248,7 +248,7 @@ export function DashboardImprovementPlans({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5">
+      <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
@@ -265,7 +265,7 @@ export function DashboardImprovementPlans({
             type="button"
             onClick={handleGenerate}
             disabled={state.status === "loading" || isHydrating}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900 disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-900 disabled:opacity-60"
           >
             {state.status === "loading" ? (
               <>
@@ -289,7 +289,7 @@ export function DashboardImprovementPlans({
 
       {/* Error */}
       {state.status === "error" && (
-        <div className="flex items-center gap-3 rounded-[1.15rem] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="flex items-center gap-3 rounded-[1.15rem] bg-red-50 px-4 py-3 text-sm text-red-700">
           <WifiOff size={15} aria-hidden className="shrink-0" />
           {state.message}
         </div>
@@ -297,7 +297,7 @@ export function DashboardImprovementPlans({
 
       {/* Idle hint */}
       {!isHydrating && state.status === "idle" && (
-        <div className="rounded-[1.35rem] border border-dashed border-slate-200 bg-white p-8 text-center text-sm leading-7 text-slate-400">
+        <div className="rounded-[1.35rem] bg-white p-8 text-center text-sm leading-7 text-slate-400 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
           Pulsa{" "}
           <span className="font-semibold text-slate-700">"Generar mejoras con IA"</span>{" "}
           para que el asistente analice los comentarios de cada sucursal y te dé una síntesis

@@ -141,7 +141,7 @@ export function DashboardAlertsView({
           <button
             type="button"
             onClick={() => setIsSettingsOpen(true)}
-            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900"
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900"
           >
             <Settings2 size={16} aria-hidden="true" />
             Contacto
@@ -150,7 +150,7 @@ export function DashboardAlertsView({
       >
         <div className="space-y-5">
           {isTipVisible && !escalationEmail ? (
-            <div className="rounded-2xl border border-amber-200/80 bg-amber-50/70 px-4 py-3 text-sm leading-6 text-amber-950">
+            <div className="rounded-2xl bg-amber-50/70 px-4 py-3 text-sm leading-6 text-amber-950">
               <p className="font-semibold">Configura un correo de escalamiento</p>
               <p className="mt-1 text-amber-900/90">
                 Cuando un caso pase a escalado, Perks puede avisar automáticamente.
@@ -185,7 +185,7 @@ export function DashboardAlertsView({
             ).map((metric) => (
               <article
                 key={metric.key}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                className="rounded-2xl bg-white px-4 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
               >
                 {metric.key === "sla" ? (
                   <SlaTerm variant="metric" />

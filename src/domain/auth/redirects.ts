@@ -1,3 +1,5 @@
+import { getHomePathForMemberAccess } from "@/domain/organizations/member-access";
+import type { PermissionProfile } from "@/domain/organizations/permission-profiles";
 import type { MemberRole } from "@/domain/organizations/schemas";
 
 export function getSafeRedirectPath(value: string | null | undefined) {
@@ -8,12 +10,29 @@ export function getSafeRedirectPath(value: string | null | undefined) {
   return value;
 }
 
+/** @deprecated Prefer getHomePathForMemberAccess con perfil y participación. */
 export function getHomePathForRole(role: MemberRole | undefined) {
   if (role === "collaborator") {
     return "/colaborador";
   }
 
   return "/dashboard";
+}
+
+export function getHomePathForMembership(params: {
+  role: MemberRole | undefined;
+  profile: PermissionProfile | null;
+  participatesInListening: boolean;
+}) {
+  if (!params.role) {
+    return "/dashboard";
+  }
+
+  return getHomePathForMemberAccess({
+    role: params.role,
+    profile: params.profile,
+    participatesInListening: params.participatesInListening,
+  });
 }
 
 export function buildAuthCallbackUrl(siteUrl: string, nextPath: string) {

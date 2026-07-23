@@ -125,11 +125,11 @@ const feedbackTypeStyles: Record<
 };
 
 const statusStyles: Record<CommentStatus, string> = {
-  Nuevo: "bg-slate-100 text-slate-700",
-  "En revisión": "bg-amber-50 text-amber-800",
-  "En proceso": "bg-sky-50 text-sky-800",
-  Resuelto: "bg-emerald-50 text-emerald-800",
-  Escalado: "bg-rose-50 text-rose-700",
+  Nuevo: "text-slate-600",
+  "En revisión": "text-amber-700",
+  "En proceso": "text-sky-700",
+  Resuelto: "text-emerald-700",
+  Escalado: "text-rose-700",
 };
 
 const statusDescriptions: Record<CommentStatus, string> = {
@@ -170,7 +170,7 @@ const csatStyles: Record<
   3: {
     icon: Meh,
     className: "bg-slate-100 text-slate-600",
-    detailClassName: "border-slate-200 bg-slate-50 text-slate-600",
+    detailClassName: "bg-slate-50 text-slate-600",
     label: "Normal",
     meaning: "La experiencia cumplio, pero no genero preferencia.",
     action: "Buscar oportunidades simples de mejora.",
@@ -216,7 +216,7 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span
       className={[
-        "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+        "text-xs font-semibold",
         statusStyles[normalizedStatus],
       ].join(" ")}
     >
@@ -319,7 +319,7 @@ function CsatBadge({ score }: { score: number }) {
             id={popoverId}
             role="dialog"
             aria-label={`Detalle CSAT ${score} de 5`}
-            className="fixed left-1/2 top-1/2 z-50 w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-[1.25rem] border border-slate-200 bg-white p-4 text-left"
+            className="fixed left-1/2 top-1/2 z-50 w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-[1.25rem] bg-white p-4 text-left shadow-[0_18px_60px_rgba(15,23,42,0.16)]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
@@ -353,10 +353,10 @@ function CsatBadge({ score }: { score: number }) {
                   <div
                     key={level.score}
                     className={[
-                      "flex min-h-16 flex-col items-center justify-center rounded-2xl border px-2 py-2 text-center transition",
+                      "flex min-h-16 flex-col items-center justify-center rounded-2xl px-2 py-2 text-center transition",
                       isSelected
-                        ? `${level.detailClassName} shadow-sm`
-                        : "border-slate-100 bg-slate-50 text-slate-400",
+                        ? `${level.detailClassName}`
+                        : "bg-slate-50 text-slate-400",
                     ].join(" ")}
                     aria-current={isSelected ? "true" : undefined}
                   >
@@ -392,7 +392,7 @@ function CsatScaleStrip({ score }: { score: number }) {
   const selectedStyle = csatStyles[score] ?? csatStyles[3];
 
   return (
-    <div className="rounded-[1.25rem] border border-slate-100 bg-[#f7f8f4] p-4">
+    <div className="rounded-[1.25rem] bg-[#f7f8f4] p-4">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
@@ -416,10 +416,10 @@ function CsatScaleStrip({ score }: { score: number }) {
             <div
               key={level.score}
               className={[
-                "flex min-h-20 flex-col items-center justify-center rounded-2xl border px-2 py-3 text-center transition",
+                "flex min-h-20 flex-col items-center justify-center rounded-2xl px-2 py-3 text-center transition",
                 isSelected
-                  ? `${level.detailClassName} shadow-sm`
-                  : "border-white bg-white text-slate-400",
+                  ? `${level.detailClassName}`
+                  : "bg-white text-slate-400",
               ].join(" ")}
               aria-current={isSelected ? "true" : undefined}
             >
@@ -463,7 +463,7 @@ function RatingsStatCards({ comments }: { comments: DashboardComment[] }) {
   return (
     <section className="space-y-4" aria-label="Resumen por tipo de valoración">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <div className="rounded-2xl border border-slate-100 bg-white px-4 py-3">
+        <div className="rounded-2xl bg-white px-4 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
@@ -491,7 +491,7 @@ function RatingsStatCards({ comments }: { comments: DashboardComment[] }) {
           return (
             <div
               key={type.type}
-              className="rounded-2xl border border-slate-100 bg-white px-4 py-3"
+              className="rounded-2xl bg-white px-4 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -536,7 +536,7 @@ function RatingsChartsPanel({ comments }: { comments: DashboardComment[] }) {
   return (
     <section
       aria-label="Gráficos de valoraciones"
-      className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+      className="overflow-hidden rounded-3xl bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
     >
       <div className="grid lg:grid-cols-[minmax(0,1fr)_15.5rem] lg:divide-x lg:divide-slate-100">
         {/* Gráfica principal */}
@@ -681,12 +681,12 @@ function CommentDetailView({
     : "Lectura operativa";
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
+    <article className="overflow-hidden rounded-3xl bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
       <div className="border-b border-slate-100 bg-[#f7f8f4] p-5">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+          className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-100"
         >
           <ArrowLeft size={16} aria-hidden="true" />
           Volver a valoraciones
@@ -709,10 +709,10 @@ function CommentDetailView({
       </div>
 
       <div className="space-y-5 p-5">
-        <section className="rounded-[1.25rem] border border-slate-100 p-5">
+        <section className="rounded-[1.25rem] p-5">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
             <div className="flex items-start gap-3">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-500">
                 <Sparkles size={18} aria-hidden="true" />
               </span>
               <div>
@@ -732,7 +732,7 @@ function CommentDetailView({
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[420px]">
-              <div className="rounded-2xl border border-slate-100 px-4 py-3">
+              <div className="rounded-2xl px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Responsable
                 </p>
@@ -740,7 +740,7 @@ function CommentDetailView({
                   {responsibility}
                 </p>
               </div>
-              <div className="rounded-2xl border border-slate-100 px-4 py-3">
+              <div className="rounded-2xl px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Estado
                 </p>
@@ -748,7 +748,7 @@ function CommentDetailView({
                   <StatusBadge status={currentStatus} />
                 </div>
               </div>
-              <div className="rounded-2xl border border-slate-100 px-4 py-3">
+              <div className="rounded-2xl px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   SLA sugerido
                 </p>
@@ -756,7 +756,7 @@ function CommentDetailView({
                   {suggestedSla ?? "Por definir"}
                 </p>
               </div>
-              <div className="rounded-2xl border border-slate-100 px-4 py-3">
+              <div className="rounded-2xl px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Contacto con cliente
                 </p>
@@ -768,7 +768,7 @@ function CommentDetailView({
           </div>
 
           <div className="mt-5 grid items-stretch gap-3 lg:grid-cols-[1fr_auto_0.9fr]">
-            <div className="rounded-2xl border border-slate-100 bg-white p-4">
+            <div className="rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-medium text-slate-500">
                   {dominantPattern}
@@ -790,7 +790,7 @@ function CommentDetailView({
             </div>
 
             <div className="flex items-center justify-center">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-400">
                 <ArrowRight
                   size={16}
                   className="rotate-90 lg:rotate-0"
@@ -799,7 +799,7 @@ function CommentDetailView({
               </span>
             </div>
 
-            <div className="rounded-2xl border border-slate-100 bg-[#f7f8f4] p-4">
+            <div className="rounded-2xl bg-[#f7f8f4] p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                 Próxima acción
               </p>
@@ -810,7 +810,7 @@ function CommentDetailView({
           </div>
         </section>
 
-        <section className="rounded-[1.25rem] border border-slate-100 p-5">
+        <section className="rounded-[1.25rem] p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <MessageSquareText size={17} className="text-emerald-700" />
             Valoración recibida
@@ -825,7 +825,7 @@ function CommentDetailView({
           </p>
         </section>
 
-        <section className="rounded-[1.25rem] border border-slate-100 p-5">
+        <section className="rounded-[1.25rem] p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <ClipboardCheck size={17} className="text-emerald-700" />
             Seguimiento
@@ -834,7 +834,7 @@ function CommentDetailView({
           <div className="mt-5 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
               {canManageFollowUp ? (
-                <div className="rounded-2xl border border-slate-100 p-4">
+                <div className="rounded-2xl p-4">
                   <label className="block">
                     <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                       Estado de seguimiento
@@ -863,7 +863,7 @@ function CommentDetailView({
                       type="button"
                       disabled={isSaving}
                       onClick={() => onStatusChange("Escalado")}
-                      className="mt-3 w-full rounded-full bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-3 w-full rounded-full bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Escalar a responsable
                     </button>
@@ -875,7 +875,7 @@ function CommentDetailView({
                   ) : null}
                 </div>
               ) : (
-                <p className="rounded-2xl border border-slate-100 p-4 text-sm leading-6 text-slate-500">
+                <p className="rounded-2xl p-4 text-sm leading-6 text-slate-500">
                   Solo gerencia puede actualizar el seguimiento de este caso.
                 </p>
               )}
@@ -907,7 +907,7 @@ function CommentDetailView({
                   type="button"
                   disabled={isSaving || followUpNote.trim().length === 0}
                   onClick={onSaveFollowUpNote}
-                  className="mt-3 w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-3 w-full rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-60 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
                 >
                   Guardar nota de seguimiento
                 </button>
@@ -916,7 +916,7 @@ function CommentDetailView({
           </div>
 
           {saveError ? (
-            <p className="mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+            <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
               {saveError}
             </p>
           ) : null}
@@ -930,7 +930,7 @@ function CommentDetailView({
                 {followUpActions.map((action) => (
                   <li
                     key={action.id}
-                    className="rounded-xl border border-slate-100 bg-[#f7f8f4] px-3 py-3"
+                    className="rounded-xl bg-[#f7f8f4] px-3 py-3"
                   >
                     <p className="text-xs font-semibold text-slate-500">
                       {action.actorName} ·{" "}
@@ -1045,7 +1045,7 @@ function buildColumns(
           event.stopPropagation();
           onView(comment);
         }}
-        className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+        className="inline-flex size-9 items-center justify-center rounded-full text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 focus:outline-none focus:ring-4 focus:ring-emerald-100"
         aria-label={`Ver detalle de la valoración de ${comment.customer}`}
       >
         <Eye size={16} aria-hidden="true" />

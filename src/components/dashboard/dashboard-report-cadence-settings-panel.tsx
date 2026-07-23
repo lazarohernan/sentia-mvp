@@ -85,9 +85,9 @@ export function DashboardReportCadenceSettingsPanel({
   }
 
   return (
-    <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.04)]">
+    <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.04)]">
       <div className="flex items-start gap-3">
-        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600">
           <CalendarClock className="h-5 w-5" aria-hidden="true" />
         </span>
         <div>
@@ -113,7 +113,7 @@ export function DashboardReportCadenceSettingsPanel({
               onClick={() => setCadence(option.value)}
               aria-pressed={isSelected}
               className={[
-                "rounded-2xl border p-4 text-left transition",
+                "rounded-2xl p-4 text-left transition",
                 isSelected
                   ? "border-slate-950 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.08)]"
                   : "border-slate-100 bg-slate-50/70 hover:border-slate-300 hover:bg-white",
@@ -134,13 +134,13 @@ export function DashboardReportCadenceSettingsPanel({
       </p>
 
       {error ? (
-        <p className="mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+        <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
           {error}
         </p>
       ) : null}
 
       {success ? (
-        <p className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+        <p className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
           {success}
         </p>
       ) : null}

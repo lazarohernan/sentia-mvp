@@ -11,21 +11,18 @@ const ALERT_PREVIEW_LIMIT = 2;
 function alertToneClasses(tone: DashboardAlertItem["tone"]) {
   if (tone === "danger") {
     return {
-      chip: "bg-red-50 text-red-700",
-      border: "border-red-100",
+      chip: "text-red-700",
     };
   }
 
   if (tone === "warning") {
     return {
-      chip: "bg-amber-50 text-amber-700",
-      border: "border-amber-100",
+      chip: "text-amber-700",
     };
   }
 
   return {
-    chip: "bg-emerald-50 text-emerald-800",
-    border: "border-emerald-100",
+    chip: "text-emerald-700",
   };
 }
 
@@ -51,7 +48,7 @@ export function DashboardAlertsSummaryPreview({
         </div>
         <Link
           href="/dashboard#alertas"
-          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-emerald-800 transition hover:border-emerald-200 hover:bg-emerald-50"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-white px-3 text-xs font-semibold text-emerald-800 transition hover:border-emerald-200 hover:bg-emerald-50"
         >
           Ver todas
           <ArrowRight size={14} aria-hidden="true" />
@@ -84,14 +81,14 @@ export function DashboardAlertsSummaryPreview({
               return (
                 <li
                   key={alert.id}
-                  className={`rounded-xl border ${classes.border} bg-white px-3 py-2.5`}
+                  className="rounded-xl bg-white px-3 py-2.5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-950">
                       {alert.title}
                     </p>
                     <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${classes.chip}`}
+                      className={`shrink-0 text-[10px] font-semibold ${classes.chip}`}
                     >
                       {alert.priority}
                     </span>

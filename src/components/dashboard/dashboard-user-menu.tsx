@@ -31,7 +31,7 @@ function SignOutMenuButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-50 px-4 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
     >
       <LogOut className="h-4 w-4" aria-hidden="true" />
       {pending ? "Saliendo..." : "Cerrar sesion"}
@@ -55,13 +55,13 @@ export function DashboardUserMenu({
   const initials = getUserInitials(user.fullName);
   const menuItemClass = flat
     ? "mb-2 flex w-full items-center gap-3 rounded-2xl bg-slate-50/80 px-4 py-3 text-left transition hover:bg-emerald-50/80"
-    : "mb-2 flex w-full items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-left transition hover:border-emerald-200 hover:bg-emerald-50/80";
+    : "mb-2 flex w-full items-center gap-3 rounded-2xl bg-slate-50/80 px-4 py-3 text-left transition hover:border-emerald-200 hover:bg-emerald-50/80";
   const menuIconClass = flat
     ? "inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-700"
-    : "inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-700 shadow-sm";
+    : "inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-700";
   const passwordResetMessageClass = flat
     ? "mt-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-medium leading-5 text-slate-600"
-    : "mt-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-medium leading-5 text-slate-600";
+    : "mt-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-medium leading-5 text-slate-600";
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent | globalThis.MouseEvent) {
@@ -82,7 +82,7 @@ export function DashboardUserMenu({
       <button
         type="button"
         className={[
-          "inline-flex max-w-48 items-center gap-2 rounded-full border px-1.5 py-1.5 text-left transition sm:max-w-56",
+          "inline-flex max-w-48 items-center gap-2 rounded-full px-1.5 py-1.5 text-left transition sm:max-w-56",
           isOpen
             ? "border-emerald-200 bg-emerald-50 text-emerald-950"
             : "border-transparent text-slate-600 hover:border-emerald-100 hover:bg-emerald-50/80 hover:text-emerald-950",
@@ -92,7 +92,7 @@ export function DashboardUserMenu({
         aria-haspopup="menu"
         onClick={() => setIsOpen((current) => !current)}
       >
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-xs font-bold text-white shadow-sm shadow-emerald-900/20">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-xs font-bold text-white shadow-emerald-900/20">
           {initials}
         </span>
         <span className="hidden min-w-0 truncate text-sm font-semibold leading-5 text-slate-900 sm:inline">
@@ -113,13 +113,13 @@ export function DashboardUserMenu({
           aria-label="Menu de cuenta"
           className={
             flat
-              ? "absolute right-0 top-12 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-3xl bg-white/95 shadow-[0_10px_32px_rgba(15,23,42,0.1)] backdrop-blur-xl"
-              : "absolute right-0 top-12 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-[0_22px_60px_rgba(15,23,42,0.18)] ring-1 ring-black/5 backdrop-blur-xl"
+              ? "absolute right-0 top-12 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-3xl bg-white shadow-[0_10px_32px_rgba(15,23,42,0.1)] backdrop-blur-xl"
+              : "absolute right-0 top-12 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-3xl bg-white backdrop-blur-xl"
           }
         >
           <div className={flat ? "px-5 py-4" : "border-b border-slate-100 px-5 py-4"}>
             <div className="flex items-center gap-3">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-sm font-bold text-white shadow-sm shadow-emerald-900/20">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-sm font-bold text-white shadow-emerald-900/20">
                 {initials}
               </span>
               <div className="min-w-0">
@@ -194,7 +194,7 @@ export function DashboardUserMenu({
                     onRequestPasswordReset();
                   }}
                   disabled={isPasswordResetting}
-                  className={`flex w-full items-center gap-3 rounded-2xl bg-slate-50/80 px-4 py-3 text-left transition hover:bg-emerald-50/80 disabled:cursor-not-allowed disabled:opacity-70 ${flat ? "" : "border border-slate-100 hover:border-emerald-200"}`}
+                  className={`flex w-full items-center gap-3 rounded-2xl bg-slate-50/80 px-4 py-3 text-left transition hover:bg-emerald-50/80 disabled:cursor-not-allowed disabled:opacity-70 `}
                 >
                   <span className={menuIconClass}>
                     <KeyRound className="h-5 w-5" aria-hidden="true" />

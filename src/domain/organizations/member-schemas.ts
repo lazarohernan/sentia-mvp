@@ -13,6 +13,7 @@ export const createTeamMemberInputSchema = z.object({
     .pipe(z.string().email("Correo invalido.")),
   role: z.enum(["manager", "collaborator"]),
   organizationRoleId: z.string().uuid().nullable().optional(),
+  participatesInListening: z.boolean().default(false),
   branchId: z.string().uuid().optional(),
 });
 

@@ -1,10 +1,9 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import type { DashboardAlertItem } from "@/domain/dashboard/alerts";
-import { getAlertSourceLabel } from "@/domain/dashboard/alerts";
 import type { WorkflowStatus } from "@/domain/feedback/workflow-status";
 import { workflowStatusToLabel } from "@/domain/feedback/workflow-status";
 import type { TeamMember } from "@/domain/organizations/team";
@@ -29,16 +28,8 @@ const statusOptions: Array<{ value: WorkflowStatus; label: string }> = [
   { value: "resuelto", label: "Resuelto" },
 ];
 
-function priorityToneClasses(tone: DashboardAlertItem["tone"]) {
-  if (tone === "danger") {
-    return "border-red-200/70 bg-white";
-  }
-
-  if (tone === "warning") {
-    return "border-amber-200/70 bg-white";
-  }
-
-  return "border-slate-200 bg-white";
+function priorityToneClasses(_tone: DashboardAlertItem["tone"]) {
+  return "";
 }
 
 export function DashboardAlertCard({
@@ -151,19 +142,44 @@ export function DashboardAlertCard({
   }
 
   return (
-    <article className={`rounded-2xl border p-4 ${priorityToneClasses(alert.tone)}`}>
+    <article className={`rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)] ${priorityToneClasses(alert.tone)}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-600">
-              {getAlertSourceLabel(alert.source)}
-            </span>
+            {alert.source === "ia" ? (
+              <span
+                className="inline-flex size-6 items-center justify-center rounded-full bg-slate-100 text-slate-600"
+                title="Detectado por IA"
+                aria-label="Detectado por IA"
+              >
+                <Sparkles size={13} aria-hidden="true" />
+              </span>
+            ) : (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-600">
+                Sistema
+              </span>
+            )}
             {alert.slaBreached ? <SlaTerm variant="badge" /> : null}
           </div>
           <h3 className="mt-2 text-base font-semibold text-slate-950">{alert.title}</h3>
           <p className="mt-1 text-xs text-slate-500">{alert.subtitle}</p>
         </div>
-        <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+        <span
+          className={[
+            "shrink-0 text-[11px] font-semibold",
+            alert.workflowStatus === "nuevo"
+              ? "text-slate-600"
+              : alert.workflowStatus === "en_revision"
+                ? "text-amber-700"
+                : alert.workflowStatus === "en_proceso"
+                  ? "text-sky-700"
+                  : alert.workflowStatus === "escalado"
+                    ? "text-rose-700"
+                    : alert.workflowStatus === "resuelto"
+                      ? "text-emerald-700"
+                      : "text-slate-600",
+          ].join(" ")}
+        >
           {alert.workflowStatus
             ? workflowStatusToLabel(alert.workflowStatus)
             : alert.priority}
@@ -186,7 +202,7 @@ export function DashboardAlertCard({
               <select
                 value={status}
                 onChange={(event) => setStatus(event.target.value as WorkflowStatus)}
-                className="mt-1 h-10 w-full rounded-xl bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-emerald-700/10"
+                className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-emerald-700/10"
               >
                 {statusOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -200,7 +216,7 @@ export function DashboardAlertCard({
               <select
                 value={assignedUserId}
                 onChange={(event) => setAssignedUserId(event.target.value)}
-                className="mt-1 h-10 w-full rounded-xl bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-emerald-700/10"
+                className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-emerald-700/10"
               >
                 <option value="">Sin asignar</option>
                 {assignees.map((member) => (
@@ -217,7 +233,7 @@ export function DashboardAlertCard({
               value={note}
               onChange={(event) => setNote(event.target.value)}
               placeholder="Breve nota de seguimiento"
-              className="mt-1 h-10 w-full rounded-xl bg-slate-50 px-3 text-sm outline-none placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-700/10"
+              className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-700/10"
             />
           </label>
           {error ? (
@@ -242,7 +258,7 @@ export function DashboardAlertCard({
               <button
                 type="button"
                 onClick={() => onOpenSubmission(alert.submissionId!)}
-                className="inline-flex h-10 items-center rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 Ver valoración
               </button>
@@ -253,7 +269,7 @@ export function DashboardAlertCard({
         <button
           type="button"
           onClick={() => onOpenSubmission(alert.submissionId!)}
-          className="mt-4 inline-flex h-10 items-center rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          className="mt-4 inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
         >
           Ver valoración
         </button>

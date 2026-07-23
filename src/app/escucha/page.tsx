@@ -28,7 +28,7 @@ export default async function ListeningAssessmentPage() {
   const organization = await getOrganizationByUser(supabase, user.id);
   const membership = await getOrganizationMembershipByUser(supabase, user.id);
 
-  if (membership?.role === "collaborator") {
+  if (membership?.participatesInListening) {
     redirect("/colaborador?view=evaluacion");
   }
 

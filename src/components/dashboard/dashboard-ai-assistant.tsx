@@ -41,11 +41,11 @@ export function DashboardAiAssistant({
       {isOpen ? (
         <section
           aria-label="Asistente IA de alertas"
-          className="overflow-hidden rounded-xl border border-slate-300 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.2)]"
+          className="overflow-hidden rounded-xl bg-white shadow-[0_18px_60px_rgba(15,23,42,0.2)]"
         >
           <div className="flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4 text-slate-950">
             <div className="flex items-start gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-700">
                 <Activity className="h-5 w-5" aria-hidden="true" />
               </span>
               <div>
@@ -58,7 +58,7 @@ export function DashboardAiAssistant({
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+              className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
               aria-label="Cerrar asistente IA"
             >
               <X className="h-4 w-4" aria-hidden="true" />
@@ -66,7 +66,7 @@ export function DashboardAiAssistant({
           </div>
 
           <div className="space-y-4 p-4">
-            <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <div className="rounded-lg bg-white p-3">
               <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                 <Activity className="h-3.5 w-3.5" aria-hidden="true" />
                 Lectura IA
@@ -90,17 +90,17 @@ export function DashboardAiAssistant({
                 <p className="text-sm font-semibold text-slate-950">
                   Alertas activas
                 </p>
-                <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                <span className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
                   {alerts.length}
                 </span>
               </div>
 
               {activeAlert ? (
                 <article
-                  className={`mt-3 rounded-lg border p-3 ${getToneClass(activeAlert.tone)}`}
+                  className={`mt-3 rounded-lg p-3 ${getToneClass(activeAlert.tone)}`}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-current/20 bg-white px-2.5 py-1 text-xs font-semibold">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border-current/20 bg-white px-2.5 py-1 text-xs font-semibold">
                       <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
                       {activeAlert.priority}
                     </span>
@@ -117,7 +117,7 @@ export function DashboardAiAssistant({
                   </p>
                 </article>
               ) : (
-                <div className="mt-3 rounded-lg border border-dashed border-slate-300 bg-white p-3 text-sm leading-6 text-slate-500">
+                <div className="mt-3 rounded-lg border-dashed bg-white p-3 text-sm leading-6 text-slate-500">
                   No hay alertas abiertas en este momento.
                 </div>
               )}
@@ -128,11 +128,11 @@ export function DashboardAiAssistant({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="ml-auto flex w-full max-w-sm items-center justify-between gap-3 rounded-xl border border-slate-300 bg-white px-4 py-3 text-left shadow-[0_14px_44px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_54px_rgba(15,23,42,0.2)]"
+          className="ml-auto flex w-full max-w-sm items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 text-left shadow-[0_14px_44px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_54px_rgba(15,23,42,0.2)]"
           aria-label="Abrir asistente IA de alertas"
         >
           <span className="flex items-center gap-3">
-            <span className="relative flex size-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-950 text-white">
+            <span className="relative flex size-11 items-center justify-center rounded-lg bg-slate-950 text-white">
               <Activity className="h-5 w-5" aria-hidden="true" />
               {unreadCount > 0 ? (
                 <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">

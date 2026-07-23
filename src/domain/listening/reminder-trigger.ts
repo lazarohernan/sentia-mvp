@@ -9,6 +9,7 @@ type MemberForSurvey = {
   user_id: string;
   branch_id: string | null;
   role: string;
+  participates_in_listening: boolean;
 };
 
 export type TriggerListeningSurveyResult = {
@@ -26,9 +27,11 @@ export async function triggerListeningSurveyForOrganization(
 ): Promise<TriggerListeningSurveyResult> {
   const { data: members, error: membersError } = await client
     .from("organization_members")
-    .select("user_id, branch_id, role")
+    .select("user_id, branch_id, role, participates_in_listening")
     .eq("organization_id", params.organizationId)
-    .eq("role", "collaborator");
+    .eq("participates_in_listening", true)
+    .neq("role", "owner")
+    .neq("role", "manager");
 
   if (membersError || !members) {
     throw new Error("No se pudo cargar el equipo para enviar la encuesta.");
@@ -36,7 +39,7 @@ export async function triggerListeningSurveyForOrganization(
 
   const recipients = (members as MemberForSurvey[]).filter(
     (member) =>
-      member.role === "collaborator" &&
+      member.participates_in_listening &&
       (!params.actorUserId || member.user_id !== params.actorUserId),
   );
 

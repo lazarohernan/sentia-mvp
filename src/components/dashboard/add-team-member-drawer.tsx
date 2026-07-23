@@ -38,6 +38,7 @@ export function AddTeamMemberDrawer({
   const [email, setEmail] = useState("");
   const [branchId, setBranchId] = useState("");
   const [permissionProfileId, setPermissionProfileId] = useState("");
+  const [participatesInListening, setParticipatesInListening] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState<SuccessState | null>(null);
@@ -47,6 +48,7 @@ export function AddTeamMemberDrawer({
     setEmail("");
     setBranchId("");
     setPermissionProfileId("");
+    setParticipatesInListening(false);
     setError("");
     setSuccess(null);
   }
@@ -66,6 +68,14 @@ export function AddTeamMemberDrawer({
         assignablePermissionProfiles.find((profile) => profile.id === permissionProfileId) ??
         null;
 
+      if (!selectedPermissionProfile && !participatesInListening) {
+        setError(
+          "Asigna un rol de plataforma o activa la participación en Escucha.",
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
       const response = await fetch("/api/team-members", {
         method: "POST",
         credentials: "same-origin",
@@ -73,8 +83,11 @@ export function AddTeamMemberDrawer({
         body: JSON.stringify({
           fullName,
           email,
-          role: inferMemberRoleFromPermissionProfile(selectedPermissionProfile),
+          role: selectedPermissionProfile
+            ? inferMemberRoleFromPermissionProfile(selectedPermissionProfile)
+            : "collaborator",
           organizationRoleId: selectedPermissionProfile?.id ?? null,
+          participatesInListening,
           branchId: branchId || undefined,
         }),
       });
@@ -95,6 +108,7 @@ export function AddTeamMemberDrawer({
         ...body.member,
         permissionProfileId: selectedPermissionProfile?.id ?? null,
         permissionProfileName: selectedPermissionProfile?.name ?? null,
+        participatesInListening,
       };
 
       onSaved(memberWithProfile);
@@ -131,7 +145,7 @@ export function AddTeamMemberDrawer({
         onClick={handleClose}
       />
       <aside
-        className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl"
+        className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-team-member-title"
@@ -146,7 +160,7 @@ export function AddTeamMemberDrawer({
           <button
             type="button"
             onClick={handleClose}
-            className="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50"
+            className="inline-flex size-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-50"
           >
             <X className="h-5 w-5" aria-hidden="true" />
             <span className="sr-only">Cerrar</span>
@@ -161,7 +175,7 @@ export function AddTeamMemberDrawer({
             </p>
 
             {success.inviteEmailStatus === "sent" ? (
-              <div className="mt-5 rounded-lg border border-emerald-100 bg-emerald-50/70 p-4">
+              <div className="mt-5 rounded-lg bg-emerald-50/70 p-4">
                 <p className="text-sm font-semibold text-emerald-950">
                   Invitación enviada
                 </p>
@@ -172,12 +186,12 @@ export function AddTeamMemberDrawer({
                 </p>
               </div>
             ) : success.inviteEmailStatus === "skipped" ? (
-              <div className="mt-5 rounded-lg border border-amber-100 bg-amber-50/70 p-4 text-sm leading-6 text-amber-900">
+              <div className="mt-5 rounded-lg border-amber-100 bg-amber-50/70 p-4 text-sm leading-6 text-amber-900">
                 El colaborador fue agregado, pero el correo no se envió porque Resend no está
                 configurado en este entorno.
               </div>
             ) : (
-              <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+              <div className="mt-5 rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-600">
                 Esta persona ya tenía cuenta. Puede entrar en{" "}
                 <span className="font-semibold text-slate-900">/login</span>.
               </div>
@@ -197,7 +211,7 @@ export function AddTeamMemberDrawer({
           <form onSubmit={handleSubmit} className="flex flex-1 flex-col">
             <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
               <label className="block">
-                <span className="text-sm font-semibold text-slate-700">Nombre completo</span>
+                <span className="text-sm font-semibold text-slate-900">Nombre completo</span>
                 <input
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
@@ -205,12 +219,12 @@ export function AddTeamMemberDrawer({
                   minLength={2}
                   maxLength={120}
                   placeholder="Ej. Ana Lopez"
-                  className="mt-2 h-12 w-full rounded-lg border border-slate-200 px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  className="field-control mt-2 h-12 w-full rounded-lg bg-white px-4 text-sm"
                 />
               </label>
 
               <label className="block">
-                <span className="text-sm font-semibold text-slate-700">Correo electronico</span>
+                <span className="text-sm font-semibold text-slate-900">Correo electronico</span>
                 <input
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -218,16 +232,16 @@ export function AddTeamMemberDrawer({
                   type="email"
                   autoComplete="email"
                   placeholder="colaborador@empresa.com"
-                  className="mt-2 h-12 w-full rounded-lg border border-slate-200 px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  className="field-control mt-2 h-12 w-full rounded-lg bg-white px-4 text-sm"
                 />
               </label>
 
               <label className="block">
-                <span className="text-sm font-semibold text-slate-700">Sucursal</span>
+                <span className="text-sm font-semibold text-slate-900">Sucursal</span>
                 <select
                   value={branchId}
                   onChange={(event) => setBranchId(event.target.value)}
-                  className="mt-2 h-12 w-full rounded-lg border border-slate-200 px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  className="field-control mt-2 h-12 w-full rounded-lg bg-white px-4 text-sm"
                 >
                   <option value="">Sin sucursal asignada</option>
                   {branches.map((branch) => (
@@ -238,33 +252,68 @@ export function AddTeamMemberDrawer({
                 </select>
               </label>
 
+              <div className="border border-slate-200 px-4 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Participa en Escucha
+                    </p>
+                    <p className="mt-1.5 text-sm leading-6 text-slate-700">
+                      Si solo activas esto, no necesita rol. Entra al portal para
+                      evaluarse.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={participatesInListening}
+                    aria-label="Participa en Escucha"
+                    onClick={() =>
+                      setParticipatesInListening((current) => !current)
+                    }
+                    className={[
+                      "relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition",
+                      participatesInListening ? "bg-emerald-800" : "bg-slate-300",
+                    ].join(" ")}
+                  >
+                    <span
+                      className={[
+                        "absolute top-0.5 size-5 rounded-full bg-white transition",
+                        participatesInListening ? "left-5" : "left-0.5",
+                      ].join(" ")}
+                    />
+                  </button>
+                </div>
+              </div>
+
               <label className="block">
-                <span className="text-sm font-semibold text-slate-700">Rol</span>
+                <span className="text-sm font-semibold text-slate-900">
+                  Rol de plataforma
+                </span>
                 <select
                   aria-label="Rol"
                   value={permissionProfileId}
                   onChange={(event) => setPermissionProfileId(event.target.value)}
-                  className="mt-2 h-12 w-full rounded-lg border border-slate-200 px-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                  className="field-control mt-2 h-12 w-full rounded-lg bg-white px-4 text-sm text-slate-900"
                 >
-                  <option value="">Sin rol asignado</option>
+                  <option value="">Sin acceso a la plataforma</option>
                   {assignablePermissionProfiles.map((profile) => (
                     <option key={profile.id} value={profile.id}>
                       {profile.name}
                     </option>
                   ))}
                 </select>
-                <span className="mt-2 block text-xs leading-5 text-slate-500">
-                  Los roles se crean en Gestion &gt; Permisos y definen que puede ver
-                  cada persona.
+                <span className="mt-1.5 block text-sm leading-6 text-slate-700">
+                  Opcional. Solo si también debe ver el dashboard.
                 </span>
               </label>
 
-              <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-4 text-sm leading-6 text-emerald-950">
-                Generaremos un enlace de activacion para compartir con el colaborador.
-              </div>
+              <p className="text-sm leading-6 text-slate-700">
+                Generaremos un enlace de activación para el colaborador.
+              </p>
 
               {error ? (
-                <p className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
+                <p className="rounded-lg border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
                   {error}
                 </p>
               ) : null}
@@ -274,7 +323,7 @@ export function AddTeamMemberDrawer({
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex h-11 items-center rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700"
+                className="inline-flex h-11 items-center rounded-full px-5 text-sm font-semibold text-slate-700"
               >
                 Cancelar
               </button>

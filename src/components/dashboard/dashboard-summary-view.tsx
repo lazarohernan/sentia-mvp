@@ -26,8 +26,6 @@ import {
   healthZoneStyles,
 } from "./csat-health-distribution";
 import { HealthDistributionHeading } from "./health-distribution-heading";
-import { DashboardSection } from "./dashboard-section";
-
 type DashboardSummaryViewProps = {
   dashboardData?: DashboardSummaryData;
   alerts?: DashboardAlertItem[];
@@ -104,7 +102,7 @@ function MetricCard({
   const hasValue = value !== "Sin datos";
 
   return (
-    <article className="min-h-[132px] rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+    <article className="min-h-[132px] rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-semibold text-slate-600">{label}</p>
         <Icon
@@ -140,7 +138,7 @@ function EmptyOperationalSummary() {
   return (
     <section
       aria-label="Resumen operativo sin datos"
-      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.05)]"
+      className="rounded-2xl bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
     >
       <p className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
         <TrendingUp size={14} aria-hidden="true" />
@@ -171,7 +169,7 @@ function SummaryOverviewPanel({
   metrics: DashboardFollowUpMetrics;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
+    <section className="rounded-2xl bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
       <div className="grid gap-5 lg:grid-cols-2 lg:items-stretch">
         <div className="flex min-h-0 flex-col justify-between">
           <div>
@@ -188,13 +186,13 @@ function SummaryOverviewPanel({
             </p>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] px-4 py-3">
+            <div className="rounded-xl bg-[#f7f8f4] px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
                 Cobertura
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-950">{scope}</p>
             </div>
-            <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] px-4 py-3">
+            <div className="rounded-xl bg-[#f7f8f4] px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
                 Periodo
               </p>
@@ -213,7 +211,7 @@ function SummaryOverviewPanel({
 
 function BranchHealth({ items }: { items: DashboardBranchHealthItem[] }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+    <section className="rounded-2xl bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
       <div>
         <h3 className="text-lg font-semibold text-slate-950">
           Salud de sucursales
@@ -292,40 +290,62 @@ function BranchHealth({ items }: { items: DashboardBranchHealthItem[] }) {
   );
 }
 
+function recentCommentStatusClass(
+  status: DashboardRecentComment["status"],
+) {
+  if (status === "Pendiente") return "text-amber-700";
+  if (status === "En revisión") return "text-sky-700";
+  if (status === "Resuelto") return "text-emerald-700";
+  return "text-slate-600";
+}
+
 function RecentComments({ comments }: { comments: DashboardRecentComment[] }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+    <section className="overflow-hidden rounded-2xl bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
       <div className="p-5 pb-0">
         <h3 className="text-lg font-semibold text-slate-950">
           Comentarios recientes
         </h3>
       </div>
       <div className="mt-4 overflow-x-auto px-5">
-        <table className="w-full min-w-[560px] text-left text-sm">
+        <table className="w-full min-w-[560px] border-collapse text-left text-sm">
           <thead className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-            <tr className="border-b border-slate-100">
-              <th className="py-3 pr-4">Sucursal</th>
-              <th className="py-3 pr-4">Comentario</th>
-              <th className="py-3 pr-4">Sentimiento</th>
-              <th className="py-3 pr-4">CSAT</th>
-              <th className="py-3 pr-4">Estado</th>
-              <th className="py-3">Fecha</th>
+            <tr className="border-y border-slate-100">
+              <th className="border-r border-slate-100/80 py-3 pr-4 pl-0 font-semibold">
+                Sucursal
+              </th>
+              <th className="border-r border-slate-100/80 px-3 py-3 font-semibold">
+                Comentario
+              </th>
+              <th className="border-r border-slate-100/80 px-3 py-3 font-semibold">
+                Sentimiento
+              </th>
+              <th className="border-r border-slate-100/80 px-3 py-3 font-semibold">
+                CSAT
+              </th>
+              <th className="border-r border-slate-100/80 px-3 py-3 font-semibold">
+                Estado
+              </th>
+              <th className="py-3 pl-3 pr-0 font-semibold">Fecha</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {comments.map((comment) => {
               const classes = toneClasses(comment.tone);
               const SentimentIcon = sentimentIcons[comment.tone];
 
               return (
-                <tr key={`${comment.branch}-${comment.date}`}>
-                  <td className="py-3 pr-4 font-medium text-slate-700">
+                <tr
+                  key={`${comment.branch}-${comment.date}`}
+                  className="border-b border-slate-100"
+                >
+                  <td className="border-r border-slate-100/80 py-3 pr-4 pl-0 font-medium text-slate-700">
                     {comment.branch}
                   </td>
-                  <td className="py-3 pr-4 text-slate-600">
+                  <td className="border-r border-slate-100/80 px-3 py-3 text-slate-600">
                     {comment.comment}
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="border-r border-slate-100/80 px-3 py-3">
                     <span
                       className={`inline-flex size-7 items-center justify-center rounded-full ${classes.bg} ${classes.icon}`}
                       aria-label={comment.sentiment}
@@ -333,17 +353,21 @@ function RecentComments({ comments }: { comments: DashboardRecentComment[] }) {
                       <SentimentIcon size={17} aria-hidden="true" />
                     </span>
                   </td>
-                  <td className={`py-3 pr-4 font-semibold ${classes.text}`}>
+                  <td
+                    className={`border-r border-slate-100/80 px-3 py-3 font-semibold ${classes.text}`}
+                  >
                     {comment.csat}
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="border-r border-slate-100/80 px-3 py-3">
                     <span
-                      className={`rounded-md px-2.5 py-1 text-xs font-semibold ${classes.chip}`}
+                      className={`text-xs font-semibold ${recentCommentStatusClass(comment.status)}`}
                     >
                       {comment.status}
                     </span>
                   </td>
-                  <td className="py-3 text-slate-500">{comment.date}</td>
+                  <td className="py-3 pl-3 pr-0 text-slate-500">
+                    {comment.date}
+                  </td>
                 </tr>
               );
             })}
@@ -386,11 +410,6 @@ export function DashboardSummaryView({
     alerts.length > 0;
 
   return (
-    <DashboardSection
-      id="resumen"
-      title="Resumen"
-      description="Indicadores principales para decidir dónde revisar primero."
-    >
       <div className="space-y-3.5">
         <SummaryOverviewPanel
           scope={scope}
@@ -426,6 +445,5 @@ export function DashboardSummaryView({
         )}
 
       </div>
-    </DashboardSection>
   );
 }

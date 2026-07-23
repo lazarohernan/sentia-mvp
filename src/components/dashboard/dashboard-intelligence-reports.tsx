@@ -53,7 +53,7 @@ function MetricCard({
   detail: string;
 }) {
   return (
-    <div className="rounded-[1.15rem] border border-slate-100 bg-white p-5">
+    <div className="rounded-[1.15rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
         {label}
       </p>
@@ -227,7 +227,7 @@ export function DashboardIntelligenceReports({
     <div className="space-y-5">
       {reportPreviewHtml ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 px-4 py-6 backdrop-blur-[2px]">
-          <div className="flex h-[min(90vh,58rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+          <div className="flex h-[min(90vh,58rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
             <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
@@ -249,7 +249,7 @@ export function DashboardIntelligenceReports({
                 <button
                   type="button"
                   onClick={() => setReportPreviewHtml(null)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
                   aria-label="Cerrar vista previa del informe"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
@@ -262,7 +262,7 @@ export function DashboardIntelligenceReports({
                 ref={reportPreviewFrameRef}
                 title="Vista previa del informe"
                 srcDoc={reportPreviewHtml}
-                className="h-full w-full rounded-[1rem] border border-slate-200 bg-white"
+                className="h-full w-full rounded-[1rem] bg-white"
               />
             </div>
           </div>
@@ -270,7 +270,7 @@ export function DashboardIntelligenceReports({
       ) : null}
 
       {reportCadence === "both" ? (
-        <div className="flex w-fit max-w-full overflow-x-auto rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+        <div className="flex w-fit max-w-full overflow-x-auto rounded-full bg-white p-1">
           {reportPeriods.map((period) => {
             const periodMeta = getReportCadenceMeta(period);
             const isActive = activeReportPeriod === period;
@@ -296,7 +296,7 @@ export function DashboardIntelligenceReports({
       ) : null}
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <article className="rounded-[1.35rem] border border-slate-200 bg-white p-5">
+        <article className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <TrendingUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
             {cadenceMeta.preparationTitle}
@@ -353,9 +353,9 @@ export function DashboardIntelligenceReports({
           </div>
         </article>
 
-        <article className="flex flex-col rounded-[1.35rem] border border-slate-200 bg-white p-5">
+        <article className="flex flex-col rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
           {readiness.missingUsefulResponses > 0 && showReadinessNote ? (
-            <div className="mb-5 flex items-start justify-between gap-3 rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium leading-6 text-slate-800">
+            <div className="mb-5 flex items-start justify-between gap-3 rounded-[1rem] bg-slate-50 px-4 py-3 text-sm font-medium leading-6 text-slate-800">
               <p>No hay suficiente información para entregar el informe aún.</p>
               <button
                 type="button"
@@ -394,7 +394,7 @@ export function DashboardIntelligenceReports({
               <button
                 type="button"
                 onClick={handleExportPdf}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-900"
               >
                 <FileText className="h-4 w-4" aria-hidden="true" />
                 Ver informe
@@ -402,7 +402,7 @@ export function DashboardIntelligenceReports({
             </div>
 
             <div className="mt-auto grid gap-3 pt-5 sm:grid-cols-2">
-              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+              <div className="rounded-xl bg-slate-50/80 p-4">
                 <CalendarDays className="h-4 w-4 text-slate-500" aria-hidden="true" />
                 <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Periodo del informe
@@ -411,7 +411,7 @@ export function DashboardIntelligenceReports({
                   {dashboardData?.period ?? cadenceMeta.periodLabel}
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+              <div className="rounded-xl bg-slate-50/80 p-4">
                 <TrendingUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
                 <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Estado actual
@@ -450,7 +450,7 @@ export function DashboardIntelligenceReports({
         />
       </section>
 
-      <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5">
+      <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <h3 className="text-lg font-semibold text-slate-950">
@@ -471,7 +471,7 @@ export function DashboardIntelligenceReports({
             {anomalies.map((anomaly) => (
               <article
                 key={`${anomaly.branch}-${anomaly.title}`}
-                className="rounded-[1.15rem] border border-slate-100 bg-[#f7f8f4] p-4"
+                className="rounded-[1.15rem] bg-[#f7f8f4] p-4"
               >
                 <div className="flex items-start gap-3">
                   <span
@@ -499,7 +499,7 @@ export function DashboardIntelligenceReports({
             ))}
           </div>
         ) : (
-          <div className="mt-5 rounded-[1.15rem] border border-dashed border-slate-200 p-6 text-sm leading-6 text-slate-500">
+          <div className="mt-5 rounded-[1.15rem] bg-white p-6 text-sm leading-6 text-slate-500 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
             Aún no hay variaciones suficientemente bruscas para marcar una anomalía
             operativa en este periodo.
           </div>
@@ -507,7 +507,7 @@ export function DashboardIntelligenceReports({
       </section>
 
       {SHOW_AGENT_UI ? (
-        <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5">
+        <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
             <div className="max-w-2xl">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
@@ -549,14 +549,14 @@ export function DashboardIntelligenceReports({
           </div>
 
           {agentReportError ? (
-            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <div className="mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {agentReportError}
             </div>
           ) : null}
 
           {agentReport ? (
             <div className="mt-5 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-[1.1rem] border border-slate-100 bg-slate-50/80 p-4">
+              <div className="rounded-[1.1rem] bg-slate-50/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Siguiente paso
                 </p>
@@ -568,7 +568,7 @@ export function DashboardIntelligenceReports({
                   ))}
                 </div>
               </div>
-              <div className="rounded-[1.1rem] border border-slate-100 bg-slate-50/80 p-4">
+              <div className="rounded-[1.1rem] bg-slate-50/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Estado de entrega
                 </p>
@@ -584,7 +584,7 @@ export function DashboardIntelligenceReports({
         </section>
       ) : null}
 
-      <section className="rounded-[1.35rem] border border-slate-200 bg-white p-5">
+      <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <h3 className="text-lg font-semibold text-slate-950">
@@ -605,7 +605,7 @@ export function DashboardIntelligenceReports({
             {reports.map((report) => (
               <article
                 key={report.branch}
-                className="rounded-[1.15rem] border border-slate-100 bg-[#f7f8f4] p-4"
+                className="rounded-[1.15rem] bg-[#f7f8f4] p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -706,7 +706,7 @@ export function DashboardIntelligenceReports({
             ))}
           </div>
         ) : (
-          <div className="mt-5 rounded-[1.15rem] border border-dashed border-slate-200 p-6 text-sm leading-6 text-slate-500">
+          <div className="mt-5 rounded-[1.15rem] bg-white p-6 text-sm leading-6 text-slate-500 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
             Aún no hay valoraciones suficientes para construir patrones por
             establecimiento.
           </div>

@@ -4,7 +4,6 @@ import {
   Bell,
   Building2,
   ChartNoAxesColumnIncreasing,
-  Ear,
   Loader2,
   MessageSquareText,
   Pencil,
@@ -32,7 +31,6 @@ const permissionIcons = {
   branches: Building2,
   team: UsersRound,
   settings: Settings2,
-  listening: Ear,
 } satisfies Record<PermissionKey, typeof ShieldCheck>;
 
 type DashboardPermissionProfilesPanelProps = {
@@ -115,13 +113,6 @@ export function DashboardPermissionProfilesPanel({
         ? current.filter((item) => item !== permission)
         : [...current, permission],
     );
-  }
-
-  function applyCollaboratorTemplate() {
-    setName((current) => current || "Colaborador escucha");
-    setSelectedPermissions(["listening"]);
-    setEditingProfileId(null);
-    setError("");
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -230,7 +221,7 @@ export function DashboardPermissionProfilesPanel({
     <div className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
       <form
         onSubmit={handleSubmit}
-        className="rounded-[1.25rem] border border-slate-200 bg-white"
+        className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
       >
         <div className="border-b border-slate-100 px-5 py-4">
           <p className="text-sm font-semibold text-emerald-800">Roles y permisos</p>
@@ -252,7 +243,7 @@ export function DashboardPermissionProfilesPanel({
               onChange={(event) => setName(event.target.value)}
               disabled={!canManage || isSubmitting}
               placeholder="Ej. Gerente de tienda"
-              className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-50"
+              className="field-control mt-2 h-12 w-full rounded-xl bg-white px-4 text-sm text-slate-900 disabled:bg-slate-50"
             />
           </label>
 
@@ -260,27 +251,10 @@ export function DashboardPermissionProfilesPanel({
             <legend className="text-sm font-semibold text-slate-700">
               Permisos de la plataforma
             </legend>
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 px-4 py-3">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-emerald-950">
-                    Plantilla recomendada para colaboradores
-                  </p>
-                  <p className="mt-1 text-sm leading-5 text-emerald-900/80">
-                    Crea un perfil con solo Escucha. Ese perfil entra al portal
-                    de colaborador y no ve gestión administrativa.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={applyCollaboratorTemplate}
-                  disabled={!canManage || isSubmitting}
-                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Usar Colaborador
-                </button>
-              </div>
-            </div>
+            <p className="text-sm leading-6 text-slate-700">
+              Escucha ya no es un permiso: se activa por persona en Equipo
+              (“Participa en Escucha”).
+            </p>
             <div className="grid gap-3">
               {platformPermissions.map((permission) => {
                 const Icon = permissionIcons[permission.key];
@@ -290,10 +264,10 @@ export function DashboardPermissionProfilesPanel({
                   <label
                     key={permission.key}
                     className={[
-                      "flex items-start gap-3 rounded-xl border px-4 py-3 transition",
+                      "flex items-start gap-3 rounded-xl px-4 py-3 transition",
                       isSelected
                         ? "border-slate-400 bg-white"
-                        : "border-slate-200 bg-white hover:border-slate-300",
+                        : "bg-white hover:bg-slate-50",
                     ].join(" ")}
                   >
                     <input
@@ -317,7 +291,7 @@ export function DashboardPermissionProfilesPanel({
                         "ml-auto mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-lg border",
                         isSelected
                           ? "border-slate-300 bg-slate-950 text-white"
-                          : "border-slate-200 bg-slate-50 text-slate-600",
+                          : "bg-slate-50 text-slate-600",
                       ].join(" ")}
                     >
                       <Icon className="h-4 w-4" aria-hidden="true" />
@@ -328,7 +302,7 @@ export function DashboardPermissionProfilesPanel({
             </div>
           </fieldset>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="rounded-xl bg-slate-50 px-4 py-3">
             <p className="text-sm font-semibold text-slate-700">
               Tipo de acceso resultante
             </p>
@@ -342,7 +316,7 @@ export function DashboardPermissionProfilesPanel({
           </div>
 
           {error ? (
-            <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
               {error}
             </p>
           ) : null}
@@ -351,7 +325,7 @@ export function DashboardPermissionProfilesPanel({
             <button
               type="submit"
               disabled={!canManage || isSubmitting}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -371,7 +345,7 @@ export function DashboardPermissionProfilesPanel({
                 type="button"
                 disabled={isSubmitting}
                 onClick={resetForm}
-                className="inline-flex h-11 items-center rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex h-11 items-center rounded-full px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 Cancelar edición
               </button>
@@ -380,7 +354,7 @@ export function DashboardPermissionProfilesPanel({
         </div>
       </form>
 
-      <section className="rounded-[1.25rem] border border-slate-200 bg-white">
+      <section className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
         <div className="border-b border-slate-100 px-5 py-4">
           <p className="text-sm font-semibold text-emerald-800">Roles creados</p>
           <h3 className="mt-1 text-xl font-semibold text-slate-950">
@@ -399,7 +373,7 @@ export function DashboardPermissionProfilesPanel({
                 <article
                   key={profile.id}
                   className={[
-                    "relative rounded-xl border p-4",
+                    "relative rounded-xl p-4",
                     canManage ? "pr-14" : "",
                     isBeingEdited
                       ? "border-emerald-200 bg-emerald-50/40"
@@ -454,10 +428,10 @@ export function DashboardPermissionProfilesPanel({
                         aria-label={`Editar rol ${profile.name}`}
                         title="Editar"
                         className={[
-                          "inline-flex size-8 items-center justify-center rounded-lg border bg-white transition disabled:cursor-not-allowed disabled:opacity-60",
+                          "inline-flex size-8 items-center justify-center rounded-lg bg-white transition disabled:cursor-not-allowed disabled:opacity-60",
                           isBeingEdited
                             ? "border-emerald-300 text-emerald-800"
-                            : "border-slate-200 text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900",
+                            : "bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-900",
                         ].join(" ")}
                       >
                         <Pencil className="h-4 w-4" aria-hidden="true" />
@@ -470,7 +444,7 @@ export function DashboardPermissionProfilesPanel({
                         }}
                         aria-label={`Eliminar rol ${profile.name}`}
                         title="Eliminar"
-                        className="inline-flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex size-8 items-center justify-center rounded-lg bg-white text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {isDeleting ? (
                           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -484,7 +458,7 @@ export function DashboardPermissionProfilesPanel({
               );
             })
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5">
+            <div className="rounded-xl bg-slate-50 p-5">
               <p className="text-sm font-semibold text-slate-900">
                 Aun no hay roles creados
               </p>

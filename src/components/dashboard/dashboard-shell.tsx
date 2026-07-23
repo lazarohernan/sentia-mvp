@@ -120,6 +120,7 @@ type DashboardShellProps = {
   teamMembers?: TeamMember[];
   permissionProfiles?: PermissionProfile[];
   canManageTeam?: boolean;
+  canViewNotifications?: boolean;
   actorRole?: "owner" | "manager";
   currentUserId?: string;
   currentUser?: DashboardCurrentUser;
@@ -184,7 +185,7 @@ function DashboardBranchesList({
         return (
           <article
             key={branch.id}
-            className="overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white"
+            className="overflow-hidden rounded-[1.35rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
           >
             <div className="border-b border-slate-100 bg-[linear-gradient(180deg,rgba(248,250,252,0.98)_0%,rgba(255,255,255,0.96)_100%)] px-5 py-5">
               <div className="flex items-start justify-between gap-4">
@@ -215,7 +216,7 @@ function DashboardBranchesList({
             </div>
 
             <div className="grid grid-cols-2 gap-3 px-5 py-5">
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+              <div className="rounded-2xl bg-slate-50/80 p-4">
                 <div className="flex items-center gap-2 text-slate-500">
                   <Star className="h-4 w-4" aria-hidden="true" />
                   <span className="text-xs font-semibold uppercase tracking-[0.08em]">
@@ -227,7 +228,7 @@ function DashboardBranchesList({
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+              <div className="rounded-2xl bg-slate-50/80 p-4">
                 <div className="flex items-center gap-2 text-slate-500">
                   <MessageSquareText className="h-4 w-4" aria-hidden="true" />
                   <span className="text-xs font-semibold uppercase tracking-[0.08em]">
@@ -255,7 +256,7 @@ function DashboardBranchesList({
                   type="button"
                   onClick={() => onEdit(branch)}
                   aria-label={`Editar ${branch.name}`}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                 >
                   <PencilLine className="h-4 w-4" aria-hidden="true" />
                   Editar
@@ -263,7 +264,7 @@ function DashboardBranchesList({
                 <button
                   type="button"
                   onClick={() => onViewQr(branch)}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100"
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100"
                 >
                   <QrCode className="h-4 w-4" aria-hidden="true" />
                   Ver QR
@@ -296,7 +297,7 @@ function OperationsTabs({
   }>;
 
   return (
-    <div className="mb-5 w-fit max-w-full overflow-x-auto rounded-full border border-white/70 bg-white/75 p-1 shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5 backdrop-blur">
+    <div className="mb-5 w-fit max-w-full overflow-x-auto rounded-full bg-white p-1 backdrop-blur">
       <div className="flex min-w-max gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -311,7 +312,7 @@ function OperationsTabs({
               className={[
                 "inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition",
                 isActive
-                  ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
+                  ? "bg-emerald-800 text-white shadow-emerald-900/20"
                   : "text-slate-600 hover:bg-white hover:text-emerald-900",
               ].join(" ")}
             >
@@ -427,7 +428,7 @@ function CreateBranchDrawer({
       />
       <aside
         className={[
-          "absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
           open
             ? "translate-x-0 opacity-100"
             : "translate-x-8 opacity-0",
@@ -459,7 +460,7 @@ function CreateBranchDrawer({
           <button
             type="button"
             onClick={handleClose}
-            className="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+            className="inline-flex size-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
           >
             <X className="h-5 w-5" aria-hidden="true" />
             <span className="sr-only">Cerrar</span>
@@ -472,7 +473,7 @@ function CreateBranchDrawer({
               <span className="font-semibold text-slate-950">{savedBranch.name}</span>{" "}
               quedo lista. Genera su codigo QR para compartirlo con clientes.
             </p>
-            <div className="mt-5 rounded-lg border border-emerald-100 bg-emerald-50/70 p-4 text-sm leading-6 text-emerald-950">
+            <div className="mt-5 rounded-lg bg-emerald-50/70 p-4 text-sm leading-6 text-emerald-950">
               Ruta firmada:{" "}
               <span className="font-semibold">/q/...</span>
             </div>
@@ -491,7 +492,7 @@ function CreateBranchDrawer({
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700"
+                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold text-slate-700"
               >
                 Listo
               </button>
@@ -516,7 +517,7 @@ function CreateBranchDrawer({
                 minLength={2}
                 maxLength={160}
                 placeholder="Ej. Mall Norte"
-                className="mt-2 h-12 w-full rounded-lg border border-slate-200 bg-white px-4 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                className="field-control mt-2 h-12 w-full rounded-lg bg-white px-4 text-sm text-slate-950 placeholder:text-slate-400"
               />
             </label>
 
@@ -529,11 +530,11 @@ function CreateBranchDrawer({
                 onChange={(event) => setAddress(event.target.value)}
                 maxLength={320}
                 placeholder="Ej. Nivel 2, local 14"
-                className="mt-2 min-h-28 w-full resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                className="field-control mt-2 min-h-28 w-full resize-none rounded-lg bg-white px-4 py-3 text-sm text-slate-950 placeholder:text-slate-400"
               />
             </label>
 
-            <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
+            <label className="flex items-start gap-3 rounded-lg bg-slate-50 px-4 py-4">
               <input
                 type="checkbox"
                 checked={isActive}
@@ -551,7 +552,7 @@ function CreateBranchDrawer({
               </span>
             </label>
 
-            <div className="rounded-lg border border-emerald-100 bg-emerald-50/70 p-4 text-sm leading-6 text-emerald-950">
+            <div className="rounded-lg bg-emerald-50/70 p-4 text-sm leading-6 text-emerald-950">
               {isEditing ? (
                 <>
                   Al guardar se actualizan los datos de la sucursal y su enlace
@@ -566,7 +567,7 @@ function CreateBranchDrawer({
             </div>
 
             {error ? (
-              <p className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
+              <p className="rounded-lg border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
                 {error}
               </p>
             ) : null}
@@ -581,14 +582,14 @@ function CreateBranchDrawer({
             <button
               type="button"
               onClick={handleClose}
-              className="inline-flex h-11 items-center rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex h-11 items-center rounded-full px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -614,6 +615,7 @@ export function DashboardShell({
   teamMembers: initialTeamMembers = [],
   permissionProfiles: initialPermissionProfiles = [],
   canManageTeam = false,
+  canViewNotifications = false,
   actorRole,
   currentUserId,
   currentUser,
@@ -732,7 +734,7 @@ export function DashboardShell({
       <button
         type="button"
         onClick={openCreateBranchDrawer}
-        className="inline-flex h-10 items-center gap-2 rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900"
+        className="inline-flex h-10 items-center gap-2 rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-900"
       >
         <Plus className="h-4 w-4" aria-hidden="true" />
         Nueva sucursal
@@ -743,7 +745,7 @@ export function DashboardShell({
     <button
       type="button"
       onClick={() => setIsTeamMemberDrawerOpen(true)}
-      className="inline-flex h-10 items-center gap-2 rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900"
+      className="inline-flex h-10 items-center gap-2 rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-900"
     >
       <Plus className="h-4 w-4" aria-hidden="true" />
       Agregar colaborador
@@ -775,7 +777,10 @@ export function DashboardShell({
             }
           }
         }}
-        notifications={dashboardData?.notifications}
+        notifications={
+          canViewNotifications ? dashboardData?.notifications : []
+        }
+        canViewNotifications={canViewNotifications}
         currentUser={currentUser}
         organizationName={liveOrganizationName}
         canManageBusinessProfile={canManageTeam}
@@ -784,19 +789,25 @@ export function DashboardShell({
       <section className="mx-auto flex w-full max-w-368 flex-1 flex-col px-4 pb-4 pt-28 sm:px-6 lg:px-8">
         <div className="flex-1">
           {activeView === "resumen" ? (
-            <>
-              <DashboardExecutiveHeader
-                dashboardData={dashboardData}
-                dateRange={dateRange}
-                branches={liveBranches}
-                selectedBranchId={selectedBranchId}
-                lockedBranchScope={lockedBranchScope}
-              />
+            <DashboardSection
+              id="resumen"
+              title="Resumen operativo"
+              description="Lectura ejecutiva para detectar riesgo, tendencia y puntos de acción."
+              action={
+                <DashboardExecutiveHeader
+                  dashboardData={dashboardData}
+                  dateRange={dateRange}
+                  branches={liveBranches}
+                  selectedBranchId={selectedBranchId}
+                  lockedBranchScope={lockedBranchScope}
+                />
+              }
+            >
               <DashboardSummaryView
                 dashboardData={dashboardData}
                 alerts={liveAlerts}
               />
-            </>
+            </DashboardSection>
           ) : null}
 
           {activeView === "comentarios" ? (
@@ -825,7 +836,7 @@ export function DashboardShell({
               description="Resumen inteligente de patrones, calidad de información y acciones por establecimiento."
             >
               <div className="space-y-5">
-                <div className="inline-flex rounded-full border border-slate-200 bg-white p-1">
+                <div className="inline-flex rounded-full bg-white p-1">
                   <button
                     type="button"
                     onClick={() => handleReportsTabChange("informes")}
@@ -871,7 +882,7 @@ export function DashboardShell({
           {activeView === "gestion" ? (
             <section id="gestion" className="scroll-mt-28">
               <div className="mb-5">
-                <h2 className="text-2xl font-semibold tracking-normal text-slate-950">
+                <h2 className="text-2xl font-bold tracking-normal text-slate-950">
                   Gestión
                 </h2>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">

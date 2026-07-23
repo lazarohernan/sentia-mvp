@@ -116,7 +116,7 @@ export function DashboardDataTable<Row>({
   );
 
   return (
-    <div className="rounded-[1.25rem] border border-slate-200 bg-white">
+    <div className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
       <div className="flex flex-col gap-3 border-b border-slate-100 bg-[#f7f8f4]/60 p-4 lg:flex-row lg:items-center lg:justify-between">
         {showSearch ? (
           <label className="relative block w-full lg:max-w-sm">
@@ -242,7 +242,7 @@ export function DashboardDataTable<Row>({
             type="button"
             onClick={() => setPage((current) => Math.max(1, current - 1))}
             disabled={currentPage === 1}
-            className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex size-9 items-center justify-center rounded-full text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Pagina anterior"
           >
             <ChevronLeft size={17} aria-hidden="true" />
@@ -256,7 +256,7 @@ export function DashboardDataTable<Row>({
               setPage((current) => Math.min(pageCount, current + 1))
             }
             disabled={currentPage === pageCount}
-            className="inline-flex size-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex size-9 items-center justify-center rounded-full text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Pagina siguiente"
           >
             <ChevronRight size={17} aria-hidden="true" />

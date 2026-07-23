@@ -16,7 +16,11 @@
   --surface-brand-glass: rgb(2 44 34 / 0.78);
 
   --border-soft: #dfe7df;
+  --border-strong: #0f5f49;
   --border-glass: rgb(255 255 255 / 0.62);
+
+  --focus-ring: #0f5f49;
+  --focus-ring-width: 2px;
 
   --text-primary: #10211c;
   --text-secondary: #5d6f67;
@@ -44,7 +48,9 @@
   --color-surface-glass: var(--surface-glass);
   --color-surface-brand-glass: var(--surface-brand-glass);
   --color-border-soft: var(--border-soft);
+  --color-border-strong: var(--border-strong);
   --color-border-glass: var(--border-glass);
+  --color-focus-ring: var(--focus-ring);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-inverse: var(--text-inverse);
@@ -62,9 +68,33 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+/*
+  Focus único: un solo trazo.
+  Evitar combinar outline global + border + ring de Tailwind (doble halo).
+*/
 :focus-visible {
-  outline: 3px solid #2bb58c;
-  outline-offset: 3px;
+  outline: var(--focus-ring-width) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="switch"]:focus-visible {
+  outline: none;
+}
+
+.field-control {
+  border: 1px solid var(--border-soft);
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.field-control:focus,
+.field-control:focus-visible {
+  border-color: var(--border-strong);
+  outline: none;
+  box-shadow: none;
 }
 
 @keyframes hero-rise {

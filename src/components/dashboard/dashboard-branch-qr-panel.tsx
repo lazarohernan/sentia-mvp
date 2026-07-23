@@ -105,7 +105,7 @@ export function DashboardBranchQrPanel({
   }
 
   return (
-    <section className="rounded-[1.25rem] border border-slate-200 bg-white">
+    <section className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
       {signedLink ? (
         <div className="qr-print-sheet">
           <div className="qr-print-card">
@@ -152,7 +152,7 @@ export function DashboardBranchQrPanel({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+          className="inline-flex size-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-50"
           aria-label="Volver a sucursales"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
@@ -164,7 +164,7 @@ export function DashboardBranchQrPanel({
       </div>
 
       <div className="grid gap-5 p-5 xl:grid-cols-[1fr_0.85fr]">
-        <div className="rounded-[1.25rem] border border-slate-200 bg-[#eef3ec] p-5">
+        <div className="rounded-[1.25rem] bg-[#eef3ec] p-5">
           <div className="flex flex-col items-center text-center">
             {isLoadingLink ? (
               <div className="flex aspect-square w-full max-w-72 items-center justify-center rounded-[1.5rem] bg-white ring-1 ring-slate-200">
@@ -191,7 +191,7 @@ export function DashboardBranchQrPanel({
               <p className="mt-3 text-sm text-red-700">{error}</p>
             ) : null}
 
-            <div className="mt-4 flex w-full max-w-md items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600">
+            <div className="mt-4 flex w-full max-w-md items-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-medium text-slate-600">
               <span className="min-w-0 flex-1 truncate">{signedLink?.url ?? "Generando enlace..."}</span>
               <button
                 type="button"
@@ -210,7 +210,7 @@ export function DashboardBranchQrPanel({
               type="button"
               onClick={() => window.print()}
               disabled={!signedLink}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Printer className="h-4 w-4" aria-hidden="true" />
               Imprimir
@@ -220,7 +220,7 @@ export function DashboardBranchQrPanel({
               target="_blank"
               rel="noreferrer"
               aria-disabled={!signedLink}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm shadow-emerald-900/20 transition hover:bg-emerald-900 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-900 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
             >
               <ExternalLink className="h-4 w-4" aria-hidden="true" />
               Abrir formulario
@@ -229,7 +229,7 @@ export function DashboardBranchQrPanel({
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] p-4">
+          <div className="rounded-xl bg-[#f7f8f4] p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
               Estado
             </p>
@@ -237,7 +237,7 @@ export function DashboardBranchQrPanel({
               {branch.is_active ? "Activa" : "Inactiva"}
             </p>
           </div>
-          <div className="rounded-xl border border-slate-100 bg-[#f7f8f4] p-4">
+          <div className="rounded-xl bg-[#f7f8f4] p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
               Direccion
             </p>
@@ -245,7 +245,7 @@ export function DashboardBranchQrPanel({
               {branch.address || "Sin direccion registrada"}
             </p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
+          <div className="rounded-xl bg-white p-4 text-sm leading-6 text-slate-700">
             <QrCode className="mb-2 h-5 w-5 text-slate-700" aria-hidden="true" />
             Este QR usa un enlace firmado. Si alguien lo reemplaza con otro codigo, la app lo
             rechazara antes de abrir el formulario.

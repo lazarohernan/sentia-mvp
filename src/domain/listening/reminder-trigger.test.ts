@@ -3,17 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import { triggerListeningSurveyForOrganization } from "./reminder-trigger";
 
 describe("triggerListeningSurveyForOrganization", () => {
-  it("creates user notifications for collaborator team members except the actor", async () => {
+  it("creates user notifications for listening participants except the actor", async () => {
     const insert = vi.fn((_payload: unknown) => ({
       select: vi.fn().mockResolvedValue({
         data: [
           {
             id: "notification-1",
             recipient_user_id: "user-2",
-          },
-          {
-            id: "notification-2",
-            recipient_user_id: "user-3",
           },
         ],
         error: null,
@@ -27,15 +23,26 @@ describe("triggerListeningSurveyForOrganization", () => {
     const selectExistingNotifications = vi.fn().mockReturnValue({
       eq: existingOrgEq,
     });
-    const roleEq = vi.fn().mockResolvedValue({
+    const managerNeq = vi.fn().mockResolvedValue({
       data: [
-        { user_id: "actor-1", branch_id: "branch-1", role: "manager" },
-        { user_id: "user-2", branch_id: "branch-1", role: "collaborator" },
-        { user_id: "user-3", branch_id: null, role: "manager" },
+        {
+          user_id: "actor-1",
+          branch_id: "branch-1",
+          role: "collaborator",
+          participates_in_listening: true,
+        },
+        {
+          user_id: "user-2",
+          branch_id: "branch-1",
+          role: "collaborator",
+          participates_in_listening: true,
+        },
       ],
       error: null,
     });
-    const organizationEq = vi.fn().mockReturnValue({ eq: roleEq });
+    const ownerNeq = vi.fn().mockReturnValue({ neq: managerNeq });
+    const listeningEq = vi.fn().mockReturnValue({ neq: ownerNeq });
+    const organizationEq = vi.fn().mockReturnValue({ eq: listeningEq });
     const client = {
       from: vi.fn((table: string) => {
         if (table === "organization_members") {
@@ -64,13 +71,6 @@ describe("triggerListeningSurveyForOrganization", () => {
           recipient_user_id: "user-2",
           href: "/colaborador?view=evaluacion",
           title: "Registro de escucha pendiente",
-        }),
-      ]),
-    );
-    expect(insert).not.toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({
-          recipient_user_id: "user-3",
         }),
       ]),
     );

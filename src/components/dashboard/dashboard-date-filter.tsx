@@ -175,7 +175,7 @@ export function DashboardDateFilter({
       }}
     >
       <summary
-        className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 [&::-webkit-details-marker]:hidden"
+        className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 [&::-webkit-details-marker]:hidden"
         aria-busy={isPending}
       >
         {isPending ? (
@@ -186,7 +186,7 @@ export function DashboardDateFilter({
         {dateRange.label}
       </summary>
 
-      <div className="absolute right-0 z-40 mt-2 w-[min(22.5rem,calc(100vw-2rem))] rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_60px_rgba(15,23,42,0.16)]">
+      <div className="absolute right-0 z-40 mt-2 w-[min(22.5rem,calc(100vw-2rem))] rounded-2xl bg-white p-3 shadow-[0_18px_60px_rgba(15,23,42,0.16)]">
         <div className="grid grid-cols-3 gap-2">
           {presets.map((preset) => {
             const isActive = dateRange.period === preset.period;
@@ -213,7 +213,7 @@ export function DashboardDateFilter({
         <div
           className={[
             "mt-3 rounded-xl p-3",
-            isCustomActive ? "bg-emerald-50/70 ring-1 ring-emerald-100" : "bg-[#f7f8f4]",
+            isCustomActive ? "bg-emerald-50/70" : "bg-[#f7f8f4]",
           ].join(" ")}
         >
           <div className="mb-2 flex items-center justify-between gap-2">
@@ -282,7 +282,7 @@ export function DashboardDateFilter({
               type="button"
               disabled={isPending || !canClear}
               onClick={handleClearFilter}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RotateCcw size={15} aria-hidden="true" />
               Limpiar filtro

@@ -15,6 +15,7 @@ describe("DashboardFloatingNav", () => {
         activeView="resumen"
         onViewChange={() => {}}
         currentUser={sampleUser}
+        canViewNotifications
       />,
     );
 
@@ -47,6 +48,21 @@ describe("DashboardFloatingNav", () => {
     expect(
       screen.getByRole("button", { name: /cuenta de ana lopez/i }),
     ).toBeInTheDocument();
+  });
+
+  it("oculta notificaciones sin el permiso de alertas", () => {
+    render(
+      <DashboardFloatingNav
+        activeView="resumen"
+        onViewChange={() => {}}
+        currentUser={sampleUser}
+        canViewNotifications={false}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /notificaciones/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a fallback sign out control without user data", () => {
@@ -132,6 +148,7 @@ describe("DashboardFloatingNav", () => {
       <DashboardFloatingNav
         activeView="resumen"
         onViewChange={() => {}}
+        canViewNotifications
         notifications={[
           {
             id: "notification-001",
@@ -148,6 +165,7 @@ describe("DashboardFloatingNav", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /notificaciones/i }));
     expect(screen.getByText("Informe listo")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ver todas/i })).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", {
@@ -163,11 +181,98 @@ describe("DashboardFloatingNav", () => {
     });
   });
 
+  it("solo muestra las últimas notificaciones en el popover", () => {
+    const notifications = Array.from({ length: 7 }, (_, index) => ({
+      id: `notification-${index + 1}`,
+      title: `Notificacion ${index + 1}`,
+      detail: "Detalle de prueba",
+      time: "hace 1 min",
+      href: "/dashboard",
+      unread: index < 2,
+      tone: "success" as const,
+    }));
+
+    render(
+      <DashboardFloatingNav
+        activeView="resumen"
+        onViewChange={() => {}}
+        canViewNotifications
+        notifications={notifications}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /notificaciones/i }));
+
+    expect(screen.getByText("Notificacion 1")).toBeInTheDocument();
+    expect(screen.getByText("Notificacion 5")).toBeInTheDocument();
+    expect(screen.queryByText("Notificacion 6")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /ver todas \(7\)/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("abre el drawer al pulsar Ver todas", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [
+          {
+            id: "notification-001",
+            title: "Informe listo",
+            detail: "El informe semanal esta disponible.",
+            time: "hace 1 min",
+            createdAtIso: "2026-07-09T12:00:00.000Z",
+            href: "/dashboard#informes",
+            unread: true,
+            tone: "success",
+          },
+        ],
+        page: 1,
+        pageSize: 15,
+        total: 1,
+        hasMore: false,
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <DashboardFloatingNav
+        activeView="resumen"
+        onViewChange={() => {}}
+        canViewNotifications
+        notifications={[
+          {
+            id: "notification-001",
+            title: "Informe listo",
+            detail: "El informe semanal esta disponible.",
+            time: "hace 1 min",
+            href: "/dashboard#informes",
+            unread: true,
+            tone: "success",
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /notificaciones/i }));
+    fireEvent.click(screen.getByRole("button", { name: /ver todas/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: /todas las notificaciones/i }),
+      ).toBeInTheDocument();
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/notifications?page=1"),
+    );
+  });
+
   it("does not show delete for listening survey notifications", () => {
     render(
       <DashboardFloatingNav
         activeView="resumen"
         onViewChange={() => {}}
+        canViewNotifications
         notifications={[
           {
             id: "survey-001",

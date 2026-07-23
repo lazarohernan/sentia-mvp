@@ -63,7 +63,7 @@ export function HealthDistributionHeading({
         <div
           id={panelId}
           role="tooltip"
-          className="absolute top-full left-0 z-20 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-600 shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+          className="absolute top-full left-0 z-20 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-xl bg-white p-3 text-xs leading-5 text-slate-600 shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
         >
           <p className="font-semibold text-slate-800">¿Cómo leer esto?</p>
           <p className="mt-1.5">{HEALTH_DISTRIBUTION_HELP}</p>

@@ -63,12 +63,12 @@ export function ListeningBranchFilter({
 
   return (
     <details className="group relative">
-      <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 [&::-webkit-details-marker]:hidden">
+      <summary className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900 [&::-webkit-details-marker]:hidden">
         <Building2 className="h-4 w-4" aria-hidden="true" />
         {branchFilterLabel}
       </summary>
 
-      <div className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_60px_rgba(15,23,42,0.16)]">
+      <div className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl bg-white p-2 shadow-[0_18px_60px_rgba(15,23,42,0.16)]">
         {lockedBranchScope ? (
           <p className="px-3 py-2 text-sm leading-6 text-slate-600">
             Tu usuario está limitado a esta sucursal.

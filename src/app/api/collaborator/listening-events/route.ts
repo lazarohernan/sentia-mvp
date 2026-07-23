@@ -31,7 +31,13 @@ async function getCollaboratorContext() {
     getOrganizationMembershipByUser(supabase, user.id),
   ]);
 
-  if (!organization || !membership || membership.role !== "collaborator") {
+  if (
+    !organization ||
+    !membership ||
+    !membership.participatesInListening ||
+    membership.role === "owner" ||
+    membership.role === "manager"
+  ) {
     return null;
   }
 
@@ -113,7 +119,13 @@ export async function POST(request: Request) {
     getOrganizationMembershipByUser(supabase, user.id),
   ]);
 
-  if (!organization || !membership || membership.role !== "collaborator") {
+  if (
+    !organization ||
+    !membership ||
+    !membership.participatesInListening ||
+    membership.role === "owner" ||
+    membership.role === "manager"
+  ) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 

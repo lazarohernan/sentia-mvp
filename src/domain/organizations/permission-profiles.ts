@@ -12,8 +12,7 @@ export type PermissionKey =
   | "alerts"
   | "branches"
   | "team"
-  | "settings"
-  | "listening";
+  | "settings";
 
 export type PermissionProfile = {
   id: string;
@@ -66,11 +65,6 @@ export const platformPermissions: Array<{
     label: "Configuracion",
     description: "Editar datos generales del negocio.",
   },
-  {
-    key: "listening",
-    label: "Escucha",
-    description: "Ver y registrar niveles de escucha interna.",
-  },
 ];
 
 export const permissionKeySchema = z.enum([
@@ -80,7 +74,6 @@ export const permissionKeySchema = z.enum([
   "branches",
   "team",
   "settings",
-  "listening",
 ]);
 
 export const createPermissionProfileInputSchema = z.object({
@@ -95,9 +88,17 @@ export const createPermissionProfileInputSchema = z.object({
 
 export const updatePermissionProfileInputSchema = createPermissionProfileInputSchema;
 
-export const updateTeamMemberPermissionProfileInputSchema = z.object({
-  organizationRoleId: z.string().uuid().nullable(),
-});
+export const updateTeamMemberPermissionProfileInputSchema = z
+  .object({
+    organizationRoleId: z.string().uuid().nullable().optional(),
+    participatesInListening: z.boolean().optional(),
+  })
+  .refine(
+    (value) =>
+      value.organizationRoleId !== undefined ||
+      value.participatesInListening !== undefined,
+    { message: "Sin cambios." },
+  );
 
 export type CreatePermissionProfileInput = z.infer<
   typeof createPermissionProfileInputSchema
@@ -131,6 +132,51 @@ export function inferMemberRoleFromPermissionProfile(
   return profile.permissions.some((permission) => managerPermissions.has(permission))
     ? "manager"
     : "collaborator";
+}
+
+const allPermissionKeys = platformPermissions.map((permission) => permission.key);
+
+/**
+ * Resuelve los permisos efectivos del miembro.
+ * - owner: acceso completo
+ * - con perfil asignado: solo las keys del perfil
+ * - manager sin perfil: acceso completo (compatibilidad legacy)
+ * - resto: sin permisos de plataforma
+ */
+export function resolveMemberPermissions(params: {
+  role: MemberRole;
+  profile: PermissionProfile | null;
+}): PermissionKey[] {
+  if (params.role === "owner") {
+    return [...allPermissionKeys];
+  }
+
+  if (params.profile) {
+    return [...params.profile.permissions];
+  }
+
+  if (params.role === "manager") {
+    return [...allPermissionKeys];
+  }
+
+  return [];
+}
+
+export function memberHasPermission(
+  params: {
+    role: MemberRole;
+    profile: PermissionProfile | null;
+  },
+  permission: PermissionKey,
+): boolean {
+  return resolveMemberPermissions(params).includes(permission);
+}
+
+export function memberHasBusinessAccess(params: {
+  role: MemberRole;
+  profile: PermissionProfile | null;
+}): boolean {
+  return resolveMemberPermissions(params).length > 0;
 }
 
 function normalizePermissionKeys(value: string[]): PermissionKey[] {
@@ -378,46 +424,95 @@ export async function updateTeamMemberPermissionProfile(
   params: {
     organizationId: string;
     targetUserId: string;
-    organizationRoleId: string | null;
+    organizationRoleId?: string | null;
+    participatesInListening?: boolean;
   },
 ): Promise<{
   permissionProfileId: string | null;
   permissionProfileName: string | null;
   role: MemberRole;
+  participatesInListening: boolean;
 }> {
-  const permissionProfile = params.organizationRoleId
+  const { data: currentRow, error: currentError } = await client
+    .from("organization_members")
+    .select("organization_role_id, participates_in_listening, role")
+    .eq("organization_id", params.organizationId)
+    .eq("user_id", params.targetUserId)
+    .neq("role", "owner")
+    .maybeSingle();
+
+  if (currentError || !currentRow) {
+    throw new Error("No se pudo actualizar el rol del colaborador.");
+  }
+
+  const current = currentRow as {
+    organization_role_id: string | null;
+    participates_in_listening: boolean;
+    role: MemberRole;
+  };
+
+  const nextRoleId =
+    params.organizationRoleId !== undefined
+      ? params.organizationRoleId
+      : current.organization_role_id;
+  const nextListening =
+    params.participatesInListening !== undefined
+      ? params.participatesInListening
+      : Boolean(current.participates_in_listening);
+
+  const permissionProfile = nextRoleId
     ? await getPermissionProfileById(client, {
         organizationId: params.organizationId,
-        organizationRoleId: params.organizationRoleId,
+        organizationRoleId: nextRoleId,
       })
     : null;
 
-  if (params.organizationRoleId && !permissionProfile) {
+  if (nextRoleId && !permissionProfile) {
     throw new Error("El rol seleccionado no pertenece a la organizacion.");
   }
 
-  const role = inferMemberRoleFromPermissionProfile(permissionProfile);
+  const role = permissionProfile
+    ? inferMemberRoleFromPermissionProfile(permissionProfile)
+    : "collaborator";
+
+  const hasBusinessAccess = memberHasBusinessAccess({
+    role,
+    profile: permissionProfile,
+  });
+  const canListen = role !== "manager" && nextListening;
+
+  if (!hasBusinessAccess && !canListen) {
+    throw new Error(
+      "Asigna un rol con permisos de plataforma o activa la participación en Escucha.",
+    );
+  }
+
   const { data, error } = await client
     .from("organization_members")
     .update({
-      organization_role_id: params.organizationRoleId,
+      organization_role_id: nextRoleId,
       role,
+      participates_in_listening: nextListening,
     } as never)
     .eq("organization_id", params.organizationId)
     .eq("user_id", params.targetUserId)
     .neq("role", "owner")
-    .select("role")
+    .select("role, participates_in_listening")
     .maybeSingle();
 
   if (error || !data) {
     throw new Error("No se pudo actualizar el rol del colaborador.");
   }
 
-  const row = data as { role: MemberRole };
+  const row = data as {
+    role: MemberRole;
+    participates_in_listening: boolean;
+  };
 
   return {
     permissionProfileId: permissionProfile?.id ?? null,
     permissionProfileName: permissionProfile?.name ?? null,
     role: row.role,
+    participatesInListening: Boolean(row.participates_in_listening),
   };
 }

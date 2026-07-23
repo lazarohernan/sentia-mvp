@@ -1,6 +1,8 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 
 import type { OrganizationSettings } from "@/domain/organizations/organization-settings-schemas";
 
@@ -14,6 +16,10 @@ type DashboardBusinessProfileDrawerProps = {
   onSaved?: (settings: OrganizationSettings) => void;
 };
 
+/**
+ * Overlay fullscreen: siempre a document.body vía portal.
+ * Evita que backdrop-blur/transform de ancestros atrapen position:fixed.
+ */
 export function DashboardBusinessProfileDrawer({
   open,
   onClose,
@@ -21,13 +27,19 @@ export function DashboardBusinessProfileDrawer({
   canManage = false,
   onSaved,
 }: DashboardBusinessProfileDrawerProps) {
-  if (!open) {
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
+  if (!open || !mounted) {
     return null;
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-slate-950/30 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[70] bg-slate-950/30 backdrop-blur-[2px]"
       role="presentation"
     >
       <button
@@ -37,7 +49,7 @@ export function DashboardBusinessProfileDrawer({
         onClick={onClose}
       />
       <aside
-        className="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col bg-white shadow-2xl"
+        className="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col bg-white"
         role="dialog"
         aria-modal="true"
         aria-labelledby="business-profile-title"
@@ -55,7 +67,7 @@ export function DashboardBusinessProfileDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+            className="inline-flex size-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
           >
             <X className="h-5 w-5" aria-hidden="true" />
             <span className="sr-only">Cerrar</span>
@@ -71,6 +83,7 @@ export function DashboardBusinessProfileDrawer({
           />
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }

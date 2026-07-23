@@ -12,7 +12,7 @@ export function DashboardEmptyState({
   description,
 }: DashboardEmptyStateProps) {
   return (
-    <div className="flex min-h-40 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white/70 p-6 text-center">
+    <div className="flex min-h-40 items-center justify-center rounded-lg bg-white p-6 text-center shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
       <div>
         <div className="mx-auto flex size-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-800">
           <Icon size={20} aria-hidden="true" />

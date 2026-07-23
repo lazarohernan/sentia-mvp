@@ -64,7 +64,7 @@ export function ListeningSectionTabs({
             className={[
               "inline-flex h-9 items-center rounded-full px-3 text-sm font-semibold transition",
               isActive
-                ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
+                ? "bg-emerald-800 text-white shadow-emerald-900/20"
                 : "text-slate-600 hover:bg-white hover:text-emerald-900",
             ].join(" ")}
           >

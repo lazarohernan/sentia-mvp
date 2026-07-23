@@ -88,7 +88,7 @@ function EscalationSettingsForm({
         onClick={onClose}
       />
       <aside
-        className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl"
+        className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white"
         role="dialog"
         aria-modal="true"
         aria-labelledby="alert-escalation-settings-title"
@@ -112,7 +112,7 @@ function EscalationSettingsForm({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+            className="inline-flex size-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
           >
             <X className="h-5 w-5" aria-hidden="true" />
             <span className="sr-only">Cerrar</span>
@@ -125,7 +125,7 @@ function EscalationSettingsForm({
               <span className="text-sm font-semibold text-slate-700">
                 Telefono de escalamiento
               </span>
-              <div className="mt-2 flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4">
+              <div className="mt-2 flex h-12 items-center gap-3 rounded-xl bg-white px-4">
                 <Phone className="h-4 w-4 text-slate-400" aria-hidden="true" />
                 <input
                   value={phone}
@@ -141,7 +141,7 @@ function EscalationSettingsForm({
               <span className="text-sm font-semibold text-slate-700">
                 Correo de escalamiento
               </span>
-              <div className="mt-2 flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4">
+              <div className="mt-2 flex h-12 items-center gap-3 rounded-xl bg-white px-4">
                 <Mail className="h-4 w-4 text-slate-400" aria-hidden="true" />
                 <input
                   value={email}
@@ -162,13 +162,13 @@ function EscalationSettingsForm({
           </div>
 
           {success ? (
-            <p className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            <p className="mt-5 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
               {success}
             </p>
           ) : null}
 
           {error ? (
-            <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p className="mt-5 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
               {error}
             </p>
           ) : null}
@@ -190,7 +190,7 @@ function EscalationSettingsForm({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 Cancelar
               </button>

@@ -16,6 +16,7 @@ function mapRowToDashboardNotification(row: NotificationRow): DashboardNotificat
     title: row.title,
     detail: row.detail,
     time: formatRelativeDate(row.created_at),
+    createdAtIso: row.created_at,
     href: row.href ?? "/dashboard",
     unread: !row.is_read,
     tone: row.tone,
@@ -276,4 +277,89 @@ export async function deleteNotification(
 
   if (error || !data) return false;
   return true;
+}
+
+export async function getNotificationsPageForOrganization(
+  client: Client,
+  organizationId: string,
+  params: {
+    page?: number;
+    pageSize?: number;
+  } = {},
+): Promise<{
+  items: DashboardNotification[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+}> {
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(50, Math.max(1, params.pageSize ?? 15));
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await client
+    .from("notifications")
+    .select("*", { count: "exact" })
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error || !data) {
+    return { items: [], page, pageSize, total: 0, hasMore: false };
+  }
+
+  const items = (data as NotificationRow[])
+    .filter((row) => !isListeningSurveyNotification(row))
+    .map(mapRowToDashboardNotification);
+  const total = count ?? items.length;
+
+  return {
+    items,
+    page,
+    pageSize,
+    total,
+    hasMore: from + data.length < total,
+  };
+}
+
+export async function deleteNotificationsByIds(
+  client: Client,
+  notificationIds: string[],
+): Promise<{ deletedIds: string[]; skippedIds: string[] }> {
+  const deletedIds: string[] = [];
+  const skippedIds: string[] = [];
+
+  for (const notificationId of notificationIds) {
+    const deleted = await deleteNotification(client, notificationId);
+    if (deleted) {
+      deletedIds.push(notificationId);
+    } else {
+      skippedIds.push(notificationId);
+    }
+  }
+
+  return { deletedIds, skippedIds };
+}
+
+export async function deleteAllDeletableNotificationsForOrganization(
+  client: Client,
+  organizationId: string,
+): Promise<{ deletedIds: string[]; skippedIds: string[] }> {
+  const { data, error } = await client
+    .from("notifications")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (error || !data) {
+    return { deletedIds: [], skippedIds: [] };
+  }
+
+  const deletableIds = (data as NotificationRow[])
+    .filter((row) => !isListeningSurveyNotification(row))
+    .map((row) => row.id);
+
+  return deleteNotificationsByIds(client, deletableIds);
 }

@@ -97,6 +97,7 @@ export interface Database {
           branch_id: string | null;
           organization_role_id: string | null;
           role: "owner" | "manager" | "collaborator";
+          participates_in_listening: boolean;
           created_at: string;
         };
         Insert: {
@@ -105,12 +106,14 @@ export interface Database {
           branch_id?: string | null;
           organization_role_id?: string | null;
           role: "owner" | "manager" | "collaborator";
+          participates_in_listening?: boolean;
           created_at?: string;
         };
         Update: {
           branch_id?: string | null;
           organization_role_id?: string | null;
           role?: "owner" | "manager" | "collaborator";
+          participates_in_listening?: boolean;
         };
       };
       organization_roles: {

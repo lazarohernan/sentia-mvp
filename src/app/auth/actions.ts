@@ -8,7 +8,8 @@ import {
   signInSchema,
   signUpSchema,
 } from "@/domain/auth/schemas";
-import { getHomePathForRole, getSafeRedirectPath } from "@/domain/auth/redirects";
+import { getSafeRedirectPath } from "@/domain/auth/redirects";
+import { resolveHomePathForMembership } from "@/domain/auth/resolve-home-path";
 import { REGISTRATION_ENABLED } from "@/domain/auth/config";
 import { sanitizeEmailInput } from "@/lib/security/input";
 import {
@@ -70,7 +71,7 @@ export async function signInAction(formData: FormData): Promise<void> {
   }
 
   const membership = await getOrganizationMembershipByUser(supabase, authData.user.id);
-  redirect(getHomePathForRole(membership?.role));
+  redirect(await resolveHomePathForMembership(supabase, membership));
 }
 
 export async function signUpAction(formData: FormData): Promise<void> {
