@@ -1,10 +1,9 @@
 "use client";
 
-import { CalendarDays, CircleAlert, Info, X } from "lucide-react";
+import { CalendarDays, Info, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { DashboardDateFilter } from "@/components/dashboard/dashboard-date-filter";
-import { PlatformFooter } from "@/components/platform-footer";
 import type { Branch } from "@/domain/branches/schemas";
 import type { DashboardDateRange } from "@/domain/dashboard/date-range";
 import type { DashboardNotification } from "@/domain/dashboard/schemas";
@@ -82,7 +81,7 @@ export function ListeningCoachingView({
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#f4f8f5_0%,#e9f0ed_100%)] text-slate-950">
+    <main className="flex min-h-screen flex-col bg-background text-slate-950">
       <DashboardFloatingNav
         activeView="escucha"
         onViewChange={() => {}}
@@ -143,7 +142,7 @@ export function ListeningCoachingView({
         </header>
 
         {priorities.length > 0 ? (
-          <section className="mt-8 rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+          <section className="mt-8 rounded-[1.35rem] bg-white p-5 ">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold text-slate-950">
@@ -195,7 +194,7 @@ export function ListeningCoachingView({
           </section>
         ) : null}
 
-        <section className="mt-6 overflow-hidden rounded-[1.35rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+        <section className="mt-6 overflow-hidden rounded-[1.35rem] bg-white ">
           <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">
@@ -288,7 +287,7 @@ export function ListeningCoachingView({
             </div>
           ) : (
             <div className="px-5 py-12 text-center">
-              <CircleAlert className="mx-auto h-9 w-9 text-slate-300" aria-hidden="true" />
+              <img src="/images/illustrations/perks-empty-coaching-v1.svg" alt="" width={120} height={96} className="mx-auto h-auto w-22" />
               <p className="mt-3 text-sm font-semibold text-slate-950">
                 Sin evaluaciones individuales en este periodo
               </p>
@@ -299,7 +298,6 @@ export function ListeningCoachingView({
             </div>
           )}
         </section>
-        <PlatformFooter />
       </section>
 
       <ListeningCoachingDrawer
@@ -329,7 +327,7 @@ export function ListeningCoachingView({
             role="dialog"
             aria-modal="true"
             aria-labelledby="coaching-info-title"
-            className="relative w-full max-w-lg rounded-[1.35rem] bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+            className="relative w-full max-w-lg rounded-[1.35rem] bg-white p-6 "
           >
             <button
               type="button"
@@ -356,8 +354,8 @@ export function ListeningCoachingView({
                 sin registros, media baja). No tienes que revisar a todos.
               </p>
               <p>
-                <span className="font-semibold text-slate-950">Prep:</span> al
-                abrir a alguien, Perks sugiere una lectura corta y preguntas
+                <span className="font-semibold text-slate-950">Preparación con IA:</span>{" "}
+                al abrir a alguien, Perks sugiere una lectura corta y preguntas
                 privadas para tu conversación. No se envían al colaborador.
               </p>
               <p>

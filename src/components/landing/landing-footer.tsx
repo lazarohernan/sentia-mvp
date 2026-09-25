@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { LandingReveal } from "@/components/landing/landing-reveal";
+import { isGuidedDemoEnabled, landingLoginCtaLabel } from "@/lib/app/guided-demo";
 
 const productLinks = [
   { href: "#producto", label: "Producto" },
@@ -10,6 +11,8 @@ const productLinks = [
 ];
 
 export function LandingFooter() {
+  const showGuidedDemo = isGuidedDemoEnabled();
+
   return (
     <footer className="bg-[#062f28] px-6 pb-5 pt-8 text-white sm:px-10 lg:px-14">
       <LandingReveal soft className="mx-auto max-w-[1240px]">
@@ -35,8 +38,10 @@ export function LandingFooter() {
           <nav aria-label="Acceso">
             <p className="text-sm font-extrabold uppercase tracking-[0.14em] text-[#89cbb4]">Acceso</p>
             <div className="mt-2.5 grid gap-2">
-              <Link href="/demo-guiada" className="text-sm font-semibold text-[#d7e7e0] hover:text-white">Probar experiencia</Link>
-              <Link href="/login" className="text-sm font-semibold text-[#d7e7e0] hover:text-white">Entrar a la demo</Link>
+              {showGuidedDemo ? (
+                <Link href="/demo-guiada" className="text-sm font-semibold text-[#d7e7e0] hover:text-white">Probar experiencia</Link>
+              ) : null}
+              <Link href="/login" className="text-sm font-semibold text-[#d7e7e0] hover:text-white">{landingLoginCtaLabel()}</Link>
             </div>
           </nav>
         </div>

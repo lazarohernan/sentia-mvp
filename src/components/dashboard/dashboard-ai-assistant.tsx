@@ -41,7 +41,7 @@ export function DashboardAiAssistant({
       {isOpen ? (
         <section
           aria-label="Asistente IA de alertas"
-          className="overflow-hidden rounded-xl bg-white shadow-[0_18px_60px_rgba(15,23,42,0.2)]"
+          className="overflow-hidden rounded-xl bg-white "
         >
           <div className="flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4 text-slate-950">
             <div className="flex items-start gap-3">
@@ -128,7 +128,7 @@ export function DashboardAiAssistant({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="ml-auto flex w-full max-w-sm items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 text-left shadow-[0_14px_44px_rgba(15,23,42,0.16)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_54px_rgba(15,23,42,0.2)]"
+          className="ml-auto flex w-full max-w-sm items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 text-left transition hover:-translate-y-0.5 "
           aria-label="Abrir asistente IA de alertas"
         >
           <span className="flex items-center gap-3">

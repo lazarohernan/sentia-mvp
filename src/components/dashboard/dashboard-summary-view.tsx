@@ -1,18 +1,9 @@
-import {
-  ArrowRight,
-  Bell,
-  Building2,
-  Frown,
-  MessageSquareText,
-  Meh,
-  Smile,
-  Star,
-  Store,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowRight, Frown, Meh, Smile } from "lucide-react";
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
 import type { DashboardAlertItem } from "@/domain/dashboard/alerts";
+import type { DashboardDateRange } from "@/domain/dashboard/date-range";
 import type {
   DashboardBranchHealthItem,
   DashboardFollowUpMetrics,
@@ -22,10 +13,8 @@ import type {
 import { DashboardAlertsSummaryPreview } from "./dashboard-alerts-summary-preview";
 import {
   CsatHealthDistributionBar,
-  CsatHealthExplanation,
-  healthZoneStyles,
+  CsatHealthZoneLegend,
 } from "./csat-health-distribution";
-import { HealthDistributionHeading } from "./health-distribution-heading";
 type DashboardSummaryViewProps = {
   dashboardData?: DashboardSummaryData;
   alerts?: DashboardAlertItem[];
@@ -39,13 +28,6 @@ const emptySummary = [
   { label: "Alertas", value: "Sin datos", detail: "" },
   { label: "Sucursales", value: "Sin datos", detail: "" },
 ];
-
-const metricIcons: Record<string, LucideIcon> = {
-  Comentarios: MessageSquareText,
-  CSAT: Star,
-  Alertas: Bell,
-  Sucursales: Building2,
-};
 
 const sentimentIcons: Record<StatusTone, LucideIcon> = {
   success: Smile,
@@ -89,7 +71,7 @@ function toneClasses(tone: StatusTone) {
   return tones[tone];
 }
 
-function MetricCard({
+function MetricStat({
   label,
   value,
   detail,
@@ -98,37 +80,24 @@ function MetricCard({
   value: string;
   detail: string;
 }) {
-  const Icon = metricIcons[label] ?? TrendingUp;
   const hasValue = value !== "Sin datos";
+  const detailTone =
+    label === "Alertas" ? "text-signal-danger-ink" : "text-brand-muted";
 
   return (
-    <article className="min-h-[132px] rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-semibold text-slate-600">{label}</p>
-        <Icon
-          size={20}
-          className="shrink-0 text-slate-950"
-          strokeWidth={1.75}
-          aria-hidden="true"
-        />
-      </div>
+    <article className="min-w-0 px-0 py-1 md:px-5 md:first:pl-0 md:last:pr-0">
+      <p className="text-xs font-semibold text-text-secondary">{label}</p>
       <p
         className={
           hasValue
-            ? "mt-3 text-4xl font-semibold tracking-normal text-slate-950"
-            : "mt-6 text-sm font-medium text-slate-400"
+            ? "mt-2 min-w-0 wrap-anywhere text-4xl font-semibold tracking-normal text-text-primary"
+            : "mt-3 text-sm font-medium text-text-secondary"
         }
       >
         {value}
       </p>
       {detail ? (
-        <p
-          className={`mt-2 text-sm font-semibold ${
-            label === "Alertas" ? "text-red-600" : "text-emerald-800"
-          }`}
-        >
-          {detail}
-        </p>
+        <p className={`mt-2 text-sm font-medium ${detailTone}`}>{detail}</p>
       ) : null}
     </article>
   );
@@ -138,13 +107,12 @@ function EmptyOperationalSummary() {
   return (
     <section
       aria-label="Resumen operativo sin datos"
-      className="rounded-2xl bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+      className="rounded-2xl bg-white p-6 "
     >
-      <p className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-        <TrendingUp size={14} aria-hidden="true" />
+      <p className="text-xs font-semibold text-text-secondary">
         Resumen operativo sin datos
       </p>
-      <h3 className="mt-5 text-2xl font-semibold tracking-normal text-slate-950">
+      <h3 className="mt-3 text-2xl font-semibold tracking-normal text-text-primary">
         Todavía no hay señales suficientes para analizar.
       </h3>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
@@ -169,9 +137,9 @@ function SummaryOverviewPanel({
   metrics: DashboardFollowUpMetrics;
 }) {
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-      <div className="grid gap-5 lg:grid-cols-2 lg:items-stretch">
-        <div className="flex min-h-0 flex-col justify-between">
+    <section className="overflow-hidden rounded-2xl bg-white ">
+      <div className="grid lg:grid-cols-2 lg:items-stretch">
+        <div className="flex min-h-0 flex-col justify-between p-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
               Alcance del resumen
@@ -201,7 +169,7 @@ function SummaryOverviewPanel({
           </div>
         </div>
 
-        <div className="min-h-0 border-t border-slate-100 pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5">
+        <div className="min-h-0 bg-brand-muted p-5">
           <DashboardAlertsSummaryPreview alerts={alerts} metrics={metrics} />
         </div>
       </div>
@@ -209,79 +177,132 @@ function SummaryOverviewPanel({
   );
 }
 
-function BranchHealth({ items }: { items: DashboardBranchHealthItem[] }) {
+function branchToneClass(tone: DashboardBranchHealthItem["tone"]) {
+  if (tone === "danger") return "text-signal-danger-ink";
+  if (tone === "warning") return "text-signal-warning-ink";
+  if (tone === "success") return "text-signal-ok-ink";
+  return "text-text-secondary";
+}
+
+function branchDecisionLine(branch: DashboardBranchHealthItem) {
+  if (branch.scoredCount === 0) {
+    return "Sin calificación en este periodo";
+  }
+
+  if (branch.zoneCounts.risk > 0) {
+    return branch.zoneCounts.risk === 1
+      ? "1 valoración en riesgo"
+      : `${branch.zoneCounts.risk} valoraciones en riesgo`;
+  }
+
+  if (branch.zoneCounts.observation > 0) {
+    return branch.zoneCounts.observation === 1
+      ? "1 experiencia regular"
+      : `${branch.zoneCounts.observation} con experiencia regular`;
+  }
+
+  return "Buena experiencia en este periodo";
+}
+
+function buildBranchCommentsHref(
+  dateRange: DashboardDateRange | undefined,
+  branchId?: string,
+) {
+  const params = new URLSearchParams();
+
+  if (dateRange) {
+    params.set("period", dateRange.period);
+    if (dateRange.period === "custom") {
+      params.set("start", dateRange.startDate);
+      params.set("end", dateRange.endDate);
+    }
+  }
+
+  if (branchId) {
+    params.set("branchId", branchId);
+  }
+
+  const query = params.toString();
+  return query ? `/dashboard?${query}#comentarios` : "/dashboard#comentarios";
+}
+
+function BranchHealth({
+  items,
+  dateRange,
+}: {
+  items: DashboardBranchHealthItem[];
+  dateRange?: DashboardDateRange;
+}) {
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-      <div>
-        <h3 className="text-lg font-semibold text-slate-950">
-          Salud de sucursales
-        </h3>
-        <p className="mt-1 text-xs leading-5 text-slate-500">
-          Hasta 3 sucursales con mayor prioridad de revisión en este periodo.
-        </p>
+    <section
+      aria-label="Salud de sucursales"
+      className="rounded-2xl bg-surface p-5"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h3 className="text-lg font-semibold text-text-primary">
+            Salud de sucursales
+          </h3>
+          <p className="mt-1 text-sm leading-5 text-text-secondary">
+            Nota promedio y cómo se repartieron las calificaciones.
+          </p>
+        </div>
+        <CsatHealthZoneLegend />
       </div>
 
-      <div className="mt-4 divide-y divide-slate-100">
+      <div className="mt-4 divide-y divide-border-soft">
         {items.map((branch) => {
-          const classes = toneClasses(branch.tone);
-          const healthKey =
-            branch.tone === "success"
-              ? "good"
-              : branch.tone === "warning"
-                ? "observation"
-                : branch.tone === "danger"
-                  ? "risk"
-                  : "none";
-          const healthStyle = healthZoneStyles[healthKey];
+          const volumeLabel =
+            branch.scoredCount === 0
+              ? branch.comments
+              : branch.scoredCount === 1
+                ? "1 valoración"
+                : `${branch.scoredCount} valoraciones`;
 
           return (
             <article
-              key={branch.branch}
-              className="grid gap-4 py-4 lg:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_minmax(0,15rem)] lg:items-stretch"
+              key={branch.branchId ?? branch.branch}
+              className="grid gap-4 py-4 lg:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto] lg:items-center"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-950">
-                    {branch.branch}
+              <div className="min-w-0">
+                <p className="min-w-0 wrap-anywhere text-sm font-semibold text-text-primary">
+                  {branch.branch}
+                </p>
+                {branch.scoredCount > 0 ? (
+                  <p
+                    className={`mt-2 min-w-0 text-2xl font-semibold leading-none ${branchToneClass(branch.tone)}`}
+                  >
+                    {branch.csat}
+                    <span className="ml-1 text-sm font-medium text-text-secondary">
+                      /5
+                    </span>
                   </p>
-                  {branch.scoredCount > 0 ? (
-                    <p
-                      className={`mt-2 inline-flex items-baseline gap-0.5 rounded-lg px-2 py-1 text-lg font-bold leading-none ${healthStyle.badgeClassName}`}
-                    >
-                      {branch.csat}
-                      <span className="text-xs font-semibold opacity-80">/5</span>
-                    </p>
-                  ) : null}
-                  <p className={`mt-2 text-sm font-semibold ${classes.text}`}>
-                    {branch.status}
+                ) : (
+                  <p className="mt-2 text-sm font-medium text-text-secondary">
+                    Sin nota
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">{branch.comments}</p>
-                </div>
-                <Store
-                  size={20}
-                  className="shrink-0 text-slate-950"
-                  strokeWidth={1.75}
-                  aria-hidden="true"
-                />
+                )}
+                <p className="mt-2 text-sm text-text-secondary">{volumeLabel}</p>
+                <p className={`mt-1 text-sm ${branchToneClass(branch.tone)}`}>
+                  {branchDecisionLine(branch)}
+                </p>
               </div>
 
-              <div className="min-w-0 space-y-2 lg:px-2">
-                <HealthDistributionHeading />
+              <div className="min-w-0">
                 <CsatHealthDistributionBar
                   zonePercents={branch.zonePercents}
                   zoneCounts={branch.zoneCounts}
                   showExplanation={false}
-                  size="compact"
+                  size="row"
                 />
               </div>
 
-              <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-4">
-                <CsatHealthExplanation
-                  zoneCounts={branch.zoneCounts}
-                  zonePercents={branch.zonePercents}
-                  scoredCount={branch.scoredCount}
-                />
-              </div>
+              <Link
+                href={buildBranchCommentsHref(dateRange, branch.branchId)}
+                className="inline-flex h-9 shrink-0 items-center text-sm font-semibold text-brand-muted transition hover:text-brand focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
+              >
+                Ver valoraciones
+              </Link>
             </article>
           );
         })}
@@ -301,7 +322,7 @@ function recentCommentStatusClass(
 
 function RecentComments({ comments }: { comments: DashboardRecentComment[] }) {
   return (
-    <section className="overflow-hidden rounded-2xl bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+    <section className="overflow-hidden rounded-2xl bg-white ">
       <div className="p-5 pb-0">
         <h3 className="text-lg font-semibold text-slate-950">
           Comentarios recientes
@@ -418,21 +439,27 @@ export function DashboardSummaryView({
           alerts={alerts}
           metrics={followUpMetrics}
         />
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section
+          aria-label="Indicadores del periodo"
+          className="grid gap-5 border-y border-border-soft py-5 md:grid-cols-2 md:gap-y-6 xl:grid-cols-4 xl:divide-x xl:divide-border-soft"
+        >
           {summary.map((item) => (
-            <MetricCard
+            <MetricStat
               key={item.label}
               label={item.label}
               value={item.value}
               detail={item.detail}
             />
           ))}
-        </div>
+        </section>
 
         {hasOperationalData ? (
           <>
             {branchHealthItems.length > 0 ? (
-              <BranchHealth items={branchHealthItems} />
+              <BranchHealth
+                items={branchHealthItems}
+                dateRange={dashboardData?.dateRange}
+              />
             ) : null}
             <div className="grid gap-4">
               {recentCommentItems.length > 0 ? (

@@ -1,0 +1,36 @@
+.heroHalftone,
+.cardHalftone {
+  pointer-events: none;
+  position: absolute;
+  background-image: radial-gradient(circle, rgb(60 143 116 / 38%) 2.6px, transparent 3px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(to bottom, #000 18%, transparent 100%);
+}
+
+.heroHalftone {
+  right: 18px;
+  top: 16px;
+  width: 174px;
+  height: 255px;
+}
+
+.cardHalftone {
+  right: 18px;
+  top: 36px;
+  width: 138px;
+  height: 176px;
+  background-image: radial-gradient(circle, rgb(60 143 116 / 43%) 2px, transparent 2.4px);
+  background-size: 15px 15px;
+}
+
+@media (max-width: 639px) {
+  .heroHalftone {
+    top: auto;
+    bottom: 16px;
+  }
+
+  .cardHalftone {
+    top: auto;
+    bottom: 16px;
+  }
+}

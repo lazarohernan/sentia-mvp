@@ -28,7 +28,6 @@ import { createPortal } from "react-dom";
 
 import { signOutAction } from "@/app/auth/actions";
 import type { DashboardNotification } from "@/domain/dashboard/schemas";
-import { PushNotificationsToggle } from "@/components/push/push-notifications-toggle";
 import { DashboardNotificationsDrawer } from "./dashboard-notifications-drawer";
 import {
   DashboardUserMenu,
@@ -46,7 +45,7 @@ export type DashboardNavView =
   | "escucha";
 
 const navItems = [
-  { label: "Resumen", href: "/dashboard", view: "resumen", icon: Home },
+  { label: "Inicio", href: "/dashboard", view: "resumen", icon: Home },
   {
     label: "Valoraciones",
     href: "/dashboard#comentarios",
@@ -368,7 +367,7 @@ export function DashboardFloatingNav({
   return (
     <nav
       aria-label="Navegacion principal"
-      className="fixed inset-x-0 top-4 z-50 mx-auto w-[calc(100%-2rem)] max-w-6xl rounded-full bg-[rgb(255_255_255/0.78)] px-2.5 py-2 shadow-float backdrop-blur-2xl"
+      className="fixed inset-x-0 top-4 z-50 mx-auto w-[calc(100%-2rem)] max-w-6xl rounded-2xl bg-surface px-2 py-2"
     >
       <div className="flex items-center justify-between gap-3">
         <Link
@@ -380,7 +379,7 @@ export function DashboardFloatingNav({
         </Link>
 
         {/* ── Barra de navegación central ── */}
-        <div className="flex items-center gap-1 overflow-x-auto rounded-full bg-[rgb(2_44_34/0.055)] p-1">
+        <div className="flex min-w-0 items-center gap-1 overflow-x-auto p-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeView === item.view;
@@ -417,6 +416,7 @@ export function DashboardFloatingNav({
                   <button
                     type="button"
                     ref={listeningTriggerRef}
+                    aria-label={item.label}
                     aria-haspopup="menu"
                     aria-expanded={isListeningOpen}
                     aria-controls={listeningMenuId}
@@ -435,12 +435,12 @@ export function DashboardFloatingNav({
                     className={[
                       "flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-full px-3 text-sm font-medium transition",
                       isActive
-                        ? "bg-emerald-800 text-white shadow-emerald-900/20"
-                        : "text-slate-600 hover:bg-white hover:text-emerald-900 hover:shadow-sm",
+                        ? "bg-brand text-text-inverse"
+                        : "text-text-secondary hover:bg-surface-muted",
                     ].join(" ")}
                   >
                     <Icon size={17} aria-hidden="true" />
-                    <span className="hidden md:inline">{item.label}</span>
+                    <span className="hidden lg:inline">{item.label}</span>
                     <ChevronDown
                       size={13}
                       aria-hidden="true"
@@ -465,7 +465,7 @@ export function DashboardFloatingNav({
                           style={{ top: menuPos.top, left: menuPos.left }}
                           onMouseEnter={cancelClose}
                           onMouseLeave={scheduleClose}
-                          className="fixed z-60 w-52 overflow-hidden rounded-2xl bg-white p-1.5 backdrop-blur-xl shadow-[0_18px_60px_rgba(15,23,42,0.16)]"
+                          className="fixed z-60 w-52 overflow-hidden rounded-lg bg-surface p-2 "
                         >
                           {listeningOptions.map((subItem, idx) => {
                             const SubIcon = subItem.icon;
@@ -533,6 +533,7 @@ export function DashboardFloatingNav({
               <div key={item.label} className="relative shrink-0">
                 <Link
                   href={item.href}
+                  aria-label={item.label}
                   onClick={(event) =>
                     handleNavClick(event, item.view, item.href)
                   }
@@ -540,12 +541,12 @@ export function DashboardFloatingNav({
                   className={[
                     "flex h-9 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-medium transition",
                     isActive
-                      ? "bg-emerald-800 text-white shadow-emerald-900/20"
-                      : "text-slate-600 hover:bg-white hover:text-emerald-900 hover:shadow-sm",
+                      ? "bg-brand text-text-inverse"
+                      : "text-text-secondary hover:bg-surface-muted",
                   ].join(" ")}
                 >
                   <Icon size={17} aria-hidden="true" />
-                  <span className="hidden md:inline">{item.label}</span>
+                  <span className="hidden lg:inline">{item.label}</span>
                 </Link>
               </div>
             );
@@ -589,7 +590,7 @@ export function DashboardFloatingNav({
               <div
                 role="dialog"
                 aria-label="Panel de notificaciones"
-                className="absolute right-0 top-12 flex w-88 max-h-[min(32rem,70vh)] flex-col overflow-hidden rounded-3xl bg-white backdrop-blur-xl shadow-[0_18px_60px_rgba(15,23,42,0.16)]"
+                className="absolute right-0 top-12 flex w-88 max-h-[min(32rem,70vh)] flex-col overflow-hidden rounded-3xl bg-white backdrop-blur-xl "
               >
                 <div className="shrink-0 border-b border-slate-100 px-5 py-4">
                   <div className="flex items-center justify-between gap-3">
@@ -611,11 +612,10 @@ export function DashboardFloatingNav({
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto p-2">
-                  <PushNotificationsToggle hideWhenEnabled />
-
                   {previewNotifications.length === 0 ? (
                     <div className="px-3 py-8 text-center">
-                      <p className="text-sm font-semibold text-slate-900">
+                      <img src="/images/illustrations/perks-empty-notifications-v1.svg" alt="" width={120} height={96} className="mx-auto h-auto w-22" />
+                      <p className="mt-3 text-sm font-semibold text-slate-900">
                         Sin novedades para gerencia
                       </p>
                       <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -732,8 +732,7 @@ export function DashboardFloatingNav({
 
       {/*
         Drawer con portal a document.body (ver dashboard-notifications-drawer).
-        No renderizar overlays fixed aquí sin portal: el nav usa backdrop-blur
-        y crea un containing block que atrapa position:fixed.
+        Mantener los overlays fuera de la navegación para aislar su apilamiento.
       */}
       {canViewNotifications ? (
         <DashboardNotificationsDrawer

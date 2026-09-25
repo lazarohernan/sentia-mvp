@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { insertAiUsageEvent } from "@/domain/ai-usage/repository";
 import { buildAgentContextSnapshot } from "@/domain/agent/context";
 import { getCalendarWeekWindow, getDashboardDateRange } from "@/domain/dashboard/date-range";
 import {
   groupCommentsByBranchId,
+  partitionImprovementGeneration,
   resolveImprovementSourceComments,
   resolveApiGenerationStrategy,
 } from "@/domain/dashboard/improvements-batch";
 import { generateImprovementNarratives } from "@/domain/dashboard/improvements-narrative";
 import {
+  getImprovementNarratives,
   getWeeklyDigestsForRollup,
   upsertImprovementNarratives,
   upsertWeeklyDigests,
@@ -21,6 +24,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const inputSchema = z.object({
   period: z.enum(["7d", "30d"]).default("7d"),
+  force: z.boolean().optional().default(false),
 });
 
 function canRunAiOperations(role: string | undefined) {
@@ -57,20 +61,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const rateLimit = await consumeDistributedRateLimit({
-    namespace: "api:improvements:generate",
-    key: `${user.id}:${getClientIpFromHeaders(request.headers)}`,
-    limit: 10,
-    windowMs: 60 * 60 * 1000,
-  });
-
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: "Demasiadas solicitudes de generación. Intenta más tarde." },
-      { status: 429 },
-    );
-  }
-
   const branchIds = membership?.branchId ? [membership.branchId] : undefined;
   const serviceClient = createServiceClient();
   const dateRange = getDashboardDateRange({ period: parsed.data.period });
@@ -86,6 +76,48 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No se pudieron cargar los datos del periodo." }, { status: 500 });
   }
 
+  const sourceComments = resolveImprovementSourceComments({
+    period: parsed.data.period,
+    comments: context.dashboardComments,
+    weeklyWindow: {
+      startDate: calendarWeek.startDate,
+      endDate: calendarWeek.endDate,
+    },
+  });
+  const branchGroups = groupCommentsByBranchId(sourceComments);
+  const savedNarratives = await getImprovementNarratives(serviceClient, {
+    organizationId: organization.id,
+    period: parsed.data.period,
+    branchIds,
+  }).catch(() => []);
+  const { reusable, commentsToGenerate } = partitionImprovementGeneration({
+    groups: branchGroups,
+    saved: savedNarratives,
+    force: parsed.data.force,
+  });
+
+  if (commentsToGenerate.length === 0) {
+    return NextResponse.json({
+      narratives: reusable,
+      reusedCount: reusable.length,
+      generatedCount: 0,
+    });
+  }
+
+  const rateLimit = await consumeDistributedRateLimit({
+    namespace: "api:improvements:generate",
+    key: `${user.id}:${getClientIpFromHeaders(request.headers)}`,
+    limit: 10,
+    windowMs: 60 * 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Demasiadas solicitudes de generación. Intenta más tarde." },
+      { status: 429 },
+    );
+  }
+
   const weeklyRollups =
     parsed.data.period === "30d"
       ? await getWeeklyDigestsForRollup(serviceClient, {
@@ -96,25 +128,27 @@ export async function POST(request: Request) {
         }).catch(() => [])
       : [];
 
-  const sourceComments = resolveImprovementSourceComments({
-    period: parsed.data.period,
-    comments: context.dashboardComments,
-    weeklyWindow: {
-      startDate: calendarWeek.startDate,
-      endDate: calendarWeek.endDate,
-    },
-  });
-
-  const narratives = await generateImprovementNarratives(
-    sourceComments,
+  const generated = await generateImprovementNarratives(
+    commentsToGenerate,
     process.env.OPENAI_API_KEY?.trim(),
     {
       period: parsed.data.period,
       weeklyRollups,
+      onUsage: async ({ branchId, model, estimate, rawUsage }) => {
+        await insertAiUsageEvent(serviceClient, {
+          organizationId: organization.id,
+          branchId,
+          useCase: "improvement_narrative",
+          provider: "openai",
+          model,
+          operation: "responses.create",
+          estimate,
+          rawUsage,
+        });
+      },
     },
   );
-
-  const branchGroups = groupCommentsByBranchId(sourceComments);
+  const narratives = [...reusable, ...generated];
   const branchesWithWeeklyRollups = branchGroups.filter((group) =>
     weeklyRollups.some((rollup) => rollup.branchId === group.branchId),
   ).length;
@@ -124,7 +158,7 @@ export async function POST(request: Request) {
       organizationId: organization.id,
       actorUserId: user.id,
       period: parsed.data.period,
-      items: narratives,
+      items: generated,
     });
 
     if (parsed.data.period === "7d") {
@@ -132,7 +166,7 @@ export async function POST(request: Request) {
         branchGroups.map((group) => [group.branchId, group.comments] as const),
       );
 
-      const weeklyItems = narratives.map((narrative) => {
+      const weeklyItems = generated.map((narrative) => {
         return {
           branchId: narrative.branchId,
           branchName: narrative.branch,
@@ -165,6 +199,8 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     narratives,
+    reusedCount: reusable.length,
+    generatedCount: generated.length,
     strategy: resolveApiGenerationStrategy({
       period: parsed.data.period,
       branchCount: branchGroups.length,

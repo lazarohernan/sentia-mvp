@@ -4,13 +4,12 @@ import type { FeedbackSubmission } from "./schemas";
 import {
   analyzeFeedbackSentiment,
   getCategoryLabel,
-  mapLabelToAnalysis,
-  normalizeHuggingFaceOutput,
-  prepareTextForHuggingFace,
 } from "./sentiment-analysis";
 
 const baseSubmission: FeedbackSubmission = {
   branchSlug: "mall-norte",
+  branchId: "11111111-1111-4111-8111-111111111111",
+  branchToken: "signed-branch-token-value",
   type: "complaint",
   emotionScore: 2,
   csatScore: 2,
@@ -23,99 +22,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("normalizeHuggingFaceOutput", () => {
-  it("parses nested beto response format", () => {
-    const rows = normalizeHuggingFaceOutput([
-      [
-        { label: "NEG", score: 0.91 },
-        { label: "POS", score: 0.05 },
-        { label: "NEU", score: 0.04 },
-      ],
-    ]);
-
-    expect(rows[0]?.label).toBe("NEG");
-    expect(rows[0]?.score).toBeCloseTo(0.91);
-  });
-
-  it("parses flat classification array from HF docs", () => {
-    const rows = normalizeHuggingFaceOutput([
-      { label: "POS", score: 0.8 },
-      { label: "NEG", score: 0.1 },
-    ]);
-
-    expect(rows[0]?.label).toBe("POS");
-  });
-});
-
-describe("mapLabelToAnalysis", () => {
-  it("maps NEG with low CSAT to critical urgency for complaints", () => {
-    const analysis = mapLabelToAnalysis("NEG", 0.95, baseSubmission);
-
-    expect(analysis.sentiment).toBe("negative");
-    expect(analysis.urgency).toBe("critical");
-    expect(analysis.category).toBe("customer_service");
-  });
-
-  it("maps NEU to neutral sentiment", () => {
-    const analysis = mapLabelToAnalysis("NEU", 0.7, {
-      ...baseSubmission,
-      type: "suggestion",
-      csatScore: 3,
-    });
-
-    expect(analysis.sentiment).toBe("neutral");
-    expect(analysis.urgency).toBe("low");
-  });
-
-  it("maps POS to positive sentiment", () => {
-    const analysis = mapLabelToAnalysis("POS", 0.88, {
-      ...baseSubmission,
-      type: "compliment",
-      csatScore: 5,
-      emotionScore: 5,
-    });
-
-    expect(analysis.sentiment).toBe("positive");
-    expect(analysis.urgency).toBe("low");
-  });
-
-  it("derives operational category and keywords from Spanish feedback text", () => {
-    const analysis = mapLabelToAnalysis("NEG", 0.89, {
-      ...baseSubmission,
-      type: "complaint",
-      csatScore: 2,
-      freeText: "Espere 40 minutos en caja y la fila no avanzaba.",
-    });
-
-    expect(analysis.category).toBe("wait_time");
-    expect(analysis.keywords).toContain("espera");
-    expect(analysis.summary).toContain("Tiempo de espera");
-  });
-
-  it("uses clarification detail to derive the operational category for ambiguous comments", () => {
-    const analysis = mapLabelToAnalysis("NEU", 0.72, {
-      ...baseSubmission,
-      type: "compliment",
-      csatScore: 4,
-      emotionScore: 4,
-      freeText: "Me gusto pero no me gusto, estuvo bien pero le falto.",
-      clarification: {
-        question: undefined,
-        category: "other",
-        detail: "La espera fue larga y el lugar estaba sucio.",
-      },
-    });
-
-    expect(analysis.category).toBe("wait_time");
-    expect(analysis.keywords).toContain("espera");
-    expect(analysis.informationQuality).toBe("sufficient");
-  });
-});
-
 describe("analyzeFeedbackSentiment", () => {
   it("uses OpenAI alert triage with structured output and natural visible language when configured", async () => {
     vi.stubEnv("OPENAI_API_KEY", "test-openai-key");
-    vi.stubEnv("OPENAI_ALERTS_MODEL", "gpt-4.1-mini");
+    vi.stubEnv("OPENAI_MODEL", "gpt-5.4-mini");
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
@@ -161,7 +71,7 @@ describe("analyzeFeedbackSentiment", () => {
       throw new Error("Expected completed OpenAI triage.");
     }
 
-    expect(result.model).toBe("gpt-4.1-mini");
+    expect(result.model).toBe("gpt-5.4-mini");
     expect(result.rawLabel).toBe("openai_triage");
     expect(result.confidence).toBe(0.86);
     expect(result.usageEstimate?.usage).toMatchObject({
@@ -171,7 +81,7 @@ describe("analyzeFeedbackSentiment", () => {
       reasoningOutputTokens: 25,
       totalTokens: 1200,
     });
-    expect(result.usageEstimate?.estimatedCostUsd).toBeNull();
+    expect(result.usageEstimate?.estimatedCostUsd).toBeGreaterThan(0);
     expect(result.analysis).toMatchObject({
       sentiment: "negative",
       urgency: "critical",
@@ -237,16 +147,6 @@ describe("analyzeFeedbackSentiment", () => {
     expect(result.analysis.summary).not.toContain("- ");
     expect(result.analysis.recommendedAction).not.toContain("1.");
     expect(result.analysis.followUpQuestion).not.toContain("¿ ");
-  });
-});
-
-describe("prepareTextForHuggingFace", () => {
-  it("truncates very long comments before sending to the model", () => {
-    const longText = `${"palabra ".repeat(200)}fin`;
-    const prepared = prepareTextForHuggingFace(longText);
-
-    expect(prepared.length).toBeLessThanOrEqual(513);
-    expect(prepared.endsWith("…")).toBe(true);
   });
 });
 

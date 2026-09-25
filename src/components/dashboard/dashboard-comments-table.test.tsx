@@ -9,16 +9,14 @@ describe("DashboardCommentsTable", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders the reusable table structure without records", () => {
-    render(<DashboardCommentsTable />);
+  it("invites sharing the QR when there are no records", () => {
+    const onShareQr = vi.fn();
+    render(<DashboardCommentsTable onShareQr={onShareQr} />);
 
-    expect(screen.getByRole("tab", { name: /listado/i })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    expect(screen.getByText("Opiniones")).toBeInTheDocument();
-    expect(screen.getByText("Sin valoraciones registradas")).toBeInTheDocument();
-    expect(screen.getByText("0 resultados")).toBeInTheDocument();
+    expect(screen.getByText("Todavía no hay opiniones")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Compartir QR" }));
+    expect(onShareQr).toHaveBeenCalledOnce();
   });
 
   it("shows ratings health distribution from scored comments", () => {

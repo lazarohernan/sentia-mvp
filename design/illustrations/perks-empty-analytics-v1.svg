@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="96" viewBox="0 0 120 96" fill="none">
+<title>Observaciones por registrar</title>
+<g stroke="#84928B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+<rect x="18" y="17" width="74" height="63" rx="7" fill="#F0F3F1"/>
+<path d="M29 32h20M29 42h12M29 67h49M29 53v14"/>
+<path d="M67 12h30a8 8 0 0 1 8 8v23a8 8 0 0 1-8 8H84L73 60v-9h-6a8 8 0 0 1-8-8V20a8 8 0 0 1 8-8Z" fill="#FAFBFA"/>
+<path d="M72 29v5M82 24v15M92 29v5"/>
+</g></svg>

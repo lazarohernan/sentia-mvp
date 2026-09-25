@@ -143,7 +143,7 @@ export function Dropdown({
           role="listbox"
           aria-label={label}
           className={[
-            "absolute top-full z-50 mt-2 min-w-[10rem] overflow-hidden rounded-2xl border border-slate-200 bg-white py-1.5 shadow-[0_8px_32px_rgba(15,23,42,0.12)]",
+            "absolute top-full z-50 mt-2 min-w-[10rem] overflow-hidden rounded-2xl border border-slate-200 bg-white py-1.5",
             menuWidthClassName,
             menuAlign === "left" ? "left-0" : "right-0",
           ].join(" ")}

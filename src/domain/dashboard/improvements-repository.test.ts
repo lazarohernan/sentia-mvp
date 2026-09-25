@@ -18,6 +18,7 @@ describe("improvements-repository", () => {
       generated_at: "2026-06-16T00:00:00.000Z",
       created_at: "2026-06-16T00:00:00.000Z",
       updated_at: "2026-06-16T00:00:00.000Z",
+      comment_fingerprint: "c1|c2",
     });
 
     expect(mapped).toEqual({
@@ -28,6 +29,8 @@ describe("improvements-repository", () => {
         "En [[Manantial]] detectamos [[2 casos]] de [[tiempo de espera]].",
       urgency: "esta semana",
       generatedByLlm: true,
+      generatedAt: "2026-06-16T00:00:00.000Z",
+      commentFingerprint: "c1|c2",
     });
   });
 });

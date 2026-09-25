@@ -205,6 +205,9 @@ describe("POST /api/feedback", () => {
 
   it("returns 403 when the signed token is invalid", async () => {
     configureServiceEnv();
+    vi.stubEnv("OPENAI_API_KEY", "test-openai-key");
+    const openAiFetch = vi.fn();
+    vi.stubGlobal("fetch", openAiFetch);
 
     const response = await POST(
       new Request("http://localhost/api/feedback", {
@@ -219,6 +222,7 @@ describe("POST /api/feedback", () => {
 
     expect(response.status).toBe(403);
     expect(insertFeedback).not.toHaveBeenCalled();
+    expect(openAiFetch).not.toHaveBeenCalled();
   });
 
   it("accepts a valid signed feedback payload", async () => {
@@ -241,15 +245,11 @@ describe("POST /api/feedback", () => {
     });
   });
 
-  it("returns sentiment analysis when Hugging Face is configured", async () => {
+  it("does not replace the selected OpenAI model with Hugging Face", async () => {
     vi.stubEnv("HUGGINGFACE_API_TOKEN", "test-token");
     configureServiceEnv();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
-        Response.json([[{ label: "NEG", score: 0.91 }]], { status: 200 }),
-      ),
-    );
+    const externalFetch = vi.fn();
+    vi.stubGlobal("fetch", externalFetch);
 
     const response = await POST(
       new Request("http://localhost/api/feedback", {
@@ -270,17 +270,12 @@ describe("POST /api/feedback", () => {
     expect(response.status).toBe(202);
     expect(body).toMatchObject({
       status: "accepted",
-      analysisStatus: "completed",
+      analysisStatus: "disabled",
       sentimentAnalysis: {
-        model: "finiteautomata/beto-sentiment-analysis",
-        rawLabel: "NEG",
-        confidence: 0.91,
-        analysis: {
-          sentiment: "negative",
-          urgency: "critical",
-        },
+        model: "gpt-5.4-mini",
       },
     });
+    expect(externalFetch).not.toHaveBeenCalled();
   });
 
   it("rate limits repeated feedback submissions from the same IP", async () => {

@@ -186,7 +186,7 @@ export function DashboardDateFilter({
         {dateRange.label}
       </summary>
 
-      <div className="absolute right-0 z-40 mt-2 w-[min(22.5rem,calc(100vw-2rem))] rounded-2xl bg-white p-3 shadow-[0_18px_60px_rgba(15,23,42,0.16)]">
+      <div className="absolute right-0 z-40 mt-2 w-[min(22.5rem,calc(100vw-2rem))] rounded-2xl bg-white p-3 ">
         <div className="grid grid-cols-3 gap-2">
           {presets.map((preset) => {
             const isActive = dateRange.period === preset.period;

@@ -126,7 +126,7 @@ function OrganizationOperationalSettingsForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+      className="rounded-[1.25rem] bg-white "
     >
       <div className="border-b border-slate-100 px-5 py-4">
         <p className="text-sm font-semibold text-emerald-800">Operacion del negocio</p>
@@ -295,14 +295,15 @@ export function DashboardOrganizationOperationalSettingsPanel({
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+      <section className="rounded-[1.25rem] bg-white ">
         <div className="border-b border-slate-100 px-5 py-4">
           <p className="text-sm font-semibold text-emerald-800">Notificaciones</p>
           <h3 className="mt-1 text-xl font-semibold text-slate-950">
-            Push de este dispositivo
+            Avisos de este dispositivo
           </h3>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Controla si este navegador recibe alertas fuera de la plataforma.
+            Controla si este celular, tablet o computadora recibe alertas
+            aunque no tengas Perks abierto.
           </p>
         </div>
         <div className="p-5">

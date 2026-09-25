@@ -102,8 +102,9 @@ export function DashboardDataTable<Row>({
   const leftFilters = filters.filter((filter) => filter.align === "left");
   const rightFilters = filters.filter((filter) => filter.align !== "left");
   const renderFilter = (filter: DashboardDataTableFilter<Row>) => (
-    <Dropdown
-      key={filter.key}
+    <div key={filter.key} className="flex flex-wrap items-center gap-2">
+      <span className="text-xs font-medium text-text-secondary">{filter.label.replace(/^Filtrar por /, "")}</span>
+      <Dropdown
       label={filter.label}
       value={selectedFilters[filter.key] ?? allOption}
       onChange={(value) => updateFilter(filter.key, value)}
@@ -112,11 +113,12 @@ export function DashboardDataTable<Row>({
         ...filter.options.map((option) => ({ value: option, label: option })),
       ]}
       menuAlign={filter.align === "left" ? "left" : "right"}
-    />
+      />
+    </div>
   );
 
   return (
-    <div className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+    <div className="rounded-[1.25rem] bg-white ">
       <div className="flex flex-col gap-3 border-b border-slate-100 bg-[#f7f8f4]/60 p-4 lg:flex-row lg:items-center lg:justify-between">
         {showSearch ? (
           <label className="relative block w-full lg:max-w-sm">

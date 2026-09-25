@@ -39,6 +39,8 @@ export function mapImprovementNarrativeRow(row: ImprovementNarrativeRow): Improv
     narrative: row.narrative,
     urgency: row.urgency,
     generatedByLlm: row.generated_by_llm,
+    generatedAt: row.generated_at,
+    commentFingerprint: row.comment_fingerprint,
   };
 }
 
@@ -98,6 +100,7 @@ export async function upsertImprovementNarratives(
       actor_user_id: params.actorUserId ?? null,
       generated_at: now,
       updated_at: now,
+      comment_fingerprint: item.commentFingerprint ?? null,
     }));
 
   const { error } = await client

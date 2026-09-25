@@ -345,6 +345,7 @@ export interface Database {
           generated_at: string;
           created_at: string;
           updated_at: string;
+          comment_fingerprint: string | null;
         };
         Insert: {
           id?: string;
@@ -360,6 +361,7 @@ export interface Database {
           generated_at?: string;
           created_at?: string;
           updated_at?: string;
+          comment_fingerprint?: string | null;
         };
         Update: {
           branch_name?: string;
@@ -370,6 +372,7 @@ export interface Database {
           actor_user_id?: string | null;
           generated_at?: string;
           updated_at?: string;
+          comment_fingerprint?: string | null;
         };
       };
       improvement_weekly_digests: {

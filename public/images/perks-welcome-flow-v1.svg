@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1600" height="900" viewBox="0 0 1600 900">
+  <title>Perks — Un espacio para conectar</title>
+  <desc>Ilustración abstracta de borde a borde. Cintas, ondas y espacios compartidos en verde bosque, menta y crema. Formas vectoriales editables.</desc>
+  <defs>
+    <clipPath id="canvas"><rect width="1600" height="900"/></clipPath>
+  </defs>
+  <g clip-path="url(#canvas)">
+    <g id="01-background" aria-label="Fondo bosque">
+      <rect width="1600" height="900" fill="#063E33"/>
+      <path d="M1010-80H1680V490C1530 545 1380 500 1270 410S1020 190 1010-80Z" fill="#075344"/>
+    </g>
+    <g id="02-mint-current" aria-label="Corriente menta">
+      <path d="M-160-50H405C620-50 749 90 749 260S614 522 427 560C261 594 130 604 34 751L-160 1030V638C-57 461 103 405 287 375C411 355 475 321 475 250S424 132 329 132H-160Z" fill="#C9EDBB"/>
+      <path d="M-120 24H327C490 24 596 116 596 251S481 425 343 454C126 499-7 562-100 763" fill="none" stroke="#83CDA9" stroke-width="2"/>
+    </g>
+    <g id="03-emerald-current" aria-label="Corriente esmeralda">
+      <path d="M895-155C1264-155 1462 62 1462 294C1462 504 1320 650 1113 723C935 786 879 818 879 970H586C586 690 727 578 991 493C1118 452 1172 383 1172 287C1172 156 1068 106 895 106Z" fill="#0D9B78"/>
+      <path d="M927-44C1192-30 1320 99 1320 292C1320 452 1215 551 1054 607C824 687 733 750 733 962" fill="none" stroke="#51BD94" stroke-width="2"/>
+    </g>
+    <g id="04-shared-space" aria-label="Espace de rencontre crème">
+      <path d="M-100 965V872C-100 713 34 610 222 610H682C781 610 861 530 861 431V365H1080V447C1080 664 918 824 703 824H241C152 824 103 863 103 965Z" fill="#F5F0DB"/>
+      <path d="M-14 906C-14 793 72 718 224 718H690C846 718 971 599 971 441" fill="none" stroke="#D8D7B9" stroke-width="2"/>
+    </g>
+    <g id="05-right-petal" aria-label="Élan ouvert">
+      <path d="M1660 497C1364 473 1179 640 1179 900H1660Z" fill="#A6DBBA"/>
+      <path d="M1651 620C1421 603 1310 739 1310 932" fill="none" stroke="#5B9E82" stroke-width="2"/>
+      <path d="M1619 750C1490 750 1449 816 1449 938H1619Z" fill="#D9EDC5"/>
+    </g>
+    <g id="06-connection" aria-label="Point de connexion">
+      <circle cx="818" cy="277" r="80" fill="#F1B18B"/>
+      <circle cx="818" cy="277" r="45" fill="#063E33"/>
+      <path d="M765 164A126 126 0 0 1 916 191" fill="none" stroke="#F5F0DB" stroke-width="3" stroke-linecap="round"/>
+      <path d="M750 132A161 161 0 0 1 944 169" fill="none" stroke="#F5F0DB" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <g id="07-small-accents" aria-label="Accents de rythme">
+      <circle cx="248" cy="264" r="15" fill="#F5F0DB"/>
+      <circle cx="295" cy="264" r="15" fill="#F5F0DB"/>
+      <circle cx="342" cy="264" r="15" fill="#F5F0DB"/>
+      <path d="M1510 82V134M1484 108H1536" fill="none" stroke="#A6DBBA" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="1090" cy="810" r="11" fill="#F1B18B"/>
+    </g>
+  </g>
+</svg>

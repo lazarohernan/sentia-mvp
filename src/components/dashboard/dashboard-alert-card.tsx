@@ -1,9 +1,16 @@
 "use client";
 
-import { Loader2, Sparkles } from "lucide-react";
+/* Linear-style issue card · Perks tokens
+ * states: default · hover · focus · active · disabled · loading · error · success
+ */
+
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
-import type { DashboardAlertItem } from "@/domain/dashboard/alerts";
+import {
+  getAlertSourceLabel,
+  type DashboardAlertItem,
+} from "@/domain/dashboard/alerts";
 import type { WorkflowStatus } from "@/domain/feedback/workflow-status";
 import { workflowStatusToLabel } from "@/domain/feedback/workflow-status";
 import type { TeamMember } from "@/domain/organizations/team";
@@ -20,6 +27,28 @@ type DashboardAlertCardProps = {
   onRemoved: (alertId: string) => void;
 };
 
+function workflowStatusClass(status: WorkflowStatus | undefined) {
+  if (status === "en_revision") {
+    return "bg-signal-warning-paper text-signal-warning-ink";
+  }
+  if (status === "en_proceso") {
+    return "bg-brand-soft text-brand-muted";
+  }
+  if (status === "escalado") {
+    return "bg-signal-danger-paper text-signal-danger-ink";
+  }
+  if (status === "resuelto") {
+    return "bg-signal-ok-paper text-signal-ok-ink";
+  }
+  return "bg-surface-muted text-text-secondary";
+}
+
+function toneMarkClass(tone: DashboardAlertItem["tone"]) {
+  if (tone === "danger") return "bg-signal-danger-fill";
+  if (tone === "warning") return "bg-signal-warning-fill";
+  return "bg-signal-ok-fill";
+}
+
 const statusOptions: Array<{ value: WorkflowStatus; label: string }> = [
   { value: "nuevo", label: "Nuevo" },
   { value: "en_revision", label: "En revisión" },
@@ -27,10 +56,6 @@ const statusOptions: Array<{ value: WorkflowStatus; label: string }> = [
   { value: "escalado", label: "Escalado" },
   { value: "resuelto", label: "Resuelto" },
 ];
-
-function priorityToneClasses(_tone: DashboardAlertItem["tone"]) {
-  return "";
-}
 
 export function DashboardAlertCard({
   alert,
@@ -142,42 +167,30 @@ export function DashboardAlertCard({
   }
 
   return (
-    <article className={`rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)] ${priorityToneClasses(alert.tone)}`}>
+    <article className="min-w-0 rounded-panel bg-surface p-4 transition-colors hover:bg-surface-muted ">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            {alert.source === "ia" ? (
-              <span
-                className="inline-flex size-6 items-center justify-center rounded-full bg-slate-100 text-slate-600"
-                title="Detectado por IA"
-                aria-label="Detectado por IA"
-              >
-                <Sparkles size={13} aria-hidden="true" />
-              </span>
-            ) : (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-600">
-                Sistema
-              </span>
-            )}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span
+              className={`size-1.5 shrink-0 rounded-full ${toneMarkClass(alert.tone)}`}
+              aria-hidden="true"
+            />
+            <span className="text-[13px] text-text-secondary">
+              {getAlertSourceLabel(alert.source)}
+            </span>
             {alert.slaBreached ? <SlaTerm variant="badge" /> : null}
           </div>
-          <h3 className="mt-2 text-base font-semibold text-slate-950">{alert.title}</h3>
-          <p className="mt-1 text-xs text-slate-500">{alert.subtitle}</p>
+          <h3 className="mt-2 min-w-0 wrap-anywhere text-sm font-medium leading-5 text-text-primary">
+            {alert.title}
+          </h3>
+          <p className="mt-1 text-[13px] leading-5 text-text-secondary">
+            {alert.subtitle}
+          </p>
         </div>
         <span
           className={[
-            "shrink-0 text-[11px] font-semibold",
-            alert.workflowStatus === "nuevo"
-              ? "text-slate-600"
-              : alert.workflowStatus === "en_revision"
-                ? "text-amber-700"
-                : alert.workflowStatus === "en_proceso"
-                  ? "text-sky-700"
-                  : alert.workflowStatus === "escalado"
-                    ? "text-rose-700"
-                    : alert.workflowStatus === "resuelto"
-                      ? "text-emerald-700"
-                      : "text-slate-600",
+            "inline-flex h-6 shrink-0 items-center rounded-md px-2 text-[12px] font-medium",
+            workflowStatusClass(alert.workflowStatus),
           ].join(" ")}
         >
           {alert.workflowStatus
@@ -186,23 +199,28 @@ export function DashboardAlertCard({
         </span>
       </div>
 
-      <p className="mt-3 text-sm leading-6 text-slate-600">{alert.detail}</p>
+      <p className="mt-3 text-[13px] leading-5 text-text-secondary">
+        {alert.detail}
+      </p>
 
       {alert.probableCause ? (
-        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-600">
+        <p className="mt-3 rounded-md bg-surface-muted px-3 py-2 text-[13px] leading-5 text-text-secondary">
+          <span className="font-medium text-text-primary">Causa probable. </span>
           {alert.probableCause}
         </p>
       ) : null}
 
       {isActionable ? (
-        <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
-          <div className="grid gap-3 sm:grid-cols-2">
+        <div className="mt-4 space-y-2.5 border-t border-border-soft pt-3">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-semibold text-slate-500">Estado</span>
+              <span className="text-[12px] font-medium text-text-secondary">
+                Estado
+              </span>
               <select
                 value={status}
                 onChange={(event) => setStatus(event.target.value as WorkflowStatus)}
-                className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-emerald-700/10"
+                className="field-control mt-1 h-9 w-full rounded-md bg-surface px-2.5 text-[13px] text-text-primary"
               >
                 {statusOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -212,11 +230,13 @@ export function DashboardAlertCard({
               </select>
             </label>
             <label className="block">
-              <span className="text-xs font-semibold text-slate-500">Responsable</span>
+              <span className="text-[12px] font-medium text-text-secondary">
+                Responsable
+              </span>
               <select
                 value={assignedUserId}
                 onChange={(event) => setAssignedUserId(event.target.value)}
-                className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-emerald-700/10"
+                className="field-control mt-1 h-9 w-full rounded-md bg-surface px-2.5 text-[13px] text-text-primary"
               >
                 <option value="">Sin asignar</option>
                 {assignees.map((member) => (
@@ -228,37 +248,43 @@ export function DashboardAlertCard({
             </label>
           </div>
           <label className="block">
-            <span className="text-xs font-semibold text-slate-500">Nota</span>
+            <span className="text-[12px] font-medium text-text-secondary">
+              Nota
+            </span>
             <input
               value={note}
               onChange={(event) => setNote(event.target.value)}
               placeholder="Breve nota de seguimiento"
-              className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-700/10"
+              className="field-control mt-1 h-9 w-full rounded-md bg-surface px-2.5 text-[13px] text-text-primary placeholder:text-text-secondary"
             />
           </label>
           {error ? (
-            <p className="text-sm font-medium text-red-700">{error}</p>
+            <p className="text-[13px] font-medium text-signal-danger-ink" role="alert">
+              {error}
+            </p>
           ) : null}
           {message ? (
-            <p className="text-sm font-medium text-emerald-800">{message}</p>
+            <p className="text-[13px] font-medium text-brand-muted" role="status">
+              {message}
+            </p>
           ) : null}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => void handleSave()}
               disabled={isSaving}
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-black disabled:opacity-60"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md bg-brand-muted px-3 text-[13px] font-medium text-text-inverse transition hover:bg-brand focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : null}
-              Guardar
+              {isSaving ? "Guardando..." : "Guardar"}
             </button>
             {onOpenSubmission && alert.submissionId ? (
               <button
                 type="button"
                 onClick={() => onOpenSubmission(alert.submissionId!)}
-                className="inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex h-8 items-center rounded-md px-2.5 text-[13px] font-medium text-text-secondary transition hover:bg-surface-muted hover:text-text-primary focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
               >
                 Ver valoración
               </button>
@@ -269,7 +295,7 @@ export function DashboardAlertCard({
         <button
           type="button"
           onClick={() => onOpenSubmission(alert.submissionId!)}
-          className="mt-4 inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          className="mt-3 inline-flex h-8 items-center rounded-md px-2.5 text-[13px] font-medium text-text-secondary transition hover:bg-surface-muted hover:text-text-primary focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
         >
           Ver valoración
         </button>

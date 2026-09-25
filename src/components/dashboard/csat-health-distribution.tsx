@@ -20,17 +20,17 @@ export const healthZoneStyles: Record<
   risk: {
     badgeClassName: "bg-rose-50 text-rose-700",
     textClassName: "text-rose-700",
-    barClassName: "bg-red-500",
+    barClassName: "bg-signal-danger-fill",
   },
   observation: {
     badgeClassName: "bg-amber-50 text-amber-800",
     textClassName: "text-amber-800",
-    barClassName: "bg-amber-400",
+    barClassName: "bg-signal-warning-fill",
   },
   good: {
     badgeClassName: "bg-emerald-50 text-emerald-800",
     textClassName: "text-emerald-800",
-    barClassName: "bg-emerald-500",
+    barClassName: "bg-signal-ok-fill",
   },
 };
 
@@ -161,12 +161,12 @@ export function CsatHealthExplanation({
   );
 }
 
-type CsatHealthChartSize = "default" | "compact" | "wide";
+type CsatHealthChartSize = "default" | "compact" | "wide" | "row";
 
 function chartSizeTokens(size: CsatHealthChartSize) {
-  if (size === "compact") {
+  if (size === "compact" || size === "row") {
     return {
-      trackHeight: "h-40",
+      trackHeight: size === "row" ? "h-36" : "h-40",
       gridGap: "gap-2 sm:gap-3",
       trackPadding: "px-2 pb-2 pt-7",
       barWidth: "w-[72%] max-w-10",
@@ -263,9 +263,11 @@ function CsatHealthVerticalBars({
             <p className="mt-0.5 text-[11px] leading-4 text-slate-500">
               Notas {copy.scoreRange}
             </p>
-            <p className="mt-1 line-clamp-2 text-[10px] leading-3.5 text-slate-400">
-              {healthZoneLabels[zone]}
-            </p>
+            {size === "row" ? null : (
+              <p className="mt-1 line-clamp-2 text-[10px] leading-3.5 text-slate-400">
+                {healthZoneLabels[zone]}
+              </p>
+            )}
           </div>
         );
       })}
@@ -291,6 +293,77 @@ function CsatHealthEmptyBars({ size = "default" }: { size?: CsatHealthChartSize 
           </p>
         </div>
       ))}
+    </div>
+  );
+}
+
+const stackFillClass: Record<CsatHealthZone, string> = {
+  risk: "bg-signal-danger-fill",
+  observation: "bg-signal-warning-fill",
+  good: "bg-signal-ok-fill",
+};
+
+const healthZoneShortLabel: Record<CsatHealthZone, string> = {
+  risk: "Riesgo",
+  observation: "Regular",
+  good: "Bien",
+};
+
+export function CsatHealthZoneLegend() {
+  return (
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-secondary">
+      {healthSegments.map((zone) => (
+        <li key={zone} className="inline-flex items-center gap-1.5">
+          <span
+            className={`size-2 shrink-0 ${stackFillClass[zone]}`}
+            aria-hidden="true"
+          />
+          {healthZoneCopy[zone].scoreRange} · {healthZoneShortLabel[zone]}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function CsatHealthStackBar({
+  zoneCounts,
+  zonePercents,
+  scoredCount,
+}: {
+  zoneCounts: Record<CsatHealthZone, number>;
+  zonePercents: Record<CsatHealthZone, number>;
+  scoredCount: number;
+}) {
+  if (scoredCount === 0) {
+    return (
+      <div
+        className="h-1 w-full bg-border-soft"
+        role="img"
+        aria-label="Sin valoraciones con nota en este periodo"
+      />
+    );
+  }
+
+  return (
+    <div
+      className="flex h-1 w-full min-w-0"
+      role="img"
+      aria-label={buildHealthDistributionAriaLabel(zoneCounts, zonePercents)}
+    >
+      {healthSegments.map((zone) => {
+        const percent = zonePercents[zone];
+        if (zoneCounts[zone] <= 0 || percent <= 0) {
+          return null;
+        }
+
+        return (
+          <span
+            key={zone}
+            className={`min-w-0 ${stackFillClass[zone]}`}
+            style={{ flexGrow: percent, flexBasis: 0 }}
+          />
+        );
+      })}
     </div>
   );
 }

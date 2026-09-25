@@ -67,8 +67,8 @@ function BranchCard({
       className={[
         "shrink-0 rounded-xl px-3.5 py-2 text-sm font-semibold transition whitespace-nowrap",
         active
-          ? "bg-emerald-800 text-white shadow-emerald-900/20"
-          : "bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 shadow-[0_14px_40px_rgba(15,23,42,0.06)]",
+          ? "bg-emerald-800 text-white "
+          : "bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 ",
       ].join(" ")}
     >
       {name}
@@ -142,7 +142,7 @@ function BranchCarousel({
 
 function NarrativeCard({ narrative }: { narrative: ImprovementNarrative }) {
   return (
-    <div className="rounded-[1.15rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+    <div className="rounded-[1.15rem] bg-white p-5 ">
       <div className="mb-5 flex items-start justify-between gap-4">
         <h4 className="text-base font-semibold leading-snug text-slate-950">
           {narrative.title}
@@ -212,8 +212,9 @@ export function DashboardImprovementPlans({
 
   if (branchNames.length === 0) {
     return (
-      <div className="rounded-[1.35rem] bg-white p-6 text-sm leading-6 text-slate-500 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-        Aún no hay suficiente base para generar un plan de mejora por sucursal.
+      <div className="flex flex-col items-start gap-5 rounded-2xl bg-white p-6 text-sm leading-6 text-text-secondary sm:flex-row sm:items-center">
+        <img src="/images/illustrations/perks-empty-improvements-v1.svg" alt="" width={120} height={96} className="h-auto w-22 shrink-0" />
+        <p>Aún no hay suficiente base para generar un plan de mejora por sucursal.</p>
       </div>
     );
   }
@@ -248,7 +249,7 @@ export function DashboardImprovementPlans({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+      <section className="rounded-[1.35rem] bg-white p-5 ">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
@@ -256,8 +257,7 @@ export function DashboardImprovementPlans({
               Plan de mejora por sucursal
             </div>
             <p className="mt-1.5 text-sm leading-6 text-slate-500">
-              Síntesis en lenguaje natural de lo que ocurrió y qué atender primero,
-              generada desde los comentarios del periodo.
+              Se guarda como foto del periodo. Si los comentarios no cambiaron, regenerar no vuelve a cobrar IA.
             </p>
           </div>
 
@@ -265,7 +265,7 @@ export function DashboardImprovementPlans({
             type="button"
             onClick={handleGenerate}
             disabled={state.status === "loading" || isHydrating}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-900 disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:opacity-60"
           >
             {state.status === "loading" ? (
               <>
@@ -297,7 +297,7 @@ export function DashboardImprovementPlans({
 
       {/* Idle hint */}
       {!isHydrating && state.status === "idle" && (
-        <div className="rounded-[1.35rem] bg-white p-8 text-center text-sm leading-7 text-slate-400 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+        <div className="rounded-[1.35rem] bg-white p-8 text-center text-sm leading-7 text-slate-400 ">
           Pulsa{" "}
           <span className="font-semibold text-slate-700">"Generar mejoras con IA"</span>{" "}
           para que el asistente analice los comentarios de cada sucursal y te dé una síntesis

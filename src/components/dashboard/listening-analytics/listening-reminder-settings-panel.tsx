@@ -221,8 +221,8 @@ export function ListeningReminderSettingsPanel({
                   className={[
                     "flex size-8 items-center justify-center rounded-lg text-xs font-bold transition focus:outline-none focus-visible:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50",
                     isSelected
-                      ? "border-emerald-800 bg-emerald-800 text-white shadow-emerald-900/20 hover:bg-emerald-900"
-                      : "bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-900 shadow-[0_14px_40px_rgba(15,23,42,0.06)]",
+                      ? "border-emerald-800 bg-emerald-800 text-white hover:bg-emerald-900"
+                      : "bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-900 ",
                   ].join(" ")}
                 >
                   {weekdayLabels[day]}

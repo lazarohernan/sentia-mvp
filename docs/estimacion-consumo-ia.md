@@ -12,15 +12,15 @@ Fuentes oficiales consultadas:
 Usar `gpt-5.4-mini` como modelo base para:
 - Analisis de comentarios (`feedback_triage`).
 - Reportes operativos (`operational_report`).
+- Narrativas de mejora (`improvement_narrative`).
+- Preparacion de coaching (`listening_coaching_prep`).
 
 Razones:
 - Tiene precio oficial vigente en la tabla actual.
 - Es suficientemente fuerte para JSON estructurado, clasificacion, resumen y accion recomendada.
 - Evita usar `gpt-5.5` como default, que debe reservarse para flujos donde una evaluacion demuestre que la mejora justifica el costo.
 
-Posible optimizacion posterior:
-- Evaluar `gpt-5.4-nano` para clasificacion rapida de comentarios si una prueba con comentarios reales mantiene precision aceptable.
-- Mantener `gpt-5.4-mini` para reportes ejecutivos porque combinan contexto, priorizacion y redaccion.
+La plataforma usa un solo modelo para mantener resultados consistentes. Cualquier cambio futuro debe validarse con comentarios reales antes de modificar esta decision.
 
 ## Formula
 

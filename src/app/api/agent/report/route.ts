@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getOpenAIModel } from "@/domain/ai/model-config";
 import { insertAiUsageEvent } from "@/domain/ai-usage/repository";
 import { buildAgentContextSnapshot } from "@/domain/agent/context";
 import { generateOperationalAgentReport } from "@/domain/agent/operational-report";
@@ -74,6 +75,7 @@ export async function POST(request: Request) {
 
   try {
     const serviceClient = createServiceClient();
+    const model = getOpenAIModel();
     const context = await buildAgentContextSnapshot(serviceClient, {
       organizationId: organization.id,
       branchIds: membership?.branchId ? [membership.branchId] : undefined,
@@ -83,7 +85,7 @@ export async function POST(request: Request) {
     const report = await generateOperationalAgentReport({
       config: {
         openAiApiKey: process.env.OPENAI_API_KEY,
-        openAiModel: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
+        openAiModel: model,
       },
       context,
     });
@@ -102,7 +104,7 @@ export async function POST(request: Request) {
           branchId: membership?.branchId ?? null,
           useCase: "operational_report",
           provider: "openai",
-          model: process.env.OPENAI_MODEL ?? "gpt-5.4-mini",
+          model,
           operation: "agents.run",
           estimate: report.usageEstimate,
           rawUsage: report.rawUsage,

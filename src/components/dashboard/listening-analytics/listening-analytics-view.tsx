@@ -4,11 +4,7 @@ import {
   ArrowRight,
   BarChart3,
   CalendarDays,
-  CircleAlert,
-  Ear,
   Info,
-  LineChart,
-  MessageSquareText,
   Settings2,
   X,
 } from "lucide-react";
@@ -41,7 +37,6 @@ import {
 } from "@/domain/listening/schemas";
 import { DashboardFloatingNav } from "../dashboard-floating-nav";
 import type { DashboardCurrentUser } from "../dashboard-user-menu";
-import { PlatformFooter } from "@/components/platform-footer";
 import { ListeningBranchFilter } from "./listening-branch-filter";
 import { ListeningReminderSettingsPanel } from "./listening-reminder-settings-panel";
 import { buildListeningSectionHref } from "./listening-section-tabs";
@@ -199,7 +194,7 @@ export function ListeningAnalyticsView({
     ? Math.round((highLevelEvents / totalEvents) * 100)
     : 0;
   return (
-    <main className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.1),transparent_24%),linear-gradient(180deg,#f4f8f5_0%,#e9f0ed_100%)] text-slate-950">
+    <main className="flex min-h-screen flex-col bg-background text-slate-950">
       <DashboardFloatingNav
         activeView="escucha"
         onViewChange={() => {}}
@@ -259,7 +254,7 @@ export function ListeningAnalyticsView({
               href="/escucha"
               aria-label="Abrir evaluación"
               title="Abrir evaluación"
-              className="inline-flex size-10 items-center justify-center rounded-full bg-emerald-800 text-white shadow-emerald-900/20 transition hover:bg-emerald-900"
+              className="inline-flex size-10 items-center justify-center rounded-full bg-emerald-800 text-white transition hover:bg-emerald-900"
             >
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
@@ -272,13 +267,11 @@ export function ListeningAnalyticsView({
               label: "Evaluaciones",
               value: totalEvents.toString(),
               detail: "Registros de escucha",
-              icon: Ear,
             },
             {
               label: "Escucha alta",
-              value: `${highLevelRatio}%`,
+              value: totalEvents ? `${highLevelRatio}%` : "Sin datos",
               detail: "Empática o generativa",
-              icon: LineChart,
             },
             {
               label: "Media del periodo",
@@ -287,41 +280,35 @@ export function ListeningAnalyticsView({
                 averageSummary.average === null
                   ? "Nivel promedio"
                   : `Cercano a ${averageSummary.nearestLevelLabel}`,
-              icon: BarChart3,
             },
             {
               label: "Moda del periodo",
               value: modeSummary.modeLabel,
               detail: modeSummary.detail,
-              icon: MessageSquareText,
             },
           ].map((metric) => {
-            const Icon = metric.icon;
             return (
               <article
                 key={metric.label}
-                className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+                className="rounded-[1.35rem] bg-white p-5 "
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    <p className="text-xs font-medium text-text-secondary">
                       {metric.label}
                     </p>
-                    <p className="mt-3 text-3xl font-semibold text-slate-950">
+                    <p className="mt-3 text-3xl font-semibold tabular-nums text-slate-950">
                       {metric.value}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">{metric.detail}</p>
                   </div>
-                  <span className="flex size-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-800">
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </span>
                 </div>
               </article>
             );
           })}
         </div>
 
-        <section className="mt-6 rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+        <section className="mt-6 rounded-[1.35rem] bg-white p-5 ">
           <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">
@@ -401,7 +388,7 @@ export function ListeningAnalyticsView({
         </section>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-2">
-          <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+          <section className="rounded-[1.35rem] bg-white p-5 ">
             <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-950">
@@ -420,7 +407,7 @@ export function ListeningAnalyticsView({
             <div className="mt-5 space-y-5">
               {levelCounts.map(({ level, count }) => {
                 const meta = levelMeta[level];
-                const width = totalEvents ? Math.max((count / totalEvents) * 100, 4) : 4;
+                const width = totalEvents ? (count / totalEvents) * 100 : 0;
                 return (
                   <div key={level}>
                     <div className="flex items-center justify-between gap-4">
@@ -446,7 +433,7 @@ export function ListeningAnalyticsView({
             </div>
           </section>
 
-          <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+          <section className="rounded-[1.35rem] bg-white p-5 ">
             <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-950">
@@ -484,7 +471,7 @@ export function ListeningAnalyticsView({
                           {event.note || "Sin nota registrada."}
                         </p>
                       </div>
-                      <div className="text-xs font-medium text-slate-400 sm:text-right">
+                      <div className="text-xs font-medium text-text-secondary sm:text-right">
                         {formatListeningDate(event.createdAt)}
                       </div>
                     </article>
@@ -492,7 +479,7 @@ export function ListeningAnalyticsView({
                 })
               ) : (
                 <div className="py-10 text-center">
-                  <CircleAlert className="mx-auto h-9 w-9 text-slate-300" aria-hidden="true" />
+                  <img src="/images/illustrations/perks-empty-analytics-v1.svg" alt="" width={120} height={96} className="mx-auto h-auto w-22" />
                   <p className="mt-3 text-sm font-semibold text-slate-950">
                     Todavía no hay evaluaciones de escucha
                   </p>
@@ -522,7 +509,7 @@ export function ListeningAnalyticsView({
             role="dialog"
             aria-modal="true"
             aria-labelledby="listening-settings-title"
-            className="relative max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[1.35rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+            className="relative max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[1.35rem] bg-white "
           >
             <button
               type="button"
@@ -556,7 +543,7 @@ export function ListeningAnalyticsView({
             role="dialog"
             aria-modal="true"
             aria-labelledby="listening-info-title"
-            className="relative w-full max-w-2xl rounded-[1.35rem] bg-white p-6 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+            className="relative w-full max-w-2xl rounded-[1.35rem] bg-white p-6 "
           >
             <button
               type="button"
@@ -628,7 +615,6 @@ export function ListeningAnalyticsView({
           </div>
         </div>
       ) : null}
-      <PlatformFooter />
     </main>
   );
 }

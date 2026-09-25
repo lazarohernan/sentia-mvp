@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="96" viewBox="0 0 120 96" fill="none">
+  <title>Conversaciones por empezar</title>
+  <g stroke="#84928B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M56 39h39a10 10 0 0 1 10 10v20a10 10 0 0 1-10 10h-7v12L72 79H56a10 10 0 0 1-10-10V49a10 10 0 0 1 10-10Z" fill="#F0F3F1"/>
+    <path d="M23 12h48a11 11 0 0 1 11 11v27a11 11 0 0 1-11 11H44L27 73V61h-4a11 11 0 0 1-11-11V23a11 11 0 0 1 11-11Z" fill="#FAFBFA"/>
+    <path d="M27 29h37M27 40h25"/>
+  </g>
+</svg>

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   clearRateLimitStore,
+  consumeAuthRateLimit,
   consumeDistributedRateLimit,
   consumeRateLimit,
   getClientIpFromHeaders,
@@ -95,6 +96,71 @@ describe("consumeRateLimit", () => {
         }),
       }),
     );
+  });
+
+  it("fails closed when a distributed store is required but missing", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+
+    const result = await consumeDistributedRateLimit({
+      namespace: "auth:test",
+      key: "account",
+      limit: 5,
+      windowMs: 60_000,
+      requireDistributed: true,
+    });
+
+    expect(result).toMatchObject({ allowed: false, unavailable: true });
+  });
+
+  it("requires the distributed store for authentication in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+
+    const result = await consumeAuthRateLimit({
+      namespace: "auth:sign-in",
+      key: "account",
+      limit: 5,
+      windowMs: 60_000,
+    });
+
+    expect(result).toMatchObject({ allowed: false, unavailable: true });
+  });
+
+  it("fails closed when the configured store is unavailable", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.example.com");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "secret-token");
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({}, { status: 503 })));
+
+    const result = await consumeDistributedRateLimit({
+      namespace: "auth:test",
+      key: "account",
+      limit: 5,
+      windowMs: 60_000,
+      requireDistributed: true,
+    });
+
+    expect(result).toMatchObject({ allowed: false, unavailable: true });
+  });
+
+  it("fails closed when the store returns an invalid counter", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.example.com");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "secret-token");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json([{ result: "bad" }, { result: 1 }, { result: 60_000 }])),
+    );
+
+    const result = await consumeDistributedRateLimit({
+      namespace: "auth:test",
+      key: "account",
+      limit: 5,
+      windowMs: 60_000,
+      requireDistributed: true,
+    });
+
+    expect(result).toMatchObject({ allowed: false, unavailable: true });
   });
 });
 

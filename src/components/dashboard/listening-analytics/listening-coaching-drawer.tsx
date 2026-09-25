@@ -13,6 +13,14 @@ import {
   type ListeningEventRow,
 } from "@/domain/listening/schemas";
 
+import {
+  dashboardDrawerBodyClass,
+  dashboardDrawerFooterClass,
+  dashboardDrawerHeaderClass,
+  dashboardDrawerPanelClass,
+  dashboardDrawerPrimaryButtonClass,
+} from "../dashboard-drawer-layout";
+
 type ListeningCoachingDrawerProps = {
   open: boolean;
   onClose: () => void;
@@ -193,12 +201,12 @@ export function ListeningCoachingDrawer({
         onClick={onClose}
       />
       <aside
-        className="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col bg-white"
+        className={`${dashboardDrawerPanelClass} max-w-xl`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="listening-coaching-title"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+        <div className={`${dashboardDrawerHeaderClass} flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5`}>
           <div>
             <p className="text-sm font-semibold text-emerald-800">Coaching</p>
             <h2
@@ -222,7 +230,7 @@ export function ListeningCoachingDrawer({
           </button>
         </div>
 
-        <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
+        <div className={`${dashboardDrawerBodyClass} space-y-6 px-6 py-5`}>
           <section className="rounded-xl bg-slate-50 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
               Lectura rápida
@@ -276,7 +284,7 @@ export function ListeningCoachingDrawer({
 
           <section>
             <h3 className="text-sm font-semibold text-slate-950">
-              Preguntas para la conversación
+              Preguntas para preparar la conversación
             </h3>
             <p className="mt-1 text-xs leading-5 text-slate-500">
               Solo para ti. No se envían al colaborador.
@@ -332,12 +340,12 @@ export function ListeningCoachingDrawer({
         </div>
 
         {canManage ? (
-          <div className="border-t border-slate-100 px-6 py-4">
+          <div className={`${dashboardDrawerFooterClass} px-6 pt-4`}>
             <button
               type="button"
               onClick={() => void handleSave()}
               disabled={isSaving || isLoadingAction || actionText.trim().length === 0}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`${dashboardDrawerPrimaryButtonClass} w-full`}
             >
               {isSaving ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

@@ -1,11 +1,13 @@
 "use client";
 
 import { BellRing, Loader2, Smartphone, SmartphoneNfc } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { requiresStandaloneForWebPush } from "@/lib/app/push-device";
 
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
-type PushState =
+export type PushState =
   | "checking"
   | "unsupported"
   | "ready"
@@ -52,25 +54,6 @@ export function hasMatchingApplicationServerKey(
   }
 
   return existingBytes.every((byte, index) => byte === applicationServerKey[index]);
-}
-
-function isIosLikeSafari() {
-  if (typeof navigator === "undefined") {
-    return false;
-  }
-
-  return /iPad|iPhone|iPod/.test(navigator.userAgent);
-}
-
-function isStandaloneWebApp() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    ("standalone" in navigator && Boolean(navigator.standalone))
-  );
 }
 
 function isLocalOrigin() {
@@ -155,24 +138,44 @@ export type PushNotificationsToggleProps = {
   allowDisable?: boolean;
   hideWhenEnabled?: boolean;
   flat?: boolean;
+  layout?: "card" | "prompt";
+  onStateChange?: (state: PushState) => void;
+  onEnabled?: () => void;
 };
 
 export function PushNotificationsToggle({
   allowDisable = false,
   hideWhenEnabled = false,
   flat = false,
+  layout = "card",
+  onStateChange,
+  onEnabled,
 }: PushNotificationsToggleProps) {
   const [state, setState] = useState<PushState>("checking");
-  const [detail, setDetail] = useState("Revisando compatibilidad de push.");
+  const [detail, setDetail] = useState("Comprobando si este dispositivo puede recibir avisos.");
+  const onStateChangeRef = useRef(onStateChange);
+  const onEnabledRef = useRef(onEnabled);
+  onStateChangeRef.current = onStateChange;
+  onEnabledRef.current = onEnabled;
+
+  function updateState(next: PushState) {
+    setState(next);
+    onStateChangeRef.current?.(next);
+    if (next === "enabled") {
+      onEnabledRef.current?.();
+    }
+  }
 
   useEffect(() => {
     let active = true;
 
     async function loadStatus() {
-      if (isIosLikeSafari() && !isStandaloneWebApp()) {
+      if (requiresStandaloneForWebPush()) {
         if (!active) return;
-        setState("unsupported");
-        setDetail("En iPhone, instala Perks en pantalla de inicio y abre la app desde ahi.");
+        updateState("unsupported");
+        setDetail(
+          "En este celular, agrega Perks a la pantalla de inicio y ábrela desde ese icono para poder recibir avisos.",
+        );
         return;
       }
 
@@ -183,11 +186,11 @@ export function PushNotificationsToggle({
         !("PushManager" in window)
       ) {
         if (!active) return;
-        setState("unsupported");
+        updateState("unsupported");
         setDetail(
           isLocalOrigin()
-            ? "Este navegador local no expone Web Push. Prueba Chrome en localhost o Safari como PWA instalada."
-            : "Este dispositivo no soporta Web Push o falta configurar VAPID.",
+            ? "Este navegador local no puede recibir avisos. Prueba Chrome, Edge o la app instalada en el celular."
+            : "Este navegador no puede recibir avisos en segundo plano.",
         );
         return;
       }
@@ -195,8 +198,8 @@ export function PushNotificationsToggle({
       try {
         if (Notification.permission === "denied") {
           if (!active) return;
-          setState("blocked");
-          setDetail("Las notificaciones estan bloqueadas en el navegador.");
+          updateState("blocked");
+          setDetail("Los avisos están bloqueados en este navegador. Habilítalos en su configuración.");
           return;
         }
 
@@ -208,34 +211,22 @@ export function PushNotificationsToggle({
 
         if (!active) return;
 
-        setState(hasCurrentSubscription ? "enabled" : "ready");
+        updateState(hasCurrentSubscription ? "enabled" : "ready");
         setDetail(
           hasCurrentSubscription
-            ? "Recibiras alertas y recordatorios en este dispositivo."
-            : isLocalOrigin()
-              ? "En local, toca Activar push y acepta el permiso del navegador."
-              : "Activa push para recibir alertas operativas en iPhone y Android.",
+            ? "Recibirás alertas y recordatorios en este dispositivo."
+            : "Toca el botón y acepta el permiso de este navegador.",
         );
       } catch {
         if (!active) return;
-        // Si el SW se cuelga (común en dev / HMR), no dejar el botón girando:
-        // permitir intentar activar o mostrar error accionable.
         if (Notification.permission === "granted") {
-          setState("ready");
-          setDetail(
-            isLocalOrigin()
-              ? "El service worker tardo en responder. Puedes intentar Activar push de nuevo."
-              : "No se confirmo el registro push. Intenta Activar push de nuevo.",
-          );
+          updateState("ready");
+          setDetail("No se confirmó el registro. Puedes tocar el botón e intentarlo de nuevo.");
           return;
         }
 
-        setState("error");
-        setDetail(
-          isLocalOrigin()
-            ? "Push en local quedo a medias (service worker). Recarga o prueba en Chrome, o en produccion."
-            : "No se pudo inicializar el registro push. Recarga e intenta de nuevo.",
-        );
+        updateState("error");
+        setDetail("No se pudieron preparar los avisos. Recarga e inténtalo de nuevo.");
       }
     }
 
@@ -248,23 +239,25 @@ export function PushNotificationsToggle({
 
   async function enablePush() {
     try {
-      if (isIosLikeSafari() && !isStandaloneWebApp()) {
-        setState("unsupported");
-        setDetail("En iPhone, agrega Perks a pantalla de inicio y abre desde el icono.");
+      if (requiresStandaloneForWebPush()) {
+        updateState("unsupported");
+        setDetail(
+          "En este celular, agrega Perks a la pantalla de inicio y ábrela desde ese icono para poder recibir avisos.",
+        );
         return;
       }
 
-      setState("busy");
-      setDetail("Solicitando permiso de notificaciones.");
+      updateState("busy");
+      setDetail("Pidiendo permiso en este navegador.");
 
       const permission = await Notification.requestPermission();
 
       if (permission !== "granted") {
-        setState(permission === "denied" ? "blocked" : "ready");
+        updateState(permission === "denied" ? "blocked" : "ready");
         setDetail(
           permission === "denied"
-            ? "El navegador bloqueo las notificaciones."
-            : "Permiso pendiente para activar push.",
+            ? "Este navegador bloqueó los avisos. Puedes habilitarlos en su configuración."
+            : "Aún falta aceptar el permiso para activar los avisos.",
         );
         return;
       }
@@ -300,18 +293,18 @@ export function PushNotificationsToggle({
         throw new Error("subscription_failed");
       }
 
-      setState("enabled");
-      setDetail("Push activo en este dispositivo.");
+      updateState("enabled");
+      setDetail("Los avisos están activos en este dispositivo.");
     } catch {
-      setState("error");
-      setDetail("No se pudo activar push en este dispositivo.");
+      updateState("error");
+      setDetail("No se pudieron activar los avisos en este dispositivo.");
     }
   }
 
   async function disablePush() {
     try {
-      setState("busy");
-      setDetail("Desactivando notificaciones push.");
+      updateState("busy");
+      setDetail("Desactivando avisos en este dispositivo.");
       const registration = await ensurePushRegistration();
       const subscription = await registration.pushManager.getSubscription();
 
@@ -320,11 +313,11 @@ export function PushNotificationsToggle({
         await subscription.unsubscribe();
       }
 
-      setState("ready");
-      setDetail("Push desactivado en este dispositivo.");
+      updateState("ready");
+      setDetail("Los avisos quedaron desactivados en este dispositivo.");
     } catch {
-      setState("error");
-      setDetail("No se pudo desactivar push.");
+      updateState("error");
+      setDetail("No se pudieron desactivar los avisos.");
     }
   }
 
@@ -334,6 +327,32 @@ export function PushNotificationsToggle({
 
   if (enabled && hideWhenEnabled) {
     return null;
+  }
+
+  if (layout === "prompt") {
+    const canActivate =
+      state === "ready" || state === "error" || state === "busy";
+
+    return (
+      <div>
+        <p className="text-sm leading-6 text-text-secondary">{detail}</p>
+        {canActivate ? (
+          <button
+            type="button"
+            onClick={enablePush}
+            disabled={isBusy}
+            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-text-inverse transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isBusy ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Smartphone className="size-4" aria-hidden="true" />
+            )}
+            {isBusy ? "Activando…" : "Activar notificaciones"}
+          </button>
+        ) : null}
+      </div>
+    );
   }
 
   return (
@@ -360,7 +379,7 @@ export function PushNotificationsToggle({
         </span>
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-950">Notificaciones push</p>
+          <p className="text-sm font-semibold text-slate-950">Avisos en este dispositivo</p>
           <p className="mt-0.5 text-xs text-slate-500">{detail}</p>
 
           <button
@@ -379,7 +398,7 @@ export function PushNotificationsToggle({
             ) : (
               <Smartphone className="h-4 w-4" aria-hidden="true" />
             )}
-            {canDisable ? "Desactivar push" : enabled ? "Push activo" : "Activar push"}
+            {canDisable ? "Desactivar avisos" : enabled ? "Avisos activos" : "Activar avisos"}
           </button>
         </div>
       </div>

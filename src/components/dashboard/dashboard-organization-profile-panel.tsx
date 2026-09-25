@@ -169,7 +169,7 @@ function OrganizationProfileForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+      className="rounded-[1.25rem] bg-white "
     >
       {showHeader ? (
         <div className="border-b border-slate-100 px-5 py-4">
@@ -187,7 +187,7 @@ function OrganizationProfileForm({
       <div className="space-y-6 p-5">
         <div className="rounded-xl bg-[#f7f8f4] p-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+            <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ">
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -344,11 +344,21 @@ function OrganizationProfileForm({
         ) : null}
 
         {canManage ? (
-          <div className="flex justify-end border-t border-slate-100 pt-5">
+          <div
+            className={
+              showHeader
+                ? "flex justify-end border-t border-slate-100 pt-5"
+                : "sticky bottom-0 z-10 -mx-6 mt-2 flex justify-end bg-brand-muted px-6 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+            }
+          >
             <button
               type="submit"
               disabled={isSubmitting || isUploadingLogo}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+              className={
+                showHeader
+                  ? "inline-flex h-11 items-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+                  : "inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-brand-muted transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
+              }
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

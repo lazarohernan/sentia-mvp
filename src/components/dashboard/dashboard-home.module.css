@@ -1,0 +1,62 @@
+/* Perks: preserve redesign, informational surfaces only.
+ * design-taste-frontend: DESIGN_VARIANCE 5 / MOTION_INTENSITY 2 / VISUAL_DENSITY 5.
+ * Existing light theme and approved artwork preserved. Panels 16px; controls 8px.
+ */
+.home {
+  --home-tint: #e2eddf;
+  --home-panel-radius: 16px;
+  color: var(--color-perks-ink);
+}
+.home h3, .home h4 { min-width: 0; overflow-wrap: anywhere; font-style: normal; }
+.home button, .home summary { white-space: nowrap; min-height: 44px; }
+.home button:disabled { opacity: 0.55; cursor: not-allowed; }
+.home button:focus-visible, .home a:focus-visible, .home summary:focus-visible {
+  outline: 2px solid var(--color-perks-focus); outline-offset: 3px;
+}
+.welcome {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-perks-md);
+  padding: var(--space-perks-md);
+  background: var(--home-tint);
+  border-radius: var(--home-panel-radius);
+  overflow: hidden;
+}
+.welcomeArt { display: none; }
+.welcome h3 { font-size: clamp(1.75rem, 3vw, 2.25rem); line-height: 1.2; font-weight: 650; letter-spacing: -0.025em; color: var(--brand); }
+.welcome p { margin-top: var(--space-perks-sm); max-width: 48ch; color: var(--color-perks-ink); font-size: 1rem; line-height: 1.6; }
+.metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-perks-md); padding: var(--space-perks-md); border-radius: var(--home-panel-radius); background: var(--color-perks-paper); }
+.metrics a { padding-inline: var(--space-perks-sm); }
+.metrics a:nth-child(odd) { padding-inline-start: 0; }
+.metrics a:nth-child(even) { border-inline-start: 1px solid var(--color-perks-rule); }
+.metrics a p:last-child { font-variant-numeric: tabular-nums; color: var(--brand); font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 650; }
+.panel { display: flex; min-width: 0; flex-direction: column; padding: var(--space-perks-md); background: var(--color-perks-paper); border-radius: var(--home-panel-radius); }
+.panelHead { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-perks-xs); }
+.panelHead h3 { font-size: 1.125rem; font-weight: 650; letter-spacing: -0.015em; }
+.action { display: inline-flex; align-items: center; gap: var(--space-perks-xs); min-height: 44px; white-space: nowrap; font-size: 0.875rem; font-weight: 600; color: var(--color-perks-accent); text-underline-offset: 2px; }
+.action:active { opacity: 0.75; }
+.primary { background: var(--color-perks-accent); color: var(--color-perks-accent-ink); padding-inline: var(--space-perks-sm); border-radius: var(--radius-perks-panel); }
+.row { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-perks-md); align-items: start; }
+.empty { display: flex; width: 100%; min-height: 12rem; flex: 1; align-self: center; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-perks-sm); padding-block: var(--space-perks-md); max-width: 60ch; text-align: center; }
+.emptyArt { width: 88px; height: auto; flex-shrink: 0; }
+.empty p { color: var(--color-perks-muted); font-size: 0.875rem; line-height: 1.65; }
+.empty p:first-child { color: var(--color-perks-ink); font-weight: 600; }
+.connect { display: flex; align-items: center; gap: var(--space-perks-sm); padding-block: var(--space-perks-sm); }
+.connect + .connect { border-top: 1px solid var(--color-perks-rule); }
+.connect img { width: 5rem; height: auto; flex-shrink: 0; }
+.connect button { padding-inline: var(--space-perks-sm); margin-top: var(--space-perks-xs); border-radius: var(--radius-perks-panel); background: var(--brand); color: var(--text-inverse); }
+@media (hover: hover) { .action:hover { text-decoration: underline; } .primary:hover { text-decoration: none; opacity: 0.9; } }
+@media (min-width: 40rem) {
+  .panelHead { flex-direction: row; align-items: center; justify-content: space-between; }
+  .welcome { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 0; padding: 0; }
+  .welcomeArt { display: block; width: 100%; height: 100%; min-height: 14rem; object-fit: cover; grid-column: 2; grid-row: 1; }
+  .welcomeCopy { grid-column: 1; grid-row: 1; align-self: center; padding: var(--space-perks-lg); }
+}
+@media (min-width: 64rem) {
+  .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .metrics a:not(:first-child) { padding-inline-start: var(--space-perks-md); border-inline-start: 1px solid var(--color-perks-rule); }
+  .row { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: stretch; }
+}
+@media (max-width: 23rem) {
+  .panel, .metrics, .welcome { padding: var(--space-perks-sm); }
+  .connect { align-items: flex-start; gap: var(--space-perks-xs); }
+  .connect img { width: 3.5rem; }
+}

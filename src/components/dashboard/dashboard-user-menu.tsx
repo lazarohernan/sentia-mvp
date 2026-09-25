@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BookOpenText,
   ChevronDown,
   KeyRound,
   LogOut,
@@ -8,6 +9,7 @@ import {
   Store,
   UserRound,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -101,7 +103,7 @@ export function DashboardUserMenu({
         aria-haspopup="menu"
         onClick={() => setIsOpen((current) => !current)}
       >
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-xs font-bold text-white shadow-emerald-900/20">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-xs font-bold text-white ">
           {initials}
         </span>
         <span className="hidden min-w-0 truncate text-sm font-semibold leading-5 text-slate-900 sm:inline">
@@ -122,13 +124,13 @@ export function DashboardUserMenu({
           aria-label="Menu de cuenta"
           className={
             flat
-              ? "absolute right-0 top-12 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-3xl bg-white shadow-[0_10px_32px_rgba(15,23,42,0.1)] backdrop-blur-xl"
+              ? "absolute right-0 top-12 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-3xl bg-white backdrop-blur-xl"
               : "absolute right-0 top-12 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-3xl bg-white backdrop-blur-xl"
           }
         >
           <div className={flat ? "px-5 py-4" : "border-b border-slate-100 px-5 py-4"}>
             <div className="flex items-center gap-3">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-sm font-bold text-white shadow-emerald-900/20">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-sm font-bold text-white ">
                 {initials}
               </span>
               <div className="min-w-0">
@@ -217,6 +219,23 @@ export function DashboardUserMenu({
                 </span>
               </button>
             ) : null}
+
+            <Link
+              href="/guia"
+              target="_blank"
+              rel="noopener noreferrer"
+              role="menuitem"
+              onClick={() => setIsOpen(false)}
+              className={menuItemClass}
+            >
+              <span className={menuIconClass}>
+                <BookOpenText className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-slate-950">Guía de Perks</span>
+                <span className="mt-0.5 block text-xs text-slate-500">Qué hace cada sección</span>
+              </span>
+            </Link>
 
             {onRequestPasswordReset ? (
               <div className="mb-2">

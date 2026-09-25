@@ -6,6 +6,16 @@ import type { FormEvent } from "react";
 
 import type { AlertEscalationSettings } from "@/domain/organizations/organization-settings-schemas";
 
+import {
+  dashboardDrawerBodyClass,
+  dashboardDrawerCancelButtonClass,
+  dashboardDrawerFooterClass,
+  dashboardDrawerFormClass,
+  dashboardDrawerHeaderClass,
+  dashboardDrawerPanelClass,
+  dashboardDrawerPrimaryButtonClass,
+} from "./dashboard-drawer-layout";
+
 type DashboardAlertsEscalationSettingsPanelProps = {
   open: boolean;
   onClose: () => void;
@@ -88,12 +98,12 @@ function EscalationSettingsForm({
         onClick={onClose}
       />
       <aside
-        className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white"
+        className={`${dashboardDrawerPanelClass} max-w-md`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="alert-escalation-settings-title"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+        <div className={`${dashboardDrawerHeaderClass} flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5`}>
           <div>
             <p className="text-sm font-semibold text-emerald-800">
               Alertas y escalamiento
@@ -119,8 +129,8 @@ function EscalationSettingsForm({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-1 flex-col px-6 py-6">
-          <div className="space-y-5">
+        <form onSubmit={handleSubmit} className={dashboardDrawerFormClass}>
+          <div className={`${dashboardDrawerBodyClass} space-y-5 px-6 py-6`}>
             <label className="block">
               <span className="text-sm font-semibold text-slate-700">
                 Telefono de escalamiento
@@ -159,26 +169,26 @@ function EscalationSettingsForm({
                 Solo gerencia puede editar este contacto.
               </p>
             ) : null}
+
+            {success ? (
+              <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                {success}
+              </p>
+            ) : null}
+
+            {error ? (
+              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </p>
+            ) : null}
           </div>
 
-          {success ? (
-            <p className="mt-5 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              {success}
-            </p>
-          ) : null}
-
-          {error ? (
-            <p className="mt-5 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </p>
-          ) : null}
-
           {canManage ? (
-            <div className="mt-auto flex flex-col gap-3 border-t border-slate-100 pt-5">
+            <div className={`${dashboardDrawerFooterClass} flex flex-col gap-3 px-6 pt-5`}>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+                className={dashboardDrawerPrimaryButtonClass}
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -190,7 +200,7 @@ function EscalationSettingsForm({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className={dashboardDrawerCancelButtonClass}
               >
                 Cancelar
               </button>

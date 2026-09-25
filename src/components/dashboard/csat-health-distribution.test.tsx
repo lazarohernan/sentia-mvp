@@ -15,7 +15,7 @@ describe("CsatHealthDistributionBar", () => {
     );
 
     const riskBar = screen.getByTestId("csat-health-bar-risk");
-    expect(riskBar).toHaveClass("bg-red-500");
+    expect(riskBar).toHaveClass("bg-signal-danger-fill");
     expect(riskBar.style.height).not.toBe("0px");
     expect(Number.parseFloat(riskBar.style.height)).toBeGreaterThan(0);
   });

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480" fill="none">
+  <title>Perks: voces que se encuentran</title>
+  <desc>Cintas curvas y formas de conversación en verde bosque, menta y crema.</desc>
+  <rect width="1200" height="480" fill="#E2EDDF"/>
+  <g id="forest-field">
+    <path d="M430-80H1200V560H770C592 560 580 397 416 360C224 317 238 77 430-80Z" fill="#063E31"/>
+  </g>
+  <g id="listening-ribbon">
+    <path d="M114-86V42C114 134 188 176 291 176H402C518 176 570 230 570 315V566" stroke="#9BCFB1" stroke-width="104"/>
+    <path d="M114-86V42C114 134 188 176 291 176H402C518 176 570 230 570 315V566" stroke="#063E31" stroke-opacity=".18" stroke-width="1.5"/>
+  </g>
+  <g id="reply-ribbon">
+    <path d="M684-100V43C684 145 844 105 844 215C844 328 664 316 664 414V560" stroke="#149875" stroke-width="130"/>
+    <path d="M684-100V43C684 145 844 105 844 215C844 328 664 316 664 414V560" stroke="#D8ECCF" stroke-opacity=".25" stroke-width="1.5"/>
+  </g>
+  <g id="shared-path">
+    <path d="M250 535V429C250 349 320 313 402 313H451C499 313 525 287 525 242V227" stroke="#F3EED6" stroke-width="66"/>
+  </g>
+  <g id="conversation">
+    <path d="M915 48H1090C1159 48 1212 99 1212 166C1212 232 1159 280 1090 280H990L914 345V280C848 278 805 231 805 166C805 101 851 48 915 48Z" fill="#CCE9B6"/>
+    <path d="M928 70H1083C1139 70 1186 111 1186 166C1186 221 1142 257 1083 257H982L939 294" stroke="#063E31" stroke-opacity=".16" stroke-width="1.5"/>
+    <circle cx="923" cy="165" r="12" fill="#063E31"/>
+    <circle cx="977" cy="165" r="12" fill="#063E31"/>
+    <circle cx="1031" cy="165" r="12" fill="#063E31"/>
+  </g>
+  <g id="connection-point">
+    <circle cx="525" cy="190" r="35" fill="#E8AB84"/>
+    <circle cx="525" cy="190" r="19" fill="#063E31"/>
+    <path d="M487 132C510 117 542 117 564 132M476 114C506 94 546 94 575 114" stroke="#F3EED6" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <g id="lower-curve">
+    <path d="M908 560V496C908 421 967 390 1041 390H1270" stroke="#A6D7B8" stroke-width="72"/>
+    <path d="M908 560V496C908 421 967 390 1041 390H1270" stroke="#063E31" stroke-opacity=".18" stroke-width="1.5"/>
+  </g>
+</svg>

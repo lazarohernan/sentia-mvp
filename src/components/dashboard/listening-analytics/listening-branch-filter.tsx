@@ -68,7 +68,7 @@ export function ListeningBranchFilter({
         {branchFilterLabel}
       </summary>
 
-      <div className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl bg-white p-2 shadow-[0_18px_60px_rgba(15,23,42,0.16)]">
+      <div className="absolute right-0 z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl bg-white p-2 ">
         {lockedBranchScope ? (
           <p className="px-3 py-2 text-sm leading-6 text-slate-600">
             Tu usuario está limitado a esta sucursal.

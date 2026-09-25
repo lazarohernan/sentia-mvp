@@ -11,7 +11,13 @@ describe("auth redirects", () => {
 
   it("keeps internal redirect paths safe", () => {
     expect(getSafeRedirectPath("/escucha")).toBe("/escucha");
+    expect(getSafeRedirectPath("/auth/activar-cuenta?mode=reset")).toBe(
+      "/auth/activar-cuenta?mode=reset",
+    );
     expect(getSafeRedirectPath("https://evil.test")).toBe("/dashboard");
+    expect(getSafeRedirectPath("//evil.test")).toBe("/dashboard");
+    expect(getSafeRedirectPath("/\\evil.test/path")).toBe("/dashboard");
+    expect(getSafeRedirectPath("/\n/evil.test")).toBe("/dashboard");
   });
 
   it("builds invite callback links with token hash", () => {

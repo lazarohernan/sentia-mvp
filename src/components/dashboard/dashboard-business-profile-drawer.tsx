@@ -6,6 +6,11 @@ import { createPortal } from "react-dom";
 
 import type { OrganizationSettings } from "@/domain/organizations/organization-settings-schemas";
 
+import {
+  dashboardDrawerBodyClass,
+  dashboardDrawerHeaderClass,
+  dashboardDrawerPanelClass,
+} from "./dashboard-drawer-layout";
 import { DashboardOrganizationProfilePanel } from "./dashboard-organization-profile-panel";
 
 type DashboardBusinessProfileDrawerProps = {
@@ -49,12 +54,12 @@ export function DashboardBusinessProfileDrawer({
         onClick={onClose}
       />
       <aside
-        className="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col bg-white"
+        className={`${dashboardDrawerPanelClass} max-w-xl`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="business-profile-title"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+        <div className={`${dashboardDrawerHeaderClass} flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5`}>
           <div>
             <p className="text-sm font-semibold text-emerald-800">Perfil del negocio</p>
             <h2 id="business-profile-title" className="mt-1 text-xl font-semibold text-slate-950">
@@ -74,7 +79,7 @@ export function DashboardBusinessProfileDrawer({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className={`${dashboardDrawerBodyClass} px-6 py-5`}>
           <DashboardOrganizationProfilePanel
             initialSettings={initialSettings}
             canManage={canManage}

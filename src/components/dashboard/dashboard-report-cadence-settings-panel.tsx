@@ -85,7 +85,7 @@ export function DashboardReportCadenceSettingsPanel({
   }
 
   return (
-    <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.04)]">
+    <section className="rounded-[1.35rem] bg-white p-5 ">
       <div className="flex items-start gap-3">
         <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600">
           <CalendarClock className="h-5 w-5" aria-hidden="true" />
@@ -115,7 +115,7 @@ export function DashboardReportCadenceSettingsPanel({
               className={[
                 "rounded-2xl p-4 text-left transition",
                 isSelected
-                  ? "border-slate-950 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.08)]"
+                  ? "border-slate-950 bg-white "
                   : "border-slate-100 bg-slate-50/70 hover:border-slate-300 hover:bg-white",
                 !canManage ? "cursor-not-allowed opacity-70" : "",
               ].join(" ")}

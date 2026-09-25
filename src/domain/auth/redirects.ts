@@ -3,11 +3,21 @@ import type { PermissionProfile } from "@/domain/organizations/permission-profil
 import type { MemberRole } from "@/domain/organizations/schemas";
 
 export function getSafeRedirectPath(value: string | null | undefined) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
     return "/dashboard";
   }
 
-  return value;
+  try {
+    const base = "https://perks.invalid";
+    const destination = new URL(value, base);
+    if (destination.origin !== base) {
+      return "/dashboard";
+    }
+
+    return `${destination.pathname}${destination.search}${destination.hash}`;
+  } catch {
+    return "/dashboard";
+  }
 }
 
 /** @deprecated Prefer getHomePathForMemberAccess con perfil y participación. */

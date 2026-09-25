@@ -2,8 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { LandingReveal } from "@/components/landing/landing-reveal";
+import { isGuidedDemoEnabled, landingLoginCtaLabel } from "@/lib/app/guided-demo";
 
 export function LandingFinalCta() {
+  const showGuidedDemo = isGuidedDemoEnabled();
+
   return (
     <section id="empezar" className="bg-[#fffdf7] px-6 pb-5 sm:px-10 lg:px-14 lg:pb-8">
       <LandingReveal className="relative mx-auto min-h-[360px] max-w-[1320px] overflow-hidden rounded-[8px] bg-[#064b3d] text-white">
@@ -34,12 +37,22 @@ export function LandingFinalCta() {
             <span className="inline-flex items-center gap-2"><CheckCircle2 size={17} aria-hidden="true" /> Alcance por sucursales</span>
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link href="/demo-guiada" className="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-white px-6 font-extrabold text-[#075143] transition hover:-translate-y-0.5 hover:bg-[#edf7f1]">
-              Probar experiencia
-              <ArrowRight size={18} aria-hidden="true" />
-            </Link>
-            <Link href="/login" className="inline-flex h-11 items-center justify-center rounded-[8px] border border-white/55 bg-white/8 px-6 font-extrabold text-white backdrop-blur transition hover:bg-white/15">
-              Entrar a la demo
+            {showGuidedDemo ? (
+              <Link href="/demo-guiada" className="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-white px-6 font-extrabold text-[#075143] transition hover:-translate-y-0.5 hover:bg-[#edf7f1]">
+                Probar experiencia
+                <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+            ) : null}
+            <Link
+              href="/login"
+              className={
+                showGuidedDemo
+                  ? "inline-flex h-11 items-center justify-center rounded-[8px] border border-white/55 bg-white/8 px-6 font-extrabold text-white backdrop-blur transition hover:bg-white/15"
+                  : "inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-white px-6 font-extrabold text-[#075143] transition hover:-translate-y-0.5 hover:bg-[#edf7f1]"
+              }
+            >
+              {landingLoginCtaLabel()}
+              {showGuidedDemo ? null : <ArrowRight size={18} aria-hidden="true" />}
             </Link>
           </div>
         </div>

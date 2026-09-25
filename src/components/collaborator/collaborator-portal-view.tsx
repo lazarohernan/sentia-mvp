@@ -13,7 +13,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { PushNotificationsToggle } from "@/components/push/push-notifications-toggle";
-import { PlatformFooter } from "@/components/platform-footer";
+import { PushPromptModal } from "@/components/push/push-prompt-modal";
 import { DashboardUserMenu } from "@/components/dashboard/dashboard-user-menu";
 import { getTimeOfDayGreetingInHonduras } from "@/domain/dashboard/honduras-time";
 import { formatUserShortName, getUserInitials } from "@/domain/auth/profile";
@@ -400,8 +400,6 @@ export function CollaboratorPortalView({
                     </div>
 
                     <div className="max-h-96 overflow-y-auto p-2">
-                      <PushNotificationsToggle hideWhenEnabled flat />
-
                       {visibleNotifications.length === 0 ? (
                         <div className="px-3 py-8 text-center">
                           <p className="text-sm font-semibold text-slate-950">
@@ -763,10 +761,11 @@ export function CollaboratorPortalView({
 
               <section className="rounded-[1.35rem] bg-white p-6">
                 <h2 className="text-xl font-semibold text-slate-950">
-                  Notificaciones push
+                  Avisos de este dispositivo
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Recibe avisos en este dispositivo aunque no tengas la app abierta.
+                  Recibe avisos en este celular, tablet o computadora aunque no
+                  tengas Perks abierto.
                 </p>
                 <div className="mt-4">
                   <PushNotificationsToggle allowDisable flat />
@@ -775,8 +774,8 @@ export function CollaboratorPortalView({
             </div>
           </section>
         ) : null}
-        <PlatformFooter />
       </section>
+      <PushPromptModal />
     </main>
   );
 }

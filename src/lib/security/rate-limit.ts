@@ -10,6 +10,13 @@ type RateLimitParams = {
   limit: number;
   windowMs: number;
   now?: number;
+  requireDistributed?: boolean;
+};
+type RateLimitResult = {
+  allowed: boolean;
+  remaining: number;
+  resetAt: number;
+  unavailable?: boolean;
 };
 
 declare global {
@@ -105,10 +112,20 @@ function numericResult(row: UpstashCommandResult | undefined, fallback: number) 
   return fallback;
 }
 
-export async function consumeDistributedRateLimit(params: RateLimitParams) {
+export async function consumeDistributedRateLimit(
+  params: RateLimitParams,
+): Promise<RateLimitResult> {
+  const unavailable = () => ({
+    allowed: false,
+    remaining: 0,
+    resetAt: 0,
+    unavailable: true,
+  });
+  const fallback = () =>
+    params.requireDistributed ? unavailable() : consumeRateLimit(params);
   const upstash = getUpstashRateLimitEnv();
   if (!upstash) {
-    return consumeRateLimit(params);
+    return fallback();
   }
 
   const now = params.now ?? Date.now();
@@ -117,6 +134,7 @@ export async function consumeDistributedRateLimit(params: RateLimitParams) {
   try {
     const response = await fetch(`${upstash.url}/pipeline`, {
       method: "POST",
+      signal: AbortSignal.timeout(3_000),
       headers: {
         Authorization: `Bearer ${upstash.token}`,
         "Content-Type": "application/json",
@@ -129,16 +147,19 @@ export async function consumeDistributedRateLimit(params: RateLimitParams) {
     });
 
     if (!response.ok) {
-      return consumeRateLimit(params);
+      return fallback();
     }
 
     const rows = (await response.json()) as UpstashCommandResult[];
     if (!Array.isArray(rows) || rows.some((row) => row.error)) {
-      return consumeRateLimit(params);
+      return fallback();
     }
 
-    const count = numericResult(rows[0], 1);
-    const ttl = Math.max(0, numericResult(rows[2], params.windowMs));
+    const count = numericResult(rows[0], Number.NaN);
+    const ttl = numericResult(rows[2], Number.NaN);
+    if (!Number.isSafeInteger(count) || count < 1 || !Number.isFinite(ttl) || ttl < 0) {
+      return fallback();
+    }
 
     return {
       allowed: count <= params.limit,
@@ -146,8 +167,15 @@ export async function consumeDistributedRateLimit(params: RateLimitParams) {
       resetAt: now + ttl,
     };
   } catch {
-    return consumeRateLimit(params);
+    return fallback();
   }
+}
+
+export function consumeAuthRateLimit(params: RateLimitParams) {
+  return consumeDistributedRateLimit({
+    ...params,
+    requireDistributed: process.env.NODE_ENV === "production",
+  });
 }
 
 export function clearRateLimitStore() {

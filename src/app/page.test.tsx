@@ -1,9 +1,14 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import Home from "./page";
 
 describe("Home", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
   it("renders the landing hero entry points", () => {
     render(<Home />);
 
@@ -23,6 +28,20 @@ describe("Home", () => {
       screen.queryByRole("link", { name: /^dashboard$/i }),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Módulos principales")).not.toBeInTheDocument();
+  }, 10000);
+
+  it("hides the guided demo and uses Iniciar sesión in production", async () => {
+    vi.resetModules();
+    vi.stubEnv("NODE_ENV", "production");
+    const { default: ProductionHome } = await import("./page");
+    render(<ProductionHome />);
+
+    expect(screen.queryByRole("link", { name: /probar experiencia/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /entrar a la demo/i })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /iniciar sesión/i })[0]).toHaveAttribute(
+      "href",
+      "/login",
+    );
   }, 10000);
 
   it("renders the daily business problems section", () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   dedupeOverlappingWeeklyRollups,
+  partitionImprovementGeneration,
   resolveImprovementSourceComments,
   resolveApiGenerationStrategy,
   resolveImprovementPromptStrategy,
@@ -128,5 +129,43 @@ describe("improvements-batch", () => {
     });
 
     expect(weeklyComments.map((comment) => comment.id)).toEqual(["current"]);
+  });
+
+  it("reutiliza mejoras si los comentarios no cambiaron", () => {
+    const comments: DashboardCommentRow[] = [
+      {
+        id: "c1",
+        customer: "Cliente",
+        business: "Feedback",
+        branch: "Centro",
+        branchId: "branch-1",
+        feedbackType: "Observación",
+        sentiment: "Riesgo",
+        csatScore: 2,
+        status: "Nuevo",
+        message: "Fila lenta",
+        receivedAt: "2026-06-16T12:00:00.000Z",
+      },
+    ];
+    const saved = {
+      branchId: "branch-1",
+      commentFingerprint: "c1",
+    };
+
+    const reused = partitionImprovementGeneration({
+      groups: [{ branchId: "branch-1", branchName: "Centro", comments }],
+      saved: [saved],
+      force: false,
+    });
+    expect(reused.reusable).toEqual([saved]);
+    expect(reused.commentsToGenerate).toEqual([]);
+
+    const forced = partitionImprovementGeneration({
+      groups: [{ branchId: "branch-1", branchName: "Centro", comments }],
+      saved: [saved],
+      force: true,
+    });
+    expect(forced.reusable).toEqual([]);
+    expect(forced.commentsToGenerate).toHaveLength(1);
   });
 });

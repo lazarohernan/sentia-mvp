@@ -3,6 +3,7 @@ import {
   Mail,
   UserRound,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import { signInAction, signUpAction } from "@/app/auth/actions";
@@ -10,6 +11,7 @@ import { REGISTRATION_ENABLED } from "@/domain/auth/config";
 
 import { LoginSubmitButton } from "./login-submit-button";
 import { LoginPasswordField } from "./login-password-field";
+import styles from "./login-input.module.css";
 
 type LoginViewProps = {
   mode?: "login" | "registro";
@@ -23,6 +25,7 @@ const errorMessages: Record<string, string> = {
   invalid_credentials: "Revisa tu correo y contrasena.",
   auth_callback_failed: "El enlace expiro o ya fue usado. Solicita uno nuevo.",
   rate_limited: "Demasiados intentos. Espera unos minutos.",
+  auth_unavailable: "El acceso no está disponible temporalmente. Intenta de nuevo más tarde.",
   supabase_not_configured: "Autenticacion no configurada.",
   registration_disabled: "El registro publico esta desactivado.",
 };
@@ -41,28 +44,30 @@ export function LoginView({
   const isRegisterMode = REGISTRATION_ENABLED && mode === "registro";
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#06100d_0%,#091612_100%)] text-white">
-      <section className="grid min-h-screen overflow-hidden bg-[url('/images/auth-rustic-business.webp')] bg-cover bg-center lg:grid-cols-[1fr_1.02fr]">
-        <form
-          action={isRegisterMode ? signUpAction : signInAction}
-          className="flex min-h-[660px] flex-col bg-[#06100d]/82 px-6 py-7 shadow-[24px_0_80px_rgba(0,0,0,0.2)] backdrop-blur-2xl sm:px-10 lg:min-h-0 lg:px-16"
-        >
-          <div className="mx-auto flex h-full w-full max-w-xl flex-col">
-            <h1 className="sr-only">Perks. Escucha mejor y actua a tiempo.</h1>
-            <div className="flex justify-start">
-              <img
-                src="/brand/perks-logo-white.png"
-                alt="Perks"
-                className="h-11 w-auto sm:h-12"
-              />
-            </div>
-
-            <div className="my-auto py-10">
+    <main className="relative isolate min-h-[100dvh] overflow-hidden bg-[#e8f0e8] text-[#12362d]">
+      <div className="pointer-events-none absolute inset-0 bg-[url('/images/auth/perks-login-background-v3.svg')] bg-cover bg-center" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 bg-[url('/images/auth-rustic-business.webp')] bg-cover bg-center opacity-[0.03] grayscale" aria-hidden="true" />
+      <section className="relative mx-auto flex min-h-[100dvh] w-full max-w-[1180px] items-center justify-center px-5 py-10 sm:px-8">
+        <div className={`pointer-events-none absolute inset-0 hidden lg:block ${styles.decorEnter}`} aria-hidden="true">
+          <Image src="/images/auth/qr-stand.webp" alt="" width={640} height={640} className="absolute left-[11%] top-[17%] h-auto w-[118px] -rotate-6 xl:left-[12%] xl:w-[132px]" />
+          <Image src="/images/auth/opiniones.webp" alt="" width={640} height={640} className="absolute bottom-[16%] left-[10%] h-auto w-[118px] rotate-6 xl:left-[11%] xl:w-[132px]" />
+          <Image src="/images/auth/escucha.webp" alt="" width={640} height={640} className="absolute right-[11%] top-[17%] h-auto w-[124px] rotate-6 xl:right-[12%] xl:w-[138px]" />
+          <Image src="/images/auth/mejoras.webp" alt="" width={640} height={640} className="absolute bottom-[16%] right-[10%] h-auto w-[120px] -rotate-6 xl:right-[11%] xl:w-[134px]" />
+        </div>
+        <div className={`relative z-10 flex w-full max-w-[480px] flex-col items-center ${styles.sceneEnter}`}>
+          <h1 className="sr-only">Perks. Escucha mejor y actua a tiempo.</h1>
+          <Image src="/brand/perks-logo.png" alt="Perks" width={160} height={52} className="mb-6 h-10 w-auto" priority />
+          <form
+            action={isRegisterMode ? signUpAction : signInAction}
+            className="w-full rounded-[28px] bg-[#fffdf8] px-7 py-8 sm:px-10 sm:py-9"
+          >
+          <div className="mx-auto flex w-full flex-col">
+            <div>
               <div className="text-left">
-                <h2 className="text-3xl font-semibold tracking-normal text-white sm:text-4xl">
+                <h2 className="text-[1.8rem] font-semibold tracking-tight text-[#0b332a] sm:text-[2rem]">
                   {isRegisterMode ? "Crea tu cuenta" : "Bienvenido de nuevo"}
                 </h2>
-                <p className="mt-4 max-w-sm text-base leading-7 text-white/55">
+                <p className="mt-2 max-w-sm text-sm leading-6 text-[#60736a]">
                   {isRegisterMode
                     ? "Configura tu empresa y empieza a organizar la experiencia de tus clientes."
                     : "Accede a tu espacio de trabajo y continua gestionando tu experiencia en Perks."}
@@ -70,25 +75,25 @@ export function LoginView({
               </div>
 
               {errorCode ? (
-                <p className="mt-6 rounded-lg border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                <p className="mt-5 rounded-lg bg-[#f9e9e5] px-4 py-3 text-sm text-[#843e30]">
                   {errorMessages[errorCode] ?? "No se pudo iniciar sesion."}
                 </p>
               ) : null}
 
               {statusCode ? (
-                <p className="mt-6 rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-50">
+                <p className="mt-5 rounded-lg bg-[#e0f0e8] px-4 py-3 text-sm text-[#205b48]">
                   {statusMessages[statusCode] ?? "Operación completada."}
                 </p>
               ) : null}
 
               {REGISTRATION_ENABLED ? (
-                <div className="mt-7 grid h-12 grid-cols-2 rounded-lg border border-white/10 bg-white/15 p-1">
+                <div className="mt-6 grid h-11 grid-cols-2 rounded-lg bg-[#edf3ec] p-1">
                   <Link
                     href="/login"
                     className={`inline-flex items-center justify-center rounded-md text-sm font-semibold transition ${
                       isRegisterMode
-                        ? "text-white/55 hover:text-white"
-                        : "bg-[#07100d] text-white shadow-sm"
+                        ? "text-[#60736a] hover:text-[#0b332a]"
+                        : "bg-[#0b332a] text-white"
                     }`}
                   >
                     Iniciar sesion
@@ -97,8 +102,8 @@ export function LoginView({
                     href="/login?mode=registro"
                     className={`inline-flex items-center justify-center rounded-md text-sm font-semibold transition ${
                       isRegisterMode
-                        ? "bg-[#07100d] text-white shadow-sm"
-                        : "text-white/55 hover:text-white"
+                        ? "bg-[#0b332a] text-white"
+                        : "text-[#60736a] hover:text-[#0b332a]"
                     }`}
                   >
                     Registrarse
@@ -110,21 +115,21 @@ export function LoginView({
                 <input type="hidden" name="redirectTo" value={redirectTo} />
               ) : null}
 
-              <div className="mt-8 space-y-5">
+              <div className="mt-7 space-y-4">
                 {isRegisterMode ? (
                   <>
                     <label className="block">
-                      <span className="text-sm font-semibold text-white/75">
+                      <span className="text-sm font-semibold text-[#29483d]">
                         Nombre completo
                       </span>
-                      <div className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-white/8 bg-[#34413b] px-4 text-white transition focus-within:border-emerald-300/70 focus-within:ring-2 focus-within:ring-emerald-300/20">
+                      <div className="mt-2 flex h-12 items-center gap-3 rounded-lg border border-[#d7e3d9] bg-white px-4 text-[#12362d] transition focus-within:ring-2 focus-within:ring-[#3d9e7e]">
                         <UserRound
                           size={21}
-                          className="shrink-0 text-white/55"
+                          className="shrink-0 text-[#7a9386]"
                           aria-hidden="true"
                         />
                         <input
-                          className="h-full w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
+                          className={`${styles.input} h-full w-full bg-white text-sm text-[#12362d] outline-none placeholder:text-[#718a7d]`}
                           name="fullName"
                           type="text"
                           autoComplete="name"
@@ -135,17 +140,17 @@ export function LoginView({
                     </label>
 
                     <label className="block">
-                      <span className="text-sm font-semibold text-white/75">
+                      <span className="text-sm font-semibold text-[#29483d]">
                         Empresa
                       </span>
-                      <div className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-white/8 bg-[#34413b] px-4 text-white transition focus-within:border-emerald-300/70 focus-within:ring-2 focus-within:ring-emerald-300/20">
+                      <div className="mt-2 flex h-12 items-center gap-3 rounded-lg border border-[#d7e3d9] bg-white px-4 text-[#12362d] transition focus-within:ring-2 focus-within:ring-[#3d9e7e]">
                         <Building2
                           size={21}
-                          className="shrink-0 text-white/55"
+                          className="shrink-0 text-[#7a9386]"
                           aria-hidden="true"
                         />
                         <input
-                          className="h-full w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
+                          className={`${styles.input} h-full w-full bg-white text-sm text-[#12362d] outline-none placeholder:text-[#718a7d]`}
                           name="companyName"
                           type="text"
                           placeholder="Nombre de empresa"
@@ -157,17 +162,17 @@ export function LoginView({
                 ) : null}
 
                 <label className="block">
-                  <span className="text-sm font-semibold text-white/75">
+                  <span className="text-sm font-semibold text-[#29483d]">
                     Correo electronico
                   </span>
-                  <div className="mt-2 flex h-14 items-center gap-3 rounded-lg border border-white/8 bg-[#34413b] px-4 text-white transition focus-within:border-emerald-300/70 focus-within:ring-2 focus-within:ring-emerald-300/20">
+                  <div className="mt-2 flex h-12 items-center gap-3 rounded-lg border border-[#d7e3d9] bg-white px-4 text-[#12362d] transition focus-within:ring-2 focus-within:ring-[#3d9e7e]">
                     <Mail
                       size={21}
-                      className="shrink-0 text-white/55"
+                      className="shrink-0 text-[#7a9386]"
                       aria-hidden="true"
                     />
                     <input
-                      className="h-full w-full bg-transparent text-base text-white outline-none placeholder:text-white/45"
+                      className={`${styles.input} h-full w-full bg-white text-sm text-[#12362d] outline-none placeholder:text-[#718a7d]`}
                       name="email"
                       type="email"
                       autoComplete="email"
@@ -189,18 +194,18 @@ export function LoginView({
 
               {!isRegisterMode ? (
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                  <label className="inline-flex items-center gap-3 text-sm font-semibold text-white/85">
+                  <label className="inline-flex items-center gap-2 text-sm font-medium text-[#455f53]">
                     <input
                       type="checkbox"
                       name="remember"
-                      className="size-5 rounded border-white/10 bg-[#2b3732] accent-emerald-400"
+                      className="size-4 rounded accent-[#0b6e58]"
                     />
                     Recordarme
                   </label>
                   {REGISTRATION_ENABLED ? (
                     <Link
                       href="/login?mode=registro"
-                      className="text-sm font-semibold text-emerald-300 underline-offset-4 transition hover:text-emerald-200 hover:underline"
+                      className="text-sm font-semibold text-[#0b6e58] underline-offset-4 transition hover:underline"
                     >
                       Crear cuenta
                     </Link>
@@ -214,30 +219,21 @@ export function LoginView({
               />
 
               {!isRegisterMode ? (
-                <p className="mt-5 text-left text-sm text-white/50">
+                <p className="mt-5 text-center text-xs text-[#72877b]">
                   ¿Olvidaste tu contrasena? Pide ayuda a tu gerente.
                 </p>
               ) : null}
 
-              <p className="mt-5 text-left text-xs leading-5 text-white/45">
-                Al continuar aceptas nuestros{" "}
-                <span className="font-semibold text-white/70">Términos de uso</span>
-                {" "}y{" "}
-                <span className="font-semibold text-white/70">
-                  Política de Privacidad
-                </span>
-                .
-              </p>
             </div>
           </div>
-        </form>
-
-        <aside className="hidden min-h-[660px] text-white lg:block">
-          <div className="relative h-full overflow-hidden bg-[#0a1b16]">
-            <div className="absolute inset-0 bg-[url('/images/auth-rustic-business.webp')] bg-cover bg-center" />
-            <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(3,14,11,0.88)_0%,rgba(6,22,18,0.34)_24%,rgba(8,28,23,0.18)_44%,rgba(10,38,34,0.36)_62%,rgba(12,53,52,0.88)_100%)]" />
-          </div>
-        </aside>
+          </form>
+          <p className="mt-6 w-full text-center text-xs leading-5 text-[#4f695c]">
+            Al continuar aceptas nuestros{" "}
+            <span className="font-semibold text-[#315646]">Términos de uso</span>
+            {" "}y{" "}
+            <span className="font-semibold text-[#315646]">Política de Privacidad</span>.
+          </p>
+        </div>
       </section>
     </main>
   );

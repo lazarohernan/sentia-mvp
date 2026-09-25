@@ -12,8 +12,12 @@ import { LandingPlansSection } from "@/components/landing/landing-plans-section"
 import { LandingProblemSection } from "@/components/landing/landing-problem-section";
 import { LandingScrollReset } from "@/components/landing/landing-scroll-reset";
 import { LandingWorkflowSection } from "@/components/landing/landing-workflow-section";
+import { isGuidedDemoEnabled, landingLoginCtaLabel } from "@/lib/app/guided-demo";
 
 export default function Home() {
+  const showGuidedDemo = isGuidedDemoEnabled();
+  const loginCtaLabel = landingLoginCtaLabel();
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#fbf3e4] text-[#0d2b25]">
       <LandingScrollReset />
@@ -50,17 +54,19 @@ export default function Home() {
           </div>
 
           <div className="flex items-center justify-end gap-1.5">
+            {showGuidedDemo ? (
+              <Link
+                href="/login"
+                className="hidden h-9 items-center justify-center rounded-full px-3.5 text-[13px] font-semibold text-white/85 transition hover:bg-white/10 hover:text-white xl:inline-flex"
+              >
+                Entrar
+              </Link>
+            ) : null}
             <Link
-              href="/login"
-              className="hidden h-9 items-center justify-center rounded-full px-3.5 text-[13px] font-semibold text-white/85 transition hover:bg-white/10 hover:text-white xl:inline-flex"
-            >
-              Entrar
-            </Link>
-            <Link
-              href="/demo-guiada"
+              href={showGuidedDemo ? "/demo-guiada" : "/login"}
               className="hidden h-9 items-center justify-center gap-1.5 rounded-full bg-white px-4 text-[13px] font-bold text-[#0d2b25] shadow-[0_8px_20px_rgba(0,0,0,0.18)] transition hover:bg-[#edf7f1] xl:inline-flex"
             >
-              Probar
+              {showGuidedDemo ? "Probar" : "Iniciar sesión"}
               <ArrowRight size={14} aria-hidden="true" />
             </Link>
             <LandingMobileMenu />
@@ -92,19 +98,25 @@ export default function Home() {
                 className="hero-enter mt-5 flex w-full flex-col gap-2.5 sm:mt-4 sm:w-auto sm:flex-row sm:gap-3"
                 style={{ animationDelay: "330ms" }}
               >
-                <Link
-                  href="/demo-guiada"
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-[#005542] px-6 text-[0.95rem] font-bold text-white shadow-[0_18px_36px_rgba(0,85,66,0.26)] transition hover:-translate-y-0.5 hover:bg-[#004434] sm:h-12 sm:w-auto sm:px-7 sm:text-base"
-                >
-                  Probar experiencia
-                  <ArrowRight size={18} aria-hidden="true" />
-                </Link>
+                {showGuidedDemo ? (
+                  <Link
+                    href="/demo-guiada"
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-[#005542] px-6 text-[0.95rem] font-bold text-white shadow-[0_18px_36px_rgba(0,85,66,0.26)] transition hover:-translate-y-0.5 hover:bg-[#004434] sm:h-12 sm:w-auto sm:px-7 sm:text-base"
+                  >
+                    Probar experiencia
+                    <ArrowRight size={18} aria-hidden="true" />
+                  </Link>
+                ) : null}
                 <Link
                   href="/login"
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] border border-[#b8c4bc] bg-white px-6 text-[0.95rem] font-bold text-[#143f35] shadow-[0_14px_30px_rgba(51,40,17,0.08)] transition hover:-translate-y-0.5 hover:bg-white sm:h-12 sm:w-auto sm:bg-white/76 sm:px-7 sm:text-base"
+                  className={
+                    showGuidedDemo
+                      ? "inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] border border-[#b8c4bc] bg-white px-6 text-[0.95rem] font-bold text-[#143f35] shadow-[0_14px_30px_rgba(51,40,17,0.08)] transition hover:-translate-y-0.5 hover:bg-white sm:h-12 sm:w-auto sm:bg-white/76 sm:px-7 sm:text-base"
+                      : "inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-[#005542] px-6 text-[0.95rem] font-bold text-white shadow-[0_18px_36px_rgba(0,85,66,0.26)] transition hover:-translate-y-0.5 hover:bg-[#004434] sm:h-12 sm:w-auto sm:px-7 sm:text-base"
+                  }
                 >
-                  <Play size={17} aria-hidden="true" />
-                  Entrar a la demo
+                  {showGuidedDemo ? <Play size={17} aria-hidden="true" /> : null}
+                  {loginCtaLabel}
                 </Link>
               </div>
             </div>

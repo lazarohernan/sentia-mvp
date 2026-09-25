@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="96" viewBox="0 0 120 96" fill="none">
+<title>Acciones por definir</title>
+<g stroke="#84928B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+<rect x="25" y="16" width="66" height="71" rx="6" fill="#F0F3F1"/>
+<rect x="43" y="10" width="30" height="13" rx="4" fill="#FAFBFA"/>
+<rect x="37" y="35" width="10" height="10" rx="2" fill="#FAFBFA"/>
+<rect x="37" y="60" width="10" height="10" rx="2" fill="#FAFBFA"/>
+<path d="M56 38h23M56 44h15M56 63h23M56 69h15"/>
+</g></svg>

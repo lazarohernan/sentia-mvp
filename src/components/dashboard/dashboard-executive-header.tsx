@@ -38,6 +38,22 @@ function buildBranchHref(params: {
   return `/dashboard?${searchParams.toString()}`;
 }
 
+export function getDashboardScopeLabel(params: {
+  dashboardData?: DashboardSummaryData;
+  branches: Branch[];
+  selectedBranchId?: string;
+}) {
+  const isSingleBranchScope = params.dashboardData?.scope === "1 sucursal";
+  const selectedBranch =
+    params.branches.find((branch) => branch.id === params.selectedBranchId) ??
+    (isSingleBranchScope && params.branches.length === 1
+      ? params.branches[0]
+      : undefined);
+  const isBranchView = Boolean(selectedBranch) || isSingleBranchScope;
+
+  return isBranchView ? "Vista de sucursal" : "Vista global";
+}
+
 export function DashboardExecutiveHeader({
   dashboardData,
   dateRange,
@@ -48,15 +64,6 @@ export function DashboardExecutiveHeader({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const activeDateRange = dashboardData?.dateRange ?? dateRange;
-  const isSingleBranchScope = dashboardData?.scope === "1 sucursal";
-  const selectedBranch =
-    branches.find((branch) => branch.id === selectedBranchId) ??
-    (isSingleBranchScope && branches.length === 1 ? branches[0] : undefined);
-  const isBranchView = Boolean(selectedBranch) || isSingleBranchScope;
-  const scopeLabel = isBranchView ? "Vista de sucursal" : "Vista global";
-  const scopeDetail = isBranchView
-    ? `Datos limitados a ${selectedBranch?.name ?? "la sucursal seleccionada"}.`
-    : "Datos consolidados de toda la operación.";
   const branchOptions = [
     { value: "", label: "Todas las sucursales" },
     ...branches.map((branch) => ({ value: branch.id, label: branch.name })),
@@ -74,30 +81,22 @@ export function DashboardExecutiveHeader({
   }
 
   return (
-    <div className="flex flex-col items-stretch gap-3 sm:items-end">
-      <div className="flex flex-wrap gap-2 sm:justify-end">
-        <DashboardDateFilter
-          dateRange={activeDateRange}
-          selectedBranchId={selectedBranchId}
-        />
-        <Dropdown
-          label="Filtrar por sucursal"
-          value={selectedBranchId ?? ""}
-          onChange={handleBranchChange}
-          options={branchOptions}
-          placeholder={lockedBranchScope ? "Sucursal asignada" : "Sucursal"}
-          menuAlign="right"
-          menuWidthClassName="w-[min(18rem,calc(100vw-2rem))]"
-          disabled={lockedBranchScope || isPending}
-          leadingIcon={Filter}
-        />
-      </div>
-      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-        <span className="inline-flex h-8 items-center rounded-full bg-slate-950 px-3 text-xs font-semibold text-white">
-          {scopeLabel}
-        </span>
-        <span className="text-sm font-medium text-slate-500">{scopeDetail}</span>
-      </div>
+    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+      <DashboardDateFilter
+        dateRange={activeDateRange}
+        selectedBranchId={selectedBranchId}
+      />
+      <Dropdown
+        label="Filtrar por sucursal"
+        value={selectedBranchId ?? ""}
+        onChange={handleBranchChange}
+        options={branchOptions}
+        placeholder={lockedBranchScope ? "Sucursal asignada" : "Sucursal"}
+        menuAlign="right"
+        menuWidthClassName="w-[min(18rem,calc(100vw-2rem))]"
+        disabled={lockedBranchScope || isPending}
+        leadingIcon={Filter}
+      />
     </div>
   );
 }

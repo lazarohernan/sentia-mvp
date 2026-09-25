@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 import { LandingReveal } from "@/components/landing/landing-reveal";
+import { isGuidedDemoEnabled, landingLoginCtaLabel } from "@/lib/app/guided-demo";
 
 const plans = [
   {
@@ -30,6 +31,10 @@ const plans = [
 ];
 
 export function LandingPlansSection() {
+  const showGuidedDemo = isGuidedDemoEnabled();
+  const planCtaHref = showGuidedDemo ? "/demo-guiada" : "/login";
+  const planCtaLabel = showGuidedDemo ? "Probar esta experiencia" : landingLoginCtaLabel();
+
   return (
     <section id="planes" className="bg-[#f7f1e5] px-6 py-12 text-[#0d2b25] sm:px-10 lg:px-14 lg:py-16">
       <div className="mx-auto max-w-[1240px]">
@@ -72,14 +77,14 @@ export function LandingPlansSection() {
                 ))}
               </ul>
               <Link
-                href="/demo-guiada"
+                href={planCtaHref}
                 className={`mt-auto inline-flex h-10 items-center justify-center gap-2 rounded-[8px] px-4 text-sm font-extrabold transition hover:-translate-y-0.5 ${
                   index === 1
                     ? "bg-[#005542] text-white hover:bg-[#004434]"
                     : "border border-[#b8c7bd] bg-white text-[#124437] hover:border-[#0c735a]"
                 }`}
               >
-                Probar esta experiencia
+                {planCtaLabel}
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
             </LandingReveal>

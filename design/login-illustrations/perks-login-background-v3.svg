@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" fill="none">
+  <title>Fondo geométrico de acceso Perks</title>
+  <defs>
+    <radialGradient id="canvas" cx="0" cy="0" r="1" gradientTransform="translate(800 490) rotate(90) scale(640 900)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5F8F2"/>
+      <stop offset="1" stop-color="#E8F1E9"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#canvas)"/>
+
+  <path d="M0 0h430v34c0 156-127 283-283 283H0V0Z" fill="#D3E8D9"/>
+  <path d="M0 0h304v47c0 103-84 187-187 187H0V0Z" fill="#BCD9C7"/>
+  <path d="M0 0h172v53c0 67-54 121-121 121H0V0Z" fill="#EAF3E9"/>
+
+  <circle cx="1607" cy="185" r="363" fill="#C8E1D2"/>
+  <circle cx="1607" cy="185" r="250" fill="#E8F1E9"/>
+  <path d="M1600 0h-102a102 102 0 0 0-102 102v83h204V0Z" fill="#DCECDF"/>
+
+  <path d="M0 610h69c143 0 259 116 259 259v131H0V610Z" fill="#D5E8D9"/>
+  <path d="M0 705h54c95 0 172 77 172 172v123H0V705Z" fill="#BBD8C7"/>
+  <path d="M0 831h45c50 0 90 40 90 90v79H0V831Z" fill="#EAF3E9"/>
+
+  <path d="M1600 1000h-423v-49c0-162 131-293 293-293h130v342Z" fill="#D1E6D8"/>
+  <path d="M1600 1000h-287v-42c0-96 78-174 174-174h113v216Z" fill="#B9D8C5"/>
+  <path d="M1600 1000h-142v-19c0-43 35-78 78-78h64v97Z" fill="#E8F1E9"/>
+
+  <path d="M83 388h89c47 0 85 38 85 85v24H83V388Z" fill="#DDEEE1"/>
+  <path d="M1343 438h91c46 0 83 37 83 83v26h-174V438Z" fill="#DCEBDF"/>
+  <path d="M286 535h42c34 0 62 28 62 62v17H286v-79Z" fill="#E8BCA6" opacity=".7"/>
+  <path d="M1219 554h62c31 0 56 25 56 56v20h-118v-76Z" fill="#E8BCA6" opacity=".7"/>
+</svg>

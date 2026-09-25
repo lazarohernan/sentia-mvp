@@ -1,0 +1,19 @@
+/* Hallmark · Perks dashboard · existing brand aliases */
+:root {
+  --color-perks-paper: var(--surface);
+  --color-perks-canvas: var(--background);
+  --color-perks-ink: var(--text-primary);
+  --color-perks-muted: var(--text-secondary);
+  --color-perks-rule: var(--border-soft);
+  --color-perks-accent: var(--brand);
+  --color-perks-accent-ink: var(--text-inverse);
+  --color-perks-focus: var(--focus-ring);
+  --space-perks-xs: 0.5rem;
+  --space-perks-sm: 1rem;
+  --space-perks-md: 1.5rem;
+  --space-perks-lg: 2rem;
+  --space-perks-xl: 3rem;
+  --radius-perks-panel: var(--radius-panel);
+  --ease-perks-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-perks-press: 120ms;
+}

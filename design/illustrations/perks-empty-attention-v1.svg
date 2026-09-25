@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="96" viewBox="0 0 120 96" fill="none">
+  <title>Bandeja de seguimiento vacía</title>
+  <g stroke="#84928B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 49V21a5 5 0 0 1 5-5h40l11 11v22" />
+    <path d="M77 16v12h11M43 32h22M43 41h32" />
+    <path d="m23 47-9 21v12a5 5 0 0 0 5 5h82a5 5 0 0 0 5-5V68l-9-21H23Z" fill="#F0F3F1"/>
+    <path d="M14 68h29l5 9h24l5-9h29M23 47h74"/>
+  </g>
+</svg>

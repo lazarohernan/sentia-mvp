@@ -55,6 +55,8 @@ type CommentStatus =
 type DashboardCommentsTableProps = {
   comments?: DashboardComment[];
   dateRange?: DashboardDateRange;
+  selectedBranchId?: string;
+  onShareQr?: () => void;
   canManageFollowUp?: boolean;
   demoMode?: boolean;
   initialSelectedCommentId?: string | null;
@@ -70,10 +72,14 @@ const commentStatuses: CommentStatus[] = [
   "Escalado",
 ];
 
+/* Hallmark · component: chip · genre: modern-minimal · theme: existing dashboard tokens
+ * states: default · hover · focus · active (CSAT button) · table chips are display-only
+ * contrast: pass — ink on white, no tinted pills
+ */
 const sentimentStyles: Record<string, string> = {
-  Positivo: "bg-emerald-50 text-emerald-800",
-  Neutral: "bg-slate-100 text-slate-600",
-  Riesgo: "bg-rose-50 text-rose-700",
+  Positivo: "text-emerald-800",
+  Neutral: "text-slate-600",
+  Riesgo: "text-rose-700",
 };
 
 const feedbackTypeOrder: DashboardFeedbackType[] = [
@@ -94,32 +100,32 @@ const feedbackTypeStyles: Record<
 > = {
   Opinión: {
     icon: MessageSquareText,
-    className: "bg-slate-100 text-slate-700",
-    softClassName: "bg-slate-50 text-slate-600",
+    className: "text-slate-700",
+    softClassName: "text-slate-600",
     description: "Entrada general recibida por el canal de feedback.",
   },
   Queja: {
     icon: Frown,
-    className: "bg-rose-50 text-rose-700",
-    softClassName: "bg-rose-50 text-rose-700",
+    className: "text-rose-700",
+    softClassName: "text-rose-700",
     description: "Molestia o fricción que requiere seguimiento.",
   },
   Observación: {
     icon: ClipboardCheck,
-    className: "bg-amber-50 text-amber-800",
-    softClassName: "bg-amber-50 text-amber-800",
+    className: "text-amber-800",
+    softClassName: "text-amber-800",
     description: "Comentario útil para detectar mejora operativa.",
   },
   Felicitación: {
     icon: Smile,
-    className: "bg-emerald-50 text-emerald-800",
-    softClassName: "bg-emerald-50 text-emerald-800",
+    className: "text-emerald-800",
+    softClassName: "text-emerald-800",
     description: "Reconocimiento positivo del cliente.",
   },
   Recomendación: {
     icon: MessageSquareText,
-    className: "bg-slate-100 text-slate-600",
-    softClassName: "bg-slate-50 text-slate-600",
+    className: "text-slate-600",
+    softClassName: "text-slate-600",
     description: "Idea o sugerencia para fortalecer la experiencia.",
   },
 };
@@ -153,7 +159,7 @@ const csatStyles: Record<
 > = {
   1: {
     icon: Angry,
-    className: "bg-rose-50 text-rose-700",
+    className: "text-rose-700",
     detailClassName: "border-rose-200 bg-rose-50 text-rose-700",
     label: "Muy mal",
     meaning: "Experiencia critica o muy frustrante.",
@@ -161,7 +167,7 @@ const csatStyles: Record<
   },
   2: {
     icon: Frown,
-    className: "bg-orange-50 text-orange-700",
+    className: "text-orange-700",
     detailClassName: "border-orange-200 bg-orange-50 text-orange-700",
     label: "Mal",
     meaning: "Hay una molestia clara en la experiencia.",
@@ -169,7 +175,7 @@ const csatStyles: Record<
   },
   3: {
     icon: Meh,
-    className: "bg-slate-100 text-slate-600",
+    className: "text-slate-600",
     detailClassName: "bg-slate-50 text-slate-600",
     label: "Normal",
     meaning: "La experiencia cumplio, pero no genero preferencia.",
@@ -177,7 +183,7 @@ const csatStyles: Record<
   },
   4: {
     icon: Smile,
-    className: "bg-emerald-50 text-emerald-700",
+    className: "text-emerald-700",
     detailClassName: "border-emerald-200 bg-emerald-50 text-emerald-700",
     label: "Bien",
     meaning: "La experiencia fue positiva.",
@@ -185,7 +191,7 @@ const csatStyles: Record<
   },
   5: {
     icon: Laugh,
-    className: "bg-emerald-100 text-emerald-900",
+    className: "text-emerald-900",
     detailClassName: "border-emerald-300 bg-emerald-100 text-emerald-900",
     label: "Excelente",
     meaning: "Experiencia altamente satisfactoria.",
@@ -232,7 +238,7 @@ function FeedbackTypeBadge({ type }: { type: DashboardFeedbackType }) {
   return (
     <span
       className={[
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+        "inline-flex items-center gap-1.5 text-xs font-semibold",
         style.className,
       ].join(" ")}
     >
@@ -288,7 +294,7 @@ function CsatBadge({ score }: { score: number }) {
       <button
         type="button"
         className={[
-          "inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold transition hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-4 focus:ring-emerald-100",
+          "inline-flex items-center gap-1.5 text-xs font-semibold transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700/40",
           style.className,
         ].join(" ")}
         aria-label={`CSAT ${score} de 5, ${style.label}. Ver escala completa`}
@@ -319,7 +325,7 @@ function CsatBadge({ score }: { score: number }) {
             id={popoverId}
             role="dialog"
             aria-label={`Detalle CSAT ${score} de 5`}
-            className="fixed left-1/2 top-1/2 z-50 w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-[1.25rem] bg-white p-4 text-left shadow-[0_18px_60px_rgba(15,23,42,0.16)]"
+            className="fixed left-1/2 top-1/2 z-50 w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-[1.25rem] bg-white p-4 text-left "
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
@@ -463,7 +469,7 @@ function RatingsStatCards({ comments }: { comments: DashboardComment[] }) {
   return (
     <section className="space-y-4" aria-label="Resumen por tipo de valoración">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <div className="rounded-2xl bg-white px-4 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+        <div className="rounded-2xl bg-white px-4 py-3 ">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
@@ -491,7 +497,7 @@ function RatingsStatCards({ comments }: { comments: DashboardComment[] }) {
           return (
             <div
               key={type.type}
-              className="rounded-2xl bg-white px-4 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+              className="rounded-2xl bg-white px-4 py-3 "
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -536,7 +542,7 @@ function RatingsChartsPanel({ comments }: { comments: DashboardComment[] }) {
   return (
     <section
       aria-label="Gráficos de valoraciones"
-      className="overflow-hidden rounded-3xl bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+      className="overflow-hidden rounded-3xl bg-white "
     >
       <div className="grid lg:grid-cols-[minmax(0,1fr)_15.5rem] lg:divide-x lg:divide-slate-100">
         {/* Gráfica principal */}
@@ -681,7 +687,7 @@ function CommentDetailView({
     : "Lectura operativa";
 
   return (
-    <article className="overflow-hidden rounded-3xl bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+    <article className="overflow-hidden rounded-3xl bg-white ">
       <div className="border-b border-slate-100 bg-[#f7f8f4] p-5">
         <button
           type="button"
@@ -768,7 +774,7 @@ function CommentDetailView({
           </div>
 
           <div className="mt-5 grid items-stretch gap-3 lg:grid-cols-[1fr_auto_0.9fr]">
-            <div className="rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+            <div className="rounded-2xl bg-white p-4 ">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-medium text-slate-500">
                   {dominantPattern}
@@ -863,7 +869,7 @@ function CommentDetailView({
                       type="button"
                       disabled={isSaving}
                       onClick={() => onStatusChange("Escalado")}
-                      className="mt-3 w-full rounded-full bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-3 w-full rounded-full bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Escalar a responsable
                     </button>
@@ -907,7 +913,7 @@ function CommentDetailView({
                   type="button"
                   disabled={isSaving || followUpNote.trim().length === 0}
                   onClick={onSaveFollowUpNote}
-                  className="mt-3 w-full rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-60 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+                  className="mt-3 w-full rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-900 disabled:cursor-not-allowed disabled:opacity-60 "
                 >
                   Guardar nota de seguimiento
                 </button>
@@ -1016,7 +1022,7 @@ function buildColumns(
     cell: (comment) => (
       <span
         className={[
-          "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+          "inline-flex text-xs font-semibold",
           sentimentStyles[comment.sentiment] ?? sentimentStyles.Neutral,
         ].join(" ")}
       >
@@ -1090,6 +1096,8 @@ async function persistFollowUp(params: {
 export function DashboardCommentsTable({
   comments = [],
   dateRange,
+  selectedBranchId,
+  onShareQr,
   canManageFollowUp = false,
   demoMode = false,
   initialSelectedCommentId = null,
@@ -1266,8 +1274,34 @@ export function DashboardCommentsTable({
   }
 
   const dateFilter = dateRange ? (
-    <DashboardDateFilter dateRange={dateRange} targetHash="comentarios" />
+    <DashboardDateFilter dateRange={dateRange} selectedBranchId={selectedBranchId} targetHash="comentarios" />
   ) : null;
+
+  if (displayedComments.length === 0) {
+    return (
+      <div className="rounded-[1.25rem] bg-white px-6 py-10 sm:py-14">
+        <div className="mx-auto flex max-w-md flex-col items-center text-center">
+          <img src="/images/perks-empty-feedback-v1.svg" alt="" width={320} height={200} className="mb-6 h-auto w-56 max-w-full" />
+          <h3 className="text-xl font-semibold tracking-normal text-slate-950">
+            {dateRange ? "No hay opiniones en este periodo" : "Todavía no hay opiniones"}
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {dateRange
+              ? "Prueba con otras fechas o invita a tus clientes a contarte cómo les fue compartiendo el QR de tu sucursal."
+              : "Comparte el QR de tu sucursal e invita a tus clientes a contarte cómo les fue."}
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            {onShareQr ? (
+              <button type="button" onClick={onShareQr} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand px-5 text-sm font-semibold text-text-inverse transition hover:bg-brand-strong focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand">
+                Compartir QR
+              </button>
+            ) : null}
+            {dateFilter}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (activeTab === "graficos") {
     return (
@@ -1340,7 +1374,7 @@ export function DashboardCommentsTable({
         ]}
         searchPlaceholder="Buscar valoración"
         pageSize={5}
-        emptyTitle="Sin valoraciones registradas"
+        emptyTitle="No hay opiniones que coincidan con estos filtros. Prueba con otra selección."
         topContent={<RatingsStatCards comments={displayedComments} />}
         showSearch={false}
       />

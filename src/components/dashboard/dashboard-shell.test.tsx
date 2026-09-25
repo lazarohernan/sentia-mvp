@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import type { DashboardSummaryData } from "@/domain/dashboard/schemas";
+import { markDashboardWelcomeSeen } from "@/lib/app/welcome-modal";
 
 import { DashboardShell } from "./dashboard-shell";
 
@@ -110,6 +111,7 @@ function mockFetchWithPermissionProfile(
 describe("DashboardShell", () => {
   beforeEach(() => {
     window.history.pushState({}, "", "/dashboard");
+    markDashboardWelcomeSeen();
   });
 
   afterEach(() => {
@@ -120,7 +122,7 @@ describe("DashboardShell", () => {
     render(<DashboardShell />);
 
     expect(screen.getByRole("heading", { name: "Resumen operativo" })).toBeInTheDocument();
-    expect(screen.getByText("Resumen operativo sin datos")).toBeInTheDocument();
+    expect(screen.getByText("Aún no hay datos para detectar alertas")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Valoraciones" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Resolver alerta" })).not.toBeInTheDocument();
     expect(screen.queryByText("1,248")).not.toBeInTheDocument();
@@ -136,9 +138,9 @@ describe("DashboardShell", () => {
     });
 
     expect(screen.queryByRole("heading", { name: "Resumen operativo" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Resumen operativo sin datos")).not.toBeInTheDocument();
+    expect(screen.queryByText("Aún no hay datos para detectar alertas")).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText("Buscar valoración")).not.toBeInTheDocument();
-    expect(screen.getByText("Sin valoraciones registradas")).toBeInTheDocument();
+    expect(screen.getByText("No hay opiniones en este periodo")).toBeInTheDocument();
   });
 
   it("renders intelligence reports as an independent view from the hash", async () => {

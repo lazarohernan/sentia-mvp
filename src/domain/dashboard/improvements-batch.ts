@@ -1,3 +1,4 @@
+import { buildCommentFingerprint } from "./improvements-digest";
 import type { DashboardCommentRow } from "./schemas";
 import { isInstantInHondurasDateRange } from "./honduras-time";
 
@@ -166,4 +167,39 @@ export function resolveImprovementSourceComments(params: {
     params.weeklyWindow.startDate,
     params.weeklyWindow.endDate,
   );
+}
+
+export function partitionImprovementGeneration<
+  T extends { branchId: string; commentFingerprint?: string | null },
+>(params: {
+  groups: BranchCommentGroup[];
+  saved: T[];
+  force: boolean;
+}): {
+  reusable: T[];
+  commentsToGenerate: DashboardCommentRow[];
+} {
+  if (params.force) {
+    return {
+      reusable: [],
+      commentsToGenerate: params.groups.flatMap((group) => group.comments),
+    };
+  }
+
+  const savedByBranch = new Map(params.saved.map((item) => [item.branchId, item]));
+  const reusable: T[] = [];
+  const commentsToGenerate: DashboardCommentRow[] = [];
+
+  for (const group of params.groups) {
+    const fingerprint = buildCommentFingerprint(group.comments);
+    const saved = savedByBranch.get(group.branchId);
+    if (saved?.commentFingerprint && saved.commentFingerprint === fingerprint) {
+      reusable.push(saved);
+      continue;
+    }
+
+    commentsToGenerate.push(...group.comments);
+  }
+
+  return { reusable, commentsToGenerate };
 }

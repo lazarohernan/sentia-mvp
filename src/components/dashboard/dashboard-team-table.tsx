@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, UserRound } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { formatTableDate } from "@/domain/feedback/record-analysis";
@@ -49,29 +49,29 @@ function TeamSummary({ members }: { members: TeamMember[] }) {
 
   return (
     <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <div className="rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+      <div className="rounded-2xl bg-white p-4 ">
+        <p className="text-xs font-medium text-text-secondary">
           Colaboradores
         </p>
-        <p className="mt-2 text-2xl font-semibold text-slate-950">{members.length}</p>
+        <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-950">{members.length}</p>
       </div>
-      <div className="rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+      <div className="rounded-2xl bg-white p-4 ">
+        <p className="text-xs font-medium text-text-secondary">
           Con sucursal
         </p>
-        <p className="mt-2 text-2xl font-semibold text-slate-950">{assignedCount}</p>
+        <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-950">{assignedCount}</p>
       </div>
-      <div className="rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+      <div className="rounded-2xl bg-white p-4 ">
+        <p className="text-xs font-medium text-text-secondary">
           Gerentes
         </p>
-        <p className="mt-2 text-2xl font-semibold text-slate-950">{managerCount}</p>
+        <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-950">{managerCount}</p>
       </div>
-      <div className="rounded-2xl bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+      <div className="rounded-2xl bg-white p-4 ">
+        <p className="text-xs font-medium text-text-secondary">
           Pendientes
         </p>
-        <p className="mt-2 text-2xl font-semibold text-slate-950">{pendingCount}</p>
+        <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-950">{pendingCount}</p>
       </div>
     </section>
   );
@@ -84,12 +84,9 @@ function buildColumns(): Array<DashboardDataTableColumn<TeamMember>> {
       header: "Colaborador",
       cell: (member) => (
         <div className="flex items-start gap-3">
-          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-800">
-            <UserRound size={16} aria-hidden="true" />
-          </span>
           <div>
             <p className="font-semibold text-slate-950">{member.fullName}</p>
-            <p className="mt-1 text-xs font-medium text-slate-400">
+            <p className="mt-1 text-xs font-medium text-text-secondary">
               {member.email ?? "Sin correo"} · Desde {formatTableDate(member.joinedAt)}
             </p>
           </div>
@@ -114,7 +111,7 @@ function buildColumns(): Array<DashboardDataTableColumn<TeamMember>> {
               {member.permissionProfileName}
             </p>
           ) : (
-            <p className="text-xs font-medium text-slate-400">Sin plataforma</p>
+            <p className="text-xs font-medium text-text-secondary">Sin plataforma</p>
           )}
           {member.participatesInListening ? (
             <p className="text-xs font-medium text-slate-700">Escucha</p>
@@ -127,7 +124,7 @@ function buildColumns(): Array<DashboardDataTableColumn<TeamMember>> {
       header: "Sucursal",
       cell: (member) => (
         <div className="flex items-start gap-2">
-          <MapPin size={15} className="mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
+          <MapPin size={15} className="mt-0.5 shrink-0 text-text-secondary" aria-hidden="true" />
           <p className="font-medium text-slate-700">{formatBranchLabel(member.branchName)}</p>
         </div>
       ),

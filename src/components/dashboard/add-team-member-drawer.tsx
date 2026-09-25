@@ -11,6 +11,16 @@ import {
 } from "@/domain/organizations/permission-profiles";
 import type { TeamMember } from "@/domain/organizations/team";
 
+import {
+  dashboardDrawerBodyClass,
+  dashboardDrawerCancelButtonClass,
+  dashboardDrawerFooterClass,
+  dashboardDrawerFormClass,
+  dashboardDrawerHeaderClass,
+  dashboardDrawerPanelClass,
+  dashboardDrawerPrimaryButtonClass,
+} from "./dashboard-drawer-layout";
+
 type AddTeamMemberDrawerProps = {
   open: boolean;
   onClose: () => void;
@@ -145,12 +155,12 @@ export function AddTeamMemberDrawer({
         onClick={handleClose}
       />
       <aside
-        className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white"
+        className={`${dashboardDrawerPanelClass} max-w-md`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-team-member-title"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+        <div className={`${dashboardDrawerHeaderClass} flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5`}>
           <div>
             <p className="text-sm font-semibold text-emerald-800">Nuevo colaborador</p>
             <h2 id="add-team-member-title" className="mt-1 text-xl font-semibold text-slate-950">
@@ -168,7 +178,8 @@ export function AddTeamMemberDrawer({
         </div>
 
         {success ? (
-          <div className="flex flex-1 flex-col px-6 py-6">
+          <div className={dashboardDrawerFormClass}>
+            <div className={`${dashboardDrawerBodyClass} px-6 py-6`}>
             <p className="text-sm leading-6 text-slate-600">
               <span className="font-semibold text-slate-950">{success.memberName}</span> ya
               forma parte del equipo.
@@ -194,20 +205,21 @@ export function AddTeamMemberDrawer({
                 <span className="font-semibold text-slate-900">/login</span>.
               </div>
             )}
+            </div>
 
-            <div className="mt-auto flex justify-end border-t border-slate-100 pt-5">
+            <div className={`${dashboardDrawerFooterClass} flex justify-end px-6 pt-5`}>
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex h-11 items-center rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white"
+                className={dashboardDrawerPrimaryButtonClass}
               >
                 Listo
               </button>
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-1 flex-col">
-            <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
+          <form onSubmit={handleSubmit} className={dashboardDrawerFormClass}>
+            <div className={`${dashboardDrawerBodyClass} space-y-5 px-6 py-6`}>
               <label className="block">
                 <span className="text-sm font-semibold text-slate-900">Nombre completo</span>
                 <input
@@ -250,7 +262,7 @@ export function AddTeamMemberDrawer({
                 </select>
               </label>
 
-              <div className="border border-slate-200 px-4 py-4">
+              <div className="rounded-xl bg-surface-muted px-4 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">
@@ -317,18 +329,18 @@ export function AddTeamMemberDrawer({
               ) : null}
             </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-5">
+            <div className={`${dashboardDrawerFooterClass} flex items-center justify-end gap-3 px-6 pt-5`}>
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex h-11 items-center rounded-full px-5 text-sm font-semibold text-slate-700"
+                className={dashboardDrawerCancelButtonClass}
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex h-11 items-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white disabled:opacity-70"
+                className={dashboardDrawerPrimaryButtonClass}
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

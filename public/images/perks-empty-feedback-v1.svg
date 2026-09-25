@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200">
+  <title>Un espacio para las primeras conversaciones</title>
+  <rect x="26" y="16" width="268" height="168" rx="84" fill="#F5F4E9"/>
+  <path d="M35 121C35 65 79 31 128 31H158V67H130C96 67 73 89 73 121V173H35Z" fill="#C9EDBB"/>
+  <path d="M284 75C284 129 241 167 190 167H161V132H190C222 132 247 109 247 75V31H284Z" fill="#0D9B78"/>
+  <path d="M73 89C73 72 87 58 104 58H159C176 58 190 72 190 89V111C190 128 176 142 159 142H122L95 161V140C82 136 73 125 73 111Z" fill="#063E33"/>
+  <circle cx="105" cy="100" r="6" fill="#F5F0DB"/>
+  <circle cx="131" cy="100" r="6" fill="#F5F0DB"/>
+  <circle cx="157" cy="100" r="6" fill="#F5F0DB"/>
+  <path d="M179 112C179 99 189 89 202 89H226C239 89 249 99 249 112V130C249 143 239 153 226 153H224V169L205 153H202C189 153 179 143 179 130Z" fill="#A6DBBA"/>
+  <path d="M199 119H229M199 129H219" stroke="#063E33" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="214" cy="48" r="15" fill="#F1B18B"/>
+  <circle cx="214" cy="48" r="6" fill="#F5F4E9"/>
+  <path d="M195 24C207 17 223 18 233 28" fill="none" stroke="#063E33" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="54" cy="56" r="4" fill="#0D9B78"/>
+</svg>

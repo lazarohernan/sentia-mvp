@@ -221,7 +221,7 @@ export function DashboardPermissionProfilesPanel({
     <div className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
       <form
         onSubmit={handleSubmit}
-        className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+        className="rounded-[1.25rem] bg-white "
       >
         <div className="border-b border-slate-100 px-5 py-4">
           <p className="text-sm font-semibold text-emerald-800">Roles y permisos</p>
@@ -325,7 +325,7 @@ export function DashboardPermissionProfilesPanel({
             <button
               type="submit"
               disabled={!canManage || isSubmitting}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -354,7 +354,7 @@ export function DashboardPermissionProfilesPanel({
         </div>
       </form>
 
-      <section className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+      <section className="rounded-[1.25rem] bg-white ">
         <div className="border-b border-slate-100 px-5 py-4">
           <p className="text-sm font-semibold text-emerald-800">Roles creados</p>
           <h3 className="mt-1 text-xl font-semibold text-slate-950">

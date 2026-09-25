@@ -13,7 +13,7 @@ export function LoginSubmitButton({ label, pendingLabel }: LoginSubmitButtonProp
 
   return (
     <button
-      className="mt-7 inline-flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-[#56b298] px-4 text-base font-bold text-white transition hover:bg-[#62c2a7] focus:outline-none focus:ring-2 focus:ring-emerald-200/50 disabled:cursor-not-allowed disabled:opacity-75"
+      className="mt-7 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#0b332a] px-4 text-sm font-semibold text-white transition hover:bg-[#14513f] focus:outline-none focus:ring-2 focus:ring-[#3d9e7e] disabled:cursor-not-allowed disabled:opacity-75"
       type="submit"
       disabled={pending}
       aria-busy={pending}

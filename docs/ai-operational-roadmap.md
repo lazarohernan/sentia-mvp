@@ -56,12 +56,9 @@ Regla: las tarjetas y resumenes pueden mostrar datos compactos, pero el analisis
 ```bash
 OPENAI_API_KEY=
 OPENAI_MODEL=
-OPENAI_ALERTS_MODEL=
-OPENAI_SUMMARY_MODEL=
-OPENAI_GUIDANCE_MODEL=
 ```
 
-`OPENAI_MODEL` puede ser el default general. Los modelos especificos permiten controlar costo/calidad por tarea.
+`OPENAI_MODEL` es la unica configuracion de modelo para todos los trabajos de IA.
 
 ## Fase 1 - Alert Triage operativo
 

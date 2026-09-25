@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import { isGuidedDemoEnabled, landingLoginCtaLabel } from "@/lib/app/guided-demo";
 
 const navItems = [
   { href: "#producto", label: "Producto" },
@@ -14,6 +15,7 @@ const navItems = [
 
 export function LandingMobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const showGuidedDemo = isGuidedDemoEnabled();
 
   return (
     <div className="relative xl:hidden">
@@ -40,19 +42,25 @@ export function LandingMobileMenu() {
                 {item.label}
               </a>
             ))}
-            <Link
-              href="/demo-guiada"
-              onClick={() => setIsOpen(false)}
-              className="mt-1 inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-sm font-bold text-[#0d2b25]"
-            >
-              Probar experiencia
-            </Link>
+            {showGuidedDemo ? (
+              <Link
+                href="/demo-guiada"
+                onClick={() => setIsOpen(false)}
+                className="mt-1 inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-sm font-bold text-[#0d2b25]"
+              >
+                Probar experiencia
+              </Link>
+            ) : null}
             <Link
               href="/login"
               onClick={() => setIsOpen(false)}
-              className="mt-1 inline-flex h-9 items-center justify-center rounded-full px-4 text-sm font-bold text-white/85 transition hover:bg-white/10"
+              className={
+                showGuidedDemo
+                  ? "mt-1 inline-flex h-9 items-center justify-center rounded-full px-4 text-sm font-bold text-white/85 transition hover:bg-white/10"
+                  : "mt-1 inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-sm font-bold text-[#0d2b25]"
+              }
             >
-              Entrar a la demo
+              {landingLoginCtaLabel()}
             </Link>
           </nav>
         </div>

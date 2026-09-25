@@ -2,25 +2,11 @@ import { NextResponse } from "next/server";
 
 import { buildAuthCallbackUrl } from "@/domain/auth/redirects";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
-import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeAuthRateLimit } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
-  const rateLimit = consumeRateLimit({
-    namespace: "api:collaborator-password-reset",
-    key: getClientIpFromHeaders(request.headers),
-    limit: 3,
-    windowMs: 60 * 60 * 1000,
-  });
-
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: "Demasiados intentos. Intenta de nuevo más tarde." },
-      { status: 429 },
-    );
-  }
-
   if (!hasSupabasePublicEnv()) {
     return NextResponse.json({ error: "Supabase no esta configurado." }, { status: 503 });
   }
@@ -43,6 +29,26 @@ export async function POST(request: Request) {
     membership.role === "manager"
   ) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
+
+  const rateLimit = await consumeAuthRateLimit({
+    namespace: "api:collaborator-password-reset",
+    key: user.id,
+    limit: 3,
+    windowMs: 60 * 60 * 1000,
+  });
+
+  if (rateLimit.unavailable) {
+    return NextResponse.json(
+      { error: "El acceso no está disponible temporalmente." },
+      { status: 503 },
+    );
+  }
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Demasiados intentos. Intenta de nuevo más tarde." },
+      { status: 429 },
+    );
   }
 
   const origin = new URL(request.url).origin;

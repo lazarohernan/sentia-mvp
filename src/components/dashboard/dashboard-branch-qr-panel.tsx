@@ -105,7 +105,7 @@ export function DashboardBranchQrPanel({
   }
 
   return (
-    <section className="rounded-[1.25rem] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+    <section className="rounded-[1.25rem] bg-white ">
       {signedLink ? (
         <div className="qr-print-sheet">
           <div className="qr-print-card">
@@ -220,7 +220,7 @@ export function DashboardBranchQrPanel({
               target="_blank"
               rel="noreferrer"
               aria-disabled={!signedLink}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-900 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
             >
               <ExternalLink className="h-4 w-4" aria-hidden="true" />
               Abrir formulario

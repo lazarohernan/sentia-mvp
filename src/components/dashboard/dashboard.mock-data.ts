@@ -20,7 +20,7 @@ export const dashboardMockComments: DashboardCommentRow[] = [
       "Reconocer al equipo y usar este caso como referencia para replicar el protocolo de atención.",
     dominantPattern: "Atención al cliente",
     analysisConfidence: "91% confianza",
-    analysisModel: "gpt-4.1-mini",
+    analysisModel: "gpt-5.4-mini",
   },
   {
     id: "comentario-002",

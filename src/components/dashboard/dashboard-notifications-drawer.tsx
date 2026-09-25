@@ -17,6 +17,13 @@ import {
   toHondurasDateString,
 } from "@/domain/dashboard/honduras-time";
 
+import {
+  dashboardDrawerBodyClass,
+  dashboardDrawerFooterClass,
+  dashboardDrawerHeaderClass,
+  dashboardDrawerPanelClass,
+} from "./dashboard-drawer-layout";
+
 const PAGE_SIZE = 15;
 
 /**
@@ -222,12 +229,12 @@ export function DashboardNotificationsDrawer({
         onClick={onClose}
       />
       <aside
-        className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-[-12px_0_40px_rgba(15,23,42,0.12)]"
+        className={`${dashboardDrawerPanelClass} max-w-md `}
         role="dialog"
         aria-modal="true"
         aria-labelledby="notifications-drawer-title"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5">
+        <div className={`${dashboardDrawerHeaderClass} flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5`}>
           <div>
             <p className="text-sm font-semibold text-emerald-800">Bandeja</p>
             <h2
@@ -250,7 +257,7 @@ export function DashboardNotificationsDrawer({
           </button>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
           <button
             type="button"
             onClick={toggleSelectAll}
@@ -293,7 +300,7 @@ export function DashboardNotificationsDrawer({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 py-3">
+        <div className={`${dashboardDrawerBodyClass} px-3 py-3`}>
           {error ? (
             <p className="px-2 py-4 text-sm text-red-600">{error}</p>
           ) : null}
@@ -304,7 +311,8 @@ export function DashboardNotificationsDrawer({
             </p>
           ) : items.length === 0 ? (
             <div className="px-3 py-12 text-center">
-              <p className="text-sm font-semibold text-slate-900">
+              <img src="/images/illustrations/perks-empty-notifications-v1.svg" alt="" width={120} height={96} className="mx-auto h-auto w-22" />
+              <p className="mt-3 text-sm font-semibold text-slate-900">
                 Sin notificaciones
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -400,8 +408,8 @@ export function DashboardNotificationsDrawer({
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
-          <p className="text-xs font-medium text-slate-500">
+        <div className={`${dashboardDrawerFooterClass} flex items-center justify-between gap-3 px-5 pt-4`}>
+          <p className="text-xs font-medium text-white/70">
             Página {page} de {totalPages}
             {total > 0 ? ` · ${total} en total` : null}
           </p>
@@ -410,7 +418,7 @@ export function DashboardNotificationsDrawer({
               type="button"
               disabled={page <= 1 || loading || deleting}
               onClick={() => void loadPage(page - 1)}
-              className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+              className="rounded-full px-3 py-1.5 text-xs font-semibold text-white/90 transition hover:bg-white/12 disabled:opacity-40"
             >
               Anterior
             </button>
@@ -418,7 +426,7 @@ export function DashboardNotificationsDrawer({
               type="button"
               disabled={!hasMore || loading || deleting}
               onClick={() => void loadPage(page + 1)}
-              className="rounded-full bg-emerald-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-900 disabled:opacity-40"
+              className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-brand-muted transition hover:bg-brand-soft disabled:opacity-40"
             >
               Siguiente
             </button>

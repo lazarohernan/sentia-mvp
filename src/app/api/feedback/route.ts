@@ -100,8 +100,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const sentimentAnalysis = await analyzeFeedbackSentiment(parsed.data);
-
   if (!hasSupabaseServiceEnv()) {
     return Response.json(
       {
@@ -170,6 +168,8 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  const sentimentAnalysis = await analyzeFeedbackSentiment(parsed.data);
 
   try {
     await insertAiAnalysis(db, submissionId, {

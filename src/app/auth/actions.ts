@@ -1,6 +1,6 @@
 "use server";
 
-import { headers } from "next/headers";
+import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
 
 import {
@@ -11,11 +11,7 @@ import {
 import { getSafeRedirectPath } from "@/domain/auth/redirects";
 import { resolveHomePathForMembership } from "@/domain/auth/resolve-home-path";
 import { REGISTRATION_ENABLED } from "@/domain/auth/config";
-import { sanitizeEmailInput } from "@/lib/security/input";
-import {
-  consumeRateLimit,
-  getClientIpFromHeaders,
-} from "@/lib/security/rate-limit";
+import { consumeAuthRateLimit } from "@/lib/security/rate-limit";
 import {
   createUserOrganization,
   getOrganizationMembershipByUser,
@@ -29,22 +25,6 @@ export type AuthActionState = {
 };
 
 export async function signInAction(formData: FormData): Promise<void> {
-  const headerStore = await headers();
-  const clientIp = getClientIpFromHeaders(headerStore);
-  const emailValue = formData.get("email");
-  const email =
-    typeof emailValue === "string" ? sanitizeEmailInput(emailValue) : "unknown";
-  const rateLimit = consumeRateLimit({
-    namespace: "auth:sign-in",
-    key: `${clientIp}:${email}`,
-    limit: 5,
-    windowMs: 15 * 60 * 1000,
-  });
-
-  if (!rateLimit.allowed) {
-    redirect("/login?error=rate_limited");
-  }
-
   const parsed = signInSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -52,6 +32,21 @@ export async function signInAction(formData: FormData): Promise<void> {
 
   if (!parsed.success) {
     redirect("/login?error=invalid_credentials");
+  }
+
+  const accountKey = createHash("sha256").update(parsed.data.email).digest("hex");
+  const rateLimit = await consumeAuthRateLimit({
+    namespace: "auth:sign-in",
+    key: accountKey,
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  });
+
+  if (rateLimit.unavailable) {
+    redirect("/login?error=auth_unavailable");
+  }
+  if (!rateLimit.allowed) {
+    redirect("/login?error=rate_limited");
   }
 
   if (!hasSupabasePublicEnv()) {
@@ -79,22 +74,6 @@ export async function signUpAction(formData: FormData): Promise<void> {
     redirect("/login?error=registration_disabled");
   }
 
-  const headerStore = await headers();
-  const clientIp = getClientIpFromHeaders(headerStore);
-  const emailValue = formData.get("email");
-  const email =
-    typeof emailValue === "string" ? sanitizeEmailInput(emailValue) : "unknown";
-  const rateLimit = consumeRateLimit({
-    namespace: "auth:sign-up",
-    key: `${clientIp}:${email}`,
-    limit: 3,
-    windowMs: 30 * 60 * 1000,
-  });
-
-  if (!rateLimit.allowed) {
-    redirect("/login?error=rate_limited");
-  }
-
   const parsed = signUpSchema.safeParse({
     fullName: formData.get("fullName"),
     companyName: formData.get("companyName"),
@@ -104,6 +83,21 @@ export async function signUpAction(formData: FormData): Promise<void> {
 
   if (!parsed.success) {
     redirect("/login?error=invalid_signup");
+  }
+
+  const accountKey = createHash("sha256").update(parsed.data.email).digest("hex");
+  const rateLimit = await consumeAuthRateLimit({
+    namespace: "auth:sign-up",
+    key: accountKey,
+    limit: 3,
+    windowMs: 30 * 60 * 1000,
+  });
+
+  if (rateLimit.unavailable) {
+    redirect("/login?error=auth_unavailable");
+  }
+  if (!rateLimit.allowed) {
+    redirect("/login?error=rate_limited");
   }
 
   if (!hasSupabasePublicEnv()) {
@@ -157,19 +151,6 @@ export async function signOutAction() {
 }
 
 export async function activateAccountAction(formData: FormData): Promise<void> {
-  const headerStore = await headers();
-  const clientIp = getClientIpFromHeaders(headerStore);
-  const rateLimit = consumeRateLimit({
-    namespace: "auth:activate-account",
-    key: clientIp,
-    limit: 8,
-    windowMs: 15 * 60 * 1000,
-  });
-
-  if (!rateLimit.allowed) {
-    redirect("/auth/activar-cuenta?error=rate_limited");
-  }
-
   const parsed = activateAccountSchema.safeParse({
     fullName: formData.get("fullName"),
     password: formData.get("password"),
@@ -191,6 +172,20 @@ export async function activateAccountAction(formData: FormData): Promise<void> {
 
   if (!user) {
     redirect("/login?redirectTo=/auth/activar-cuenta");
+  }
+
+  const rateLimit = await consumeAuthRateLimit({
+    namespace: "auth:activate-account",
+    key: user.id,
+    limit: 8,
+    windowMs: 15 * 60 * 1000,
+  });
+
+  if (rateLimit.unavailable) {
+    redirect("/auth/activar-cuenta?error=auth_unavailable");
+  }
+  if (!rateLimit.allowed) {
+    redirect("/auth/activar-cuenta?error=rate_limited");
   }
 
   const { error: passwordError } = await supabase.auth.updateUser({

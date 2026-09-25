@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   AlertTriangle,
-  CalendarDays,
   CheckCircle2,
   Download,
   FileText,
@@ -53,11 +52,11 @@ function MetricCard({
   detail: string;
 }) {
   return (
-    <div className="rounded-[1.15rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+    <div className="rounded-[1.15rem] bg-white p-5 ">
+      <p className="text-xs font-medium text-text-secondary">
         {label}
       </p>
-      <p className="mt-2 text-3xl font-semibold text-slate-950">{value}</p>
+      <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-950">{value}</p>
       <p className="mt-2 text-sm leading-6 text-slate-500">{detail}</p>
     </div>
   );
@@ -227,10 +226,10 @@ export function DashboardIntelligenceReports({
     <div className="space-y-5">
       {reportPreviewHtml ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 px-4 py-6 backdrop-blur-[2px]">
-          <div className="flex h-[min(90vh,58rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+          <div className="flex h-[min(90vh,58rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[1.5rem] bg-white ">
             <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                <p className="text-xs font-medium text-text-secondary">
                   Vista previa
                 </p>
                 <h3 className="mt-1 text-lg font-semibold text-slate-950">
@@ -296,7 +295,7 @@ export function DashboardIntelligenceReports({
       ) : null}
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <article className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+        <article className="rounded-[1.35rem] bg-white p-5 ">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
             <TrendingUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
             {cadenceMeta.preparationTitle}
@@ -326,7 +325,7 @@ export function DashboardIntelligenceReports({
 
           <div className="mt-6 border-t border-slate-100 pt-5">
             <div className="flex items-end justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              <p className="text-xs font-medium text-text-secondary">
                 Avance
               </p>
               <p className="text-sm font-semibold text-slate-700">
@@ -353,7 +352,7 @@ export function DashboardIntelligenceReports({
           </div>
         </article>
 
-        <article className="flex flex-col rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+        <article className="flex flex-col rounded-[1.35rem] bg-white p-5 ">
           {readiness.missingUsefulResponses > 0 && showReadinessNote ? (
             <div className="mb-5 flex items-start justify-between gap-3 rounded-[1rem] bg-slate-50 px-4 py-3 text-sm font-medium leading-6 text-slate-800">
               <p>No hay suficiente información para entregar el informe aún.</p>
@@ -394,7 +393,7 @@ export function DashboardIntelligenceReports({
               <button
                 type="button"
                 onClick={handleExportPdf}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white shadow-emerald-900/20 transition hover:bg-emerald-900"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900"
               >
                 <FileText className="h-4 w-4" aria-hidden="true" />
                 Ver informe
@@ -402,18 +401,16 @@ export function DashboardIntelligenceReports({
             </div>
 
             <div className="mt-auto grid gap-3 pt-5 sm:grid-cols-2">
-              <div className="rounded-xl bg-slate-50/80 p-4">
-                <CalendarDays className="h-4 w-4 text-slate-500" aria-hidden="true" />
-                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              <div>
+                <p className="text-xs font-medium text-text-secondary">
                   Periodo del informe
                 </p>
                 <p className="mt-2 text-sm font-medium text-slate-700">
                   {dashboardData?.period ?? cadenceMeta.periodLabel}
                 </p>
               </div>
-              <div className="rounded-xl bg-slate-50/80 p-4">
-                <TrendingUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
-                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              <div>
+                <p className="text-xs font-medium text-text-secondary">
                   Estado actual
                 </p>
                 <p className="mt-2 text-sm font-medium text-slate-700">
@@ -450,7 +447,7 @@ export function DashboardIntelligenceReports({
         />
       </section>
 
-      <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+      <section className="rounded-[1.35rem] bg-white p-5 ">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <h3 className="text-lg font-semibold text-slate-950">
@@ -484,7 +481,7 @@ export function DashboardIntelligenceReports({
                     <AlertTriangle className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    <p className="text-xs font-medium text-text-secondary">
                       {anomaly.branch}
                     </p>
                     <h4 className="mt-1 text-base font-semibold text-slate-950">
@@ -499,7 +496,7 @@ export function DashboardIntelligenceReports({
             ))}
           </div>
         ) : (
-          <div className="mt-5 rounded-[1.15rem] bg-white p-6 text-sm leading-6 text-slate-500 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+          <div className="mt-5 rounded-[1.15rem] bg-white p-6 text-sm leading-6 text-slate-500 ">
             Aún no hay variaciones suficientemente bruscas para marcar una anomalía
             operativa en este periodo.
           </div>
@@ -507,7 +504,7 @@ export function DashboardIntelligenceReports({
       </section>
 
       {SHOW_AGENT_UI ? (
-        <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+        <section className="rounded-[1.35rem] bg-white p-5 ">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
             <div className="max-w-2xl">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-950">
@@ -557,7 +554,7 @@ export function DashboardIntelligenceReports({
           {agentReport ? (
             <div className="mt-5 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
               <div className="rounded-[1.1rem] bg-slate-50/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                <p className="text-xs font-medium text-text-secondary">
                   Siguiente paso
                 </p>
                 <div className="mt-3 space-y-3">
@@ -569,7 +566,7 @@ export function DashboardIntelligenceReports({
                 </div>
               </div>
               <div className="rounded-[1.1rem] bg-slate-50/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                <p className="text-xs font-medium text-text-secondary">
                   Estado de entrega
                 </p>
                 <p className="mt-3 text-sm leading-6 text-slate-700">
@@ -584,7 +581,7 @@ export function DashboardIntelligenceReports({
         </section>
       ) : null}
 
-      <section className="rounded-[1.35rem] bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
+      <section className="rounded-[1.35rem] bg-white p-5 ">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <h3 className="text-lg font-semibold text-slate-950">
@@ -609,7 +606,7 @@ export function DashboardIntelligenceReports({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    <p className="text-xs font-medium text-text-secondary">
                       Sucursal
                     </p>
                     <h4 className="mt-1 text-base font-semibold text-slate-950">
@@ -626,26 +623,26 @@ export function DashboardIntelligenceReports({
                     <p className="text-lg font-semibold text-rose-700">
                       {report.risk}
                     </p>
-                    <p className="text-xs font-semibold text-slate-400">Riesgo</p>
+                    <p className="text-xs font-semibold text-text-secondary">Riesgo</p>
                   </div>
                   <div className="rounded-xl bg-white p-3">
                     <p className="text-lg font-semibold text-slate-700">
                       {report.neutral}
                     </p>
-                    <p className="text-xs font-semibold text-slate-400">Neutro</p>
+                    <p className="text-xs font-semibold text-text-secondary">Neutro</p>
                   </div>
                   <div className="rounded-xl bg-white p-3">
                     <p className="text-lg font-semibold text-emerald-700">
                       {report.positive}
                     </p>
-                    <p className="text-xs font-semibold text-slate-400">
+                    <p className="text-xs font-semibold text-text-secondary">
                       Positivo
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-4 rounded-xl bg-white p-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                  <p className="text-xs font-medium text-text-secondary">
                     Patrón dominante
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-800">
@@ -655,7 +652,7 @@ export function DashboardIntelligenceReports({
 
                 <div className="mt-3 rounded-xl bg-white p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    <p className="text-xs font-medium text-text-secondary">
                       {cadenceMeta.branchReadinessLabel}
                     </p>
                     <span className="text-xs font-semibold text-slate-500">
@@ -706,9 +703,9 @@ export function DashboardIntelligenceReports({
             ))}
           </div>
         ) : (
-          <div className="mt-5 rounded-[1.15rem] bg-white p-6 text-sm leading-6 text-slate-500 shadow-[0_14px_40px_rgba(15,23,42,0.06)]">
-            Aún no hay valoraciones suficientes para construir patrones por
-            establecimiento.
+          <div className="mt-5 flex flex-col items-start gap-5 py-6 text-sm leading-6 text-text-secondary sm:flex-row sm:items-center">
+            <img src="/images/illustrations/perks-empty-reports-v1.svg" alt="" width={120} height={96} className="h-auto w-22 shrink-0" />
+            <p>Aún no hay valoraciones suficientes para construir patrones por establecimiento.</p>
           </div>
         )}
       </section>
