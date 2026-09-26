@@ -7,25 +7,25 @@ import { ArrowRight } from "lucide-react";
 const journey = [
   {
     title: "Prepara una sucursal",
-    body: "Comprueba sus datos y encuentra el QR que usarás para pedir opiniones.",
+    body: "En Gestión > Sucursales, crea tu punto de atención o comprueba sus datos. Cada sucursal tiene su propio QR. Si no puedes editarla, pide ayuda a quien administra Perks.",
     href: "/guia/gestion",
     link: "Ver Gestión",
   },
   {
     title: "Comparte el QR",
-    body: "Tus clientes podrán contar cómo les fue desde su teléfono.",
+    body: "En Inicio, pulsa Compartir QR para mostrar o enviar el código de la sucursal. Al escanearlo, el cliente podrá contar cómo le fue desde su teléfono.",
     href: "/guia/inicio",
     link: "Ver Inicio",
   },
   {
     title: "Atiende las señales",
-    body: "Lee las valoraciones y da seguimiento a los asuntos importantes.",
+    body: "En Valoraciones lee lo que dijo cada cliente. Si aparece un caso pendiente, entra a Alertas para revisar su contexto y dejar el seguimiento.",
     href: "/guia/valoraciones",
     link: "Ver Valoraciones",
   },
   {
     title: "Aprende del periodo",
-    body: "Usa los informes y las mejoras para decidir qué conviene cambiar.",
+    body: "En Informes mira el periodo completo. Después, en Mejoras, contrasta las propuestas con las opiniones originales antes de decidir una acción con tu equipo.",
     href: "/guia/informes",
     link: "Ver Informes",
   },

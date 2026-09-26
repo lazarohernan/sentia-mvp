@@ -30,7 +30,7 @@ export default function PerksGuidePage() {
           <div className="relative z-10 flex flex-col justify-center px-7 py-10 sm:px-12 md:py-14 lg:px-16">
             <h1 className="max-w-xl text-4xl font-bold tracking-tight text-[#073c34] sm:text-5xl lg:text-[72px] lg:leading-[1.05]">Conoce Perks</h1>
             <p className="mt-5 max-w-lg text-base leading-7 text-[#214f46] sm:text-lg">
-              Una guía sencilla para escuchar a tus clientes, atender lo importante y acompañar a tu equipo.
+              Aprende dónde empezar, qué encontrarás en cada sección y cómo usar Perks en tu trabajo diario.
             </p>
           </div>
           <div className="relative z-10 h-64 min-w-0 md:h-full md:min-h-[330px]">
@@ -38,11 +38,21 @@ export default function PerksGuidePage() {
           </div>
         </section>
 
+        <section aria-labelledby="que-es-perks" className="mt-11 border-b border-[#bbd1c6] pb-10">
+          <h2 id="que-es-perks" className="text-3xl font-semibold tracking-tight text-[#073c34] sm:text-4xl">¿Qué es Perks?</h2>
+          <p className="mt-4 max-w-4xl text-base leading-7 text-text-secondary">
+            Perks ayuda a un negocio a escuchar lo que viven sus clientes. Cada sucursal comparte un QR para recibir opiniones. Luego el equipo puede leerlas, atender los casos importantes y usar informes para decidir qué mejorar.
+          </p>
+          <p className="mt-3 max-w-4xl text-base leading-7 text-text-secondary">
+            Escucha y Coaching son otra parte de Perks: sirven para acompañar la práctica del equipo mediante evaluaciones internas. Esas evaluaciones no son opiniones de clientes.
+          </p>
+        </section>
+
         <GuideJourney />
 
         <nav aria-label="Secciones de la guía" className="mt-11">
           <h2 className="text-3xl font-semibold tracking-tight text-[#073c34] sm:text-4xl">Elige una sección</h2>
-          <p className="mt-2 text-base text-text-secondary">Estas secciones tratan la experiencia de tus clientes. Pulsa una tarjeta para abrir su guía.</p>
+          <p className="mt-2 text-base text-text-secondary">Estas secciones tratan la experiencia de tus clientes. Pulsa una tarjeta para ver para qué sirve, cómo usarla y qué hacer si está vacía.</p>
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
             {primaryGuideSections.filter(({ slug }) => slug !== "escucha").map(({ slug, title, icon: Icon }, index) => (
               <Link key={slug} href={`/guia/${slug}`} className={`group flex min-h-[84px] items-center gap-5 rounded-xl border border-[#b8d3c7] bg-white px-6 py-4 text-[#073c34] transition-colors hover:bg-[#edf7ef] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-muted ${index < 3 ? "lg:col-span-2" : "lg:col-span-3"}`}>

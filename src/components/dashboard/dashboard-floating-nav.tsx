@@ -8,8 +8,10 @@ import {
   Ear,
   Home,
   FileText,
+  Menu,
   MessageSquareText,
   Trash2,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -160,6 +162,10 @@ export function DashboardFloatingNav({
   const listeningMenuRef = useRef<HTMLDivElement | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const listeningMenuId = useId();
+  const mobileMenuId = useId();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Renderizar portal solo en cliente (SSR-safe)
   const mounted = useSyncExternalStore(
@@ -175,6 +181,34 @@ export function DashboardFloatingNav({
   useEffect(() => {
     setVisibleNotifications(notifications);
   }, [notifications]);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [activeView]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    function closeOnOutsideClick(event: globalThis.MouseEvent) {
+      if (!mobileMenuRef.current?.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    }
+
+    function closeOnEscape(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+        mobileMenuButtonRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isMobileMenuOpen]);
 
   async function handleDeleteNotification(notificationId: string) {
     const previousNotifications = visibleNotifications;
@@ -349,6 +383,7 @@ export function DashboardFloatingNav({
     event.preventDefault();
     window.history.pushState({}, "", href);
     onViewChange(view);
+    setIsMobileMenuOpen(false);
   }
 
   function openGestion() {
@@ -375,13 +410,65 @@ export function DashboardFloatingNav({
         <Link
           href="/dashboard"
           onClick={(event) => handleNavClick(event, "resumen", "/dashboard")}
-          className="flex min-w-0 items-center rounded-full px-3 py-1.5"
+          className="flex min-w-0 items-center rounded-full px-2 py-1.5 sm:px-3"
         >
           <img src="/brand/perks-logo.png" alt="Perks" className="h-7 w-auto" />
         </Link>
 
         {/* ── Barra de navegación central ── */}
-        <div className="flex min-w-0 items-center gap-1 overflow-x-auto p-1">
+        <div ref={mobileMenuRef} className="relative lg:hidden">
+          <button
+            type="button"
+            ref={mobileMenuButtonRef}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls={mobileMenuId}
+            onClick={() => setIsMobileMenuOpen((open) => !open)}
+            className="flex h-10 items-center gap-2 rounded-full bg-surface-muted px-3 text-sm font-semibold text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          >
+            {isMobileMenuOpen ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
+            <span>Menú</span>
+          </button>
+          {isMobileMenuOpen ? (
+            <div
+              id={mobileMenuId}
+              className="fixed inset-x-4 top-20 rounded-2xl bg-surface p-3"
+            >
+              <p className="px-3 pb-2 pt-1 text-xs font-semibold text-text-secondary">Ir a una sección</p>
+              <div className="grid gap-1">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeView === item.view &&
+                    !(item.view === "escucha" && listeningSubNav?.activeTab === "coaching");
+                  return (
+                    <Link
+                      key={item.view}
+                      href={item.href}
+                      aria-current={isActive ? "page" : undefined}
+                      onClick={(event) => {
+                        handleNavClick(event, item.view, item.href);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${isActive ? "bg-brand text-text-inverse" : "text-text-primary hover:bg-surface-muted"}`}
+                    >
+                      <Icon size={19} aria-hidden="true" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+                <Link
+                  href={listeningSubNav?.coachingHref ?? "/dashboard/escucha/coaching"}
+                  aria-current={activeView === "escucha" && listeningSubNav?.activeTab === "coaching" ? "page" : undefined}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex min-h-11 items-center gap-3 rounded-xl px-3 pl-10 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${activeView === "escucha" && listeningSubNav?.activeTab === "coaching" ? "bg-brand text-text-inverse" : "text-text-secondary hover:bg-surface-muted"}`}
+                >
+                  Coaching
+                </Link>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="hidden min-w-0 items-center gap-1 overflow-x-auto p-1 lg:flex">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeView === item.view;
