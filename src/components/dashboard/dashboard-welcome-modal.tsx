@@ -17,6 +17,7 @@ type DashboardWelcomeModalProps = {
   };
   ownerSetup?: {
     initialName: string;
+    initialBusinessName: string;
     businessCreated: boolean;
   };
 };
@@ -34,7 +35,8 @@ export function DashboardWelcomeModal({
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(ownerSetup?.businessCreated ? 3 : 1);
   const [fullName, setFullName] = useState(ownerSetup?.initialName ?? "");
-  const [businessName, setBusinessName] = useState("");
+  const [businessName, setBusinessName] = useState(ownerSetup?.initialBusinessName ?? "");
+  const [businessSaved, setBusinessSaved] = useState(ownerSetup?.businessCreated ?? false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const forceOpen = Boolean(ownerSetup);
@@ -73,6 +75,7 @@ export function DashboardWelcomeModal({
         setError(result.error ?? "No se pudo crear el negocio.");
         return;
       }
+      setBusinessSaved(true);
       setStep(3);
     } catch {
       setError("No se pudo conectar. Intenta de nuevo.");
@@ -204,7 +207,7 @@ export function DashboardWelcomeModal({
               <label htmlFor="owner-business-name" className="mt-4 block text-sm font-semibold text-text-primary">Nombre del negocio</label>
               <input id="owner-business-name" value={businessName} onChange={(event) => setBusinessName(event.target.value)} minLength={2} maxLength={160} required autoComplete="organization" placeholder="Como lo conocen tus clientes" className="mt-2 h-11 w-full rounded-xl border border-text-secondary/20 bg-white px-3 text-sm text-text-primary focus-visible:outline-2 focus-visible:outline-focus-ring" />
               {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
-              <button type="submit" disabled={busy} className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-text-inverse disabled:opacity-60">{busy ? "Guardando..." : "Guardar y continuar"}</button>
+              <button type="submit" disabled={busy} className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-text-inverse disabled:opacity-60">{busy ? "Guardando..." : businessSaved ? "Guardar cambios y continuar" : "Guardar y continuar"}</button>
               <button type="button" onClick={() => setStep(1)} className="mt-3 w-full text-sm font-semibold text-brand-muted">Volver</button>
             </form>
           )}
@@ -224,7 +227,7 @@ export function DashboardWelcomeModal({
               </label>
               <p className="mt-2 text-xs leading-5 text-text-secondary">La aceptación se habilitará cuando estén disponibles los documentos. Por ahora no se registra ninguna firma.</p>
               <button type="button" onClick={() => setStep(4)} className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-text-inverse">Continuar sin firmar</button>
-              {existingAccount && <button type="button" onClick={() => setStep(2)} className="mt-3 w-full text-sm font-semibold text-brand-muted">Volver</button>}
+              <button type="button" onClick={() => setStep(2)} className="mt-3 w-full text-sm font-semibold text-brand-muted">Volver</button>
             </>
           )}
           {guidedWelcome && step === 4 && (
@@ -234,6 +237,7 @@ export function DashboardWelcomeModal({
               <Link href="/guia" target="_blank" rel="noopener noreferrer" className="mt-5 block text-center text-sm font-semibold text-brand-muted underline-offset-4 hover:underline">Abrir la guía en otra pestaña</Link>
               {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
               <button type="button" onClick={ownerSetup ? finishOwnerSetup : dismiss} disabled={busy} className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-text-inverse disabled:opacity-60">{busy ? "Entrando..." : "Ir a Inicio"}</button>
+              {ownerSetup && <button type="button" onClick={() => setStep(2)} disabled={busy} className="mt-3 w-full text-sm font-semibold text-brand-muted disabled:opacity-60">Corregir nombre o negocio</button>}
               <button type="button" onClick={() => setStep(3)} disabled={busy} className="mt-3 w-full text-sm font-semibold text-brand-muted disabled:opacity-60">Volver</button>
             </>
           )}

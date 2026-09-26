@@ -40,17 +40,14 @@ export async function POST(request: Request) {
   if (!needsOwnerOnboarding(user)) {
     return NextResponse.json({ error: "Esta cuenta no tiene una invitación de dueño." }, { status: 403 });
   }
-  if (membership) {
-    if (membership.role === "owner") {
-      return NextResponse.json({ organizationId: membership.organizationId });
-    }
+  if (membership && membership.role !== "owner") {
     return NextResponse.json({ error: "Esta cuenta ya tiene un negocio." }, { status: 409 });
   }
 
   const limit = consumeRateLimit({
     namespace: "owner:onboarding",
     key: user.id,
-    limit: 5,
+    limit: 10,
     windowMs: 15 * 60 * 1000,
   });
   if (!limit.allowed) {
@@ -69,6 +66,19 @@ export async function POST(request: Request) {
   } as never);
   if (profileError) {
     return NextResponse.json({ error: "No se pudo guardar tu nombre." }, { status: 500 });
+  }
+
+  if (membership) {
+    const { error: updateError } = await service
+      .from("organizations")
+      .update({ name: input.data.businessName } as never)
+      .eq("id", membership.organizationId)
+      .select("id")
+      .single();
+    if (updateError) {
+      return NextResponse.json({ error: "No se pudo guardar el nombre del negocio." }, { status: 500 });
+    }
+    return NextResponse.json({ organizationId: membership.organizationId });
   }
 
   const { data: organization, error: organizationError } = await service
