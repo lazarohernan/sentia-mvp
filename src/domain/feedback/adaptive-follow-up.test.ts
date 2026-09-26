@@ -38,6 +38,8 @@ describe("adaptive feedback follow-up", () => {
   it("adds clarification context to the text analyzed by AI", () => {
     const text = buildAnalysisText({
       branchSlug: "centro",
+      branchId: "00000000-0000-4000-8000-000000000001",
+      branchToken: "test-branch-token-0001",
       type: "suggestion",
       csatScore: 3,
       emotionScore: 3,
@@ -52,6 +54,8 @@ describe("adaptive feedback follow-up", () => {
 
     expect(getClarificationAnswer({
       branchSlug: "centro",
+      branchId: "00000000-0000-4000-8000-000000000001",
+      branchToken: "test-branch-token-0001",
       type: "suggestion",
       csatScore: 3,
       emotionScore: 3,
