@@ -36,6 +36,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Inicia sesión para continuar." }, { status: 401 });
   }
 
+  const membership = await getOrganizationMembershipByUser(supabase, user.id);
+  if (!needsOwnerOnboarding(user)) {
+    return NextResponse.json({ error: "Esta cuenta no tiene una invitación de dueño." }, { status: 403 });
+  }
+  if (membership) {
+    if (membership.role === "owner") {
+      return NextResponse.json({ organizationId: membership.organizationId });
+    }
+    return NextResponse.json({ error: "Esta cuenta ya tiene un negocio." }, { status: 409 });
+  }
+
   const limit = consumeRateLimit({
     namespace: "owner:onboarding",
     key: user.id,
@@ -44,14 +55,6 @@ export async function POST(request: Request) {
   });
   if (!limit.allowed) {
     return NextResponse.json({ error: "Espera unos minutos antes de intentarlo de nuevo." }, { status: 429 });
-  }
-
-  const membership = await getOrganizationMembershipByUser(supabase, user.id);
-  if (membership) {
-    return NextResponse.json({ error: "Esta cuenta ya tiene un negocio." }, { status: 409 });
-  }
-  if (!needsOwnerOnboarding(user)) {
-    return NextResponse.json({ error: "Esta cuenta no tiene una invitación de dueño." }, { status: 403 });
   }
 
   const input = inputSchema.safeParse(await request.json().catch(() => null));

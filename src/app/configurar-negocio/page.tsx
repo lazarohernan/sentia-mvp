@@ -36,7 +36,7 @@ export default async function ConfigureBusinessPage() {
         <Image src="/brand/perks-logo.png" alt="Perks" width={160} height={52} className="h-10 w-auto" priority />
         <DashboardWelcomeModal ownerSetup={{
           initialName: profile?.fullName ?? (typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : ""),
-          businessCreated: Boolean(membership),
+          businessCreated: membership?.role === "owner",
         }} />
       </div>
     </main>

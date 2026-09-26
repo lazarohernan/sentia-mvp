@@ -197,8 +197,7 @@ export async function activateAccountAction(formData: FormData): Promise<void> {
 
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({ full_name: parsed.data.fullName })
-    .eq("id", user.id);
+    .upsert({ id: user.id, full_name: parsed.data.fullName }, { onConflict: "id" });
 
   if (profileError) {
     redirect("/auth/activar-cuenta?error=activation_failed");
