@@ -10,6 +10,7 @@ import {
 } from "@/domain/auth/schemas";
 import { getSafeRedirectPath } from "@/domain/auth/redirects";
 import { resolveHomePathForMembership } from "@/domain/auth/resolve-home-path";
+import { needsOwnerOnboarding } from "@/domain/auth/owner-onboarding";
 import { REGISTRATION_ENABLED } from "@/domain/auth/config";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
 import {
@@ -57,12 +58,16 @@ export async function signInAction(formData: FormData): Promise<void> {
     redirect("/login?error=auth_failed");
   }
 
+  const membership = await getOrganizationMembershipByUser(supabase, authData.user.id);
+  if (needsOwnerOnboarding(authData.user)) {
+    redirect("/configurar-negocio");
+  }
+
   const redirectTo = formData.get("redirectTo")?.toString();
   if (redirectTo) {
     redirect(getSafeRedirectPath(redirectTo));
   }
 
-  const membership = await getOrganizationMembershipByUser(supabase, authData.user.id);
   redirect(await resolveHomePathForMembership(supabase, membership));
 }
 

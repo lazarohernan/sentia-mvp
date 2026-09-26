@@ -4,6 +4,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { getLatestAgentOperationalReport } from "@/domain/agent/repository";
 import type { DashboardCurrentUser } from "@/components/dashboard/dashboard-user-menu";
 import { getUserProfileById } from "@/domain/auth/profile";
+import { needsOwnerOnboarding } from "@/domain/auth/owner-onboarding";
 import { getBranchesByOrganization } from "@/domain/branches/repository";
 import { getDashboardDateRange } from "@/domain/dashboard/date-range";
 import { getDashboardSummaryData } from "@/domain/dashboard/repository";
@@ -61,6 +62,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     getOrganizationMembershipByUser(supabase, user.id),
     getUserProfileById(supabase, user.id),
   ]);
+
+  if (needsOwnerOnboarding(user)) {
+    redirect("/configurar-negocio");
+  }
 
   const allowedBranchId = membership?.branchId ?? null;
   const serviceClient = hasSupabaseServiceEnv() ? createServiceClient() : null;
