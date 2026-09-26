@@ -226,12 +226,6 @@ export function LoginView({
             </div>
           </div>
           </form>
-          <p className="mt-6 w-full text-center text-xs leading-5 text-[#4f695c]">
-            Al continuar aceptas nuestros{" "}
-            <span className="font-semibold text-[#315646]">Términos de uso</span>
-            {" "}y{" "}
-            <span className="font-semibold text-[#315646]">Política de Privacidad</span>.
-          </p>
         </div>
       </section>
     </main>
