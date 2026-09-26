@@ -6,7 +6,7 @@ import { resolveSignedQrBranch } from "@/domain/branches/resolve-signed-qr-branc
 import { getOrganizationSettingsById } from "@/domain/organizations/organization-settings";
 import { FeedbackScreen } from "@/app/feedback/_shared/feedback-screen";
 import { getPublicSiteHost } from "@/lib/app/public-site-host";
-import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasQrSigningSecret } from "@/lib/security/qr-signing";
 import { hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -23,7 +23,7 @@ export default async function SignedQrFeedbackPage({ params }: SignedQrPageProps
   }
 
   const headerStore = await headers();
-  const rateLimit = await consumeDistributedRateLimit({
+  const rateLimit = consumeRateLimit({
     namespace: "qr:signed:redirect",
     key: getClientIpFromHeaders(headerStore),
     limit: 120,

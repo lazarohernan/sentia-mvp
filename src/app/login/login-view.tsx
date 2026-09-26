@@ -25,7 +25,6 @@ const errorMessages: Record<string, string> = {
   invalid_credentials: "Revisa tu correo y contrasena.",
   auth_callback_failed: "El enlace expiro o ya fue usado. Solicita uno nuevo.",
   rate_limited: "Demasiados intentos. Espera unos minutos.",
-  auth_unavailable: "El acceso no está disponible temporalmente. Intenta de nuevo más tarde.",
   supabase_not_configured: "Autenticacion no configurada.",
   registration_disabled: "El registro publico esta desactivado.",
 };

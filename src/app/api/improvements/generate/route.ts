@@ -18,7 +18,7 @@ import {
   upsertWeeklyDigests,
 } from "@/domain/dashboard/improvements-repository";
 import { getOrganizationByUser, getOrganizationMembershipByUser } from "@/domain/organizations/repository";
-import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
 
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const rateLimit = await consumeDistributedRateLimit({
+  const rateLimit = consumeRateLimit({
     namespace: "api:improvements:generate",
     key: `${user.id}:${getClientIpFromHeaders(request.headers)}`,
     limit: 10,

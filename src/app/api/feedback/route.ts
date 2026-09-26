@@ -5,7 +5,7 @@ import { feedbackSubmissionSchema } from "@/domain/feedback/schemas";
 import { verifyBranchQrTokenSignature } from "@/domain/branches/qr-token";
 import { buildFeedbackAlertDraft } from "@/domain/notifications/executive-summaries";
 import { upsertNotificationDraft } from "@/domain/notifications/repository";
-import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasQrSigningSecret } from "@/lib/security/qr-signing";
 import { hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -59,7 +59,7 @@ async function resolveFeedbackBranch(
 
 export async function POST(request: Request) {
   const clientIp = getClientIpFromHeaders(request.headers);
-  const rateLimit = await consumeDistributedRateLimit({
+  const rateLimit = consumeRateLimit({
     namespace: "api:feedback:create",
     key: clientIp,
     limit: 25,

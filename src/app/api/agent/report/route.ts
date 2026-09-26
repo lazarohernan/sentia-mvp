@@ -7,7 +7,7 @@ import { buildAgentContextSnapshot } from "@/domain/agent/context";
 import { generateOperationalAgentReport } from "@/domain/agent/operational-report";
 import { insertAgentOperationalReport } from "@/domain/agent/repository";
 import { getOrganizationByUser, getOrganizationMembershipByUser } from "@/domain/organizations/repository";
-import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
 
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const rateLimit = await consumeDistributedRateLimit({
+  const rateLimit = consumeRateLimit({
     namespace: "api:agent:report",
     key: `${user.id}:${getClientIpFromHeaders(request.headers)}`,
     limit: 10,

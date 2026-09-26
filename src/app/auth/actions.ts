@@ -11,7 +11,7 @@ import {
 import { getSafeRedirectPath } from "@/domain/auth/redirects";
 import { resolveHomePathForMembership } from "@/domain/auth/resolve-home-path";
 import { REGISTRATION_ENABLED } from "@/domain/auth/config";
-import { consumeAuthRateLimit } from "@/lib/security/rate-limit";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 import {
   createUserOrganization,
   getOrganizationMembershipByUser,
@@ -35,16 +35,13 @@ export async function signInAction(formData: FormData): Promise<void> {
   }
 
   const accountKey = createHash("sha256").update(parsed.data.email).digest("hex");
-  const rateLimit = await consumeAuthRateLimit({
+  const rateLimit = consumeRateLimit({
     namespace: "auth:sign-in",
     key: accountKey,
     limit: 5,
     windowMs: 15 * 60 * 1000,
   });
 
-  if (rateLimit.unavailable) {
-    redirect("/login?error=auth_unavailable");
-  }
   if (!rateLimit.allowed) {
     redirect("/login?error=rate_limited");
   }
@@ -86,16 +83,13 @@ export async function signUpAction(formData: FormData): Promise<void> {
   }
 
   const accountKey = createHash("sha256").update(parsed.data.email).digest("hex");
-  const rateLimit = await consumeAuthRateLimit({
+  const rateLimit = consumeRateLimit({
     namespace: "auth:sign-up",
     key: accountKey,
     limit: 3,
     windowMs: 30 * 60 * 1000,
   });
 
-  if (rateLimit.unavailable) {
-    redirect("/login?error=auth_unavailable");
-  }
   if (!rateLimit.allowed) {
     redirect("/login?error=rate_limited");
   }
@@ -174,16 +168,13 @@ export async function activateAccountAction(formData: FormData): Promise<void> {
     redirect("/login?redirectTo=/auth/activar-cuenta");
   }
 
-  const rateLimit = await consumeAuthRateLimit({
+  const rateLimit = consumeRateLimit({
     namespace: "auth:activate-account",
     key: user.id,
     limit: 8,
     windowMs: 15 * 60 * 1000,
   });
 
-  if (rateLimit.unavailable) {
-    redirect("/auth/activar-cuenta?error=auth_unavailable");
-  }
   if (!rateLimit.allowed) {
     redirect("/auth/activar-cuenta?error=rate_limited");
   }

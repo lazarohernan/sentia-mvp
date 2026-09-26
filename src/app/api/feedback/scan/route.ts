@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getActiveBranchBySlug } from "@/domain/branches/repository";
 import { recordBranchQrScan } from "@/domain/branches/qr-scans";
 import { sanitizeTextInput } from "@/lib/security/input";
-import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabaseServiceEnv } from "@/lib/supabase/config";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   }
 
   const clientIp = getClientIpFromHeaders(request.headers);
-  const rateLimit = await consumeDistributedRateLimit({
+  const rateLimit = consumeRateLimit({
     namespace: "api:feedback:scan",
     key: clientIp,
     limit: 60,

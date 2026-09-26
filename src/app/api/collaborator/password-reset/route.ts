@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { buildAuthCallbackUrl } from "@/domain/auth/redirects";
 import { getOrganizationMembershipByUser } from "@/domain/organizations/repository";
-import { consumeAuthRateLimit } from "@/lib/security/rate-limit";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,19 +31,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 
-  const rateLimit = await consumeAuthRateLimit({
+  const rateLimit = consumeRateLimit({
     namespace: "api:collaborator-password-reset",
     key: user.id,
     limit: 3,
     windowMs: 60 * 60 * 1000,
   });
 
-  if (rateLimit.unavailable) {
-    return NextResponse.json(
-      { error: "El acceso no está disponible temporalmente." },
-      { status: 503 },
-    );
-  }
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { error: "Demasiados intentos. Intenta de nuevo más tarde." },

@@ -10,7 +10,6 @@ const errorMessages: Record<string, string> = {
   invalid_activation: "Revisa tu nombre y que las contrasenas coincidan.",
   activation_failed: "No se pudo activar la cuenta. Intenta de nuevo.",
   rate_limited: "Demasiados intentos. Espera unos minutos.",
-  auth_unavailable: "El acceso no está disponible temporalmente. Intenta de nuevo más tarde.",
   supabase_not_configured: "El servicio de autenticacion no esta configurado.",
 };
 

@@ -12,7 +12,7 @@ import {
   getOrganizationMembershipByUser,
 } from "@/domain/organizations/repository";
 import { sendAlertEscalationEmail } from "@/lib/email/send-alert-escalation-email";
-import { consumeDistributedRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { consumeRateLimit, getClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { hasSupabasePublicEnv } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -83,7 +83,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
 export async function PATCH(request: Request, context: RouteContext) {
   const clientIp = getClientIpFromHeaders(request.headers);
-  const rateLimit = await consumeDistributedRateLimit({
+  const rateLimit = consumeRateLimit({
     namespace: "api:feedback:follow-up",
     key: clientIp,
     limit: 80,
