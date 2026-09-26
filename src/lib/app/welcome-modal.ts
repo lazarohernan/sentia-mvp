@@ -1,4 +1,4 @@
-export const DASHBOARD_WELCOME_STORAGE_KEY = "perks.dashboard.welcome.v5";
+export const DASHBOARD_WELCOME_STORAGE_KEY = "perks.dashboard.welcome.v6";
 export const DASHBOARD_WELCOME_DISMISSED_EVENT = "perks:welcome-dismissed";
 
 export function hasSeenDashboardWelcome() {

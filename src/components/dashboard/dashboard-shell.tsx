@@ -640,6 +640,7 @@ export function DashboardShell({
   const [isBranchDrawerOpen, setIsBranchDrawerOpen] = useState(false);
   const [isTeamMemberDrawerOpen, setIsTeamMemberDrawerOpen] = useState(false);
   const [pendingCommentId, setPendingCommentId] = useState<string | null>(null);
+  const [welcomeReopenSignal, setWelcomeReopenSignal] = useState(0);
   const canManageFollowUp = actorRole === "owner" || actorRole === "manager";
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [qrBranchId, setQrBranchId] = useState<string | null>(null);
@@ -783,6 +784,7 @@ export function DashboardShell({
         organizationName={liveOrganizationName}
         canManageBusinessProfile={canManageTeam}
         onOpenBusinessProfile={() => setIsBusinessProfileOpen(true)}
+        onOpenWelcome={() => setWelcomeReopenSignal((value) => value + 1)}
       />
       <section className="mx-auto flex w-full max-w-368 flex-1 flex-col px-4 pb-4 pt-28 sm:px-6 lg:px-8">
         <div className="flex-1">
@@ -1135,7 +1137,11 @@ export function DashboardShell({
           setLiveOrganizationName(settings.name);
         }}
       />
-      <DashboardWelcomeModal organizationName={liveOrganizationName} />
+      <DashboardWelcomeModal
+        organizationName={liveOrganizationName}
+        existingAccount={currentUser ? { fullName: currentUser.fullName } : undefined}
+        reopenSignal={welcomeReopenSignal}
+      />
       <PushPromptModal waitForWelcome />
     </main>
   );

@@ -26,6 +26,7 @@ type DashboardUserMenuProps = {
   organizationName?: string;
   canManageBusinessProfile?: boolean;
   onOpenBusinessProfile?: () => void;
+  onOpenWelcome?: () => void;
   onOpenGestion?: () => void;
   onOpenUserProfile?: () => void;
   onRequestPasswordReset?: () => void;
@@ -54,6 +55,7 @@ export function DashboardUserMenu({
   organizationName,
   canManageBusinessProfile = false,
   onOpenBusinessProfile,
+  onOpenWelcome,
   onOpenGestion,
   onOpenUserProfile,
   onRequestPasswordReset,
@@ -236,6 +238,26 @@ export function DashboardUserMenu({
                 <span className="mt-0.5 block text-xs text-slate-500">Qué hace cada sección</span>
               </span>
             </Link>
+
+            {onOpenWelcome ? (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenWelcome();
+                }}
+                className={menuItemClass}
+              >
+                <span className={menuIconClass}>
+                  <BookOpenText className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-slate-950">Ver bienvenida</span>
+                  <span className="mt-0.5 block text-xs text-slate-500">Repasar los primeros pasos</span>
+                </span>
+              </button>
+            ) : null}
 
             {onRequestPasswordReset ? (
               <div className="mb-2">

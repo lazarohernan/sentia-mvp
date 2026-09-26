@@ -89,6 +89,7 @@ type DashboardFloatingNavProps = {
   organizationName?: string;
   canManageBusinessProfile?: boolean;
   onOpenBusinessProfile?: () => void;
+  onOpenWelcome?: () => void;
   listeningSubNav?: {
     activeTab: "analytics" | "coaching";
     analyticsHref: string;
@@ -135,6 +136,7 @@ export function DashboardFloatingNav({
   organizationName,
   canManageBusinessProfile,
   onOpenBusinessProfile,
+  onOpenWelcome,
   listeningSubNav,
 }: DashboardFloatingNavProps) {
   const router = useRouter();
@@ -714,6 +716,7 @@ export function DashboardFloatingNav({
               organizationName={organizationName}
               canManageBusinessProfile={canManageBusinessProfile}
               onOpenBusinessProfile={onOpenBusinessProfile}
+              onOpenWelcome={onOpenWelcome}
               onOpenGestion={openGestion}
             />
           ) : (

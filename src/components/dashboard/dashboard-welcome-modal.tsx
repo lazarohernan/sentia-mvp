@@ -11,6 +11,10 @@ import {
 
 type DashboardWelcomeModalProps = {
   organizationName?: string;
+  reopenSignal?: number;
+  existingAccount?: {
+    fullName: string;
+  };
   ownerSetup?: {
     initialName: string;
     businessCreated: boolean;
@@ -18,7 +22,9 @@ type DashboardWelcomeModalProps = {
 };
 
 export function DashboardWelcomeModal({
-  organizationName: _organizationName,
+  organizationName,
+  reopenSignal = 0,
+  existingAccount,
   ownerSetup,
 }: DashboardWelcomeModalProps) {
   const titleId = useId();
@@ -32,11 +38,19 @@ export function DashboardWelcomeModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const forceOpen = Boolean(ownerSetup);
+  const guidedWelcome = Boolean(ownerSetup || existingAccount);
 
   useEffect(() => {
     setMounted(true);
     setOpen(forceOpen || !hasSeenDashboardWelcome());
   }, [forceOpen]);
+
+  useEffect(() => {
+    if (reopenSignal > 0) {
+      setStep(1);
+      setOpen(true);
+    }
+  }, [reopenSignal]);
 
   function dismiss() {
     markDashboardWelcomeSeen();
@@ -143,7 +157,7 @@ export function DashboardWelcomeModal({
         onKeyDown={keepFocusInside}
         className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-surface"
       >
-        {(!ownerSetup || step === 1) && <div className="relative aspect-video overflow-hidden bg-surface-muted">
+        {(!guidedWelcome || step === 1) && <div className="relative aspect-video overflow-hidden bg-surface-muted">
           <img
             src="/images/perks-welcome-flow-v1.svg"
             alt=""
@@ -152,7 +166,7 @@ export function DashboardWelcomeModal({
         </div>}
 
         <div className="px-5 pt-5 pb-6">
-          {ownerSetup && <nav aria-label="Progreso de bienvenida" className="mb-5 grid grid-cols-4 gap-2 text-center text-xs font-semibold">
+          {guidedWelcome && <nav aria-label="Progreso de bienvenida" className="mb-5 grid grid-cols-4 gap-2 text-center text-xs font-semibold">
             {(["Bienvenida", "Negocio", "Términos", "Guía"] as const).map((label, index) => (
               <span key={label} aria-current={step === index + 1 ? "step" : undefined} className={`border-b-2 pb-2 ${step === index + 1 ? "border-brand text-brand" : "border-surface-muted text-text-secondary"}`}>{label}</span>
             ))}
@@ -163,10 +177,22 @@ export function DashboardWelcomeModal({
               <p id={descriptionId} className="mt-2 text-sm leading-6 text-text-secondary">
                 Cada voz cuenta. Aquí puedes escuchar a tus clientes, acompañar a tu equipo y descubrir pequeñas acciones que hacen mejor tu negocio. Vamos paso a paso.
               </p>
-              <button type="button" onClick={ownerSetup ? () => setStep(2) : dismiss} className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-text-inverse transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 active:translate-y-px">
+              <button type="button" onClick={guidedWelcome ? () => setStep(2) : dismiss} className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-text-inverse transition hover:bg-brand-strong focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 active:translate-y-px">
                 Vamos a empezar
               </button>
-              {!ownerSetup && <Link href="/guia" target="_blank" rel="noopener noreferrer" className="mt-4 block text-center text-sm font-semibold text-brand-muted underline-offset-4 hover:underline">Conoce Perks en una nueva pestaña</Link>}
+              {!guidedWelcome && <Link href="/guia" target="_blank" rel="noopener noreferrer" className="mt-4 block text-center text-sm font-semibold text-brand-muted underline-offset-4 hover:underline">Conoce Perks en una nueva pestaña</Link>}
+            </>
+          )}
+          {existingAccount && step === 2 && (
+            <>
+              <h2 id={titleId} tabIndex={-1} data-step-focus className="text-xl font-semibold text-text-primary outline-none">Tu cuenta y tu negocio</h2>
+              <p id={descriptionId} className="mt-2 text-sm leading-6 text-text-secondary">Este es el espacio que ya tienes en Perks. No se crearán cuentas ni negocios nuevos.</p>
+              <dl className="mt-5 rounded-xl bg-surface-muted px-4 text-sm">
+                <div className="py-3"><dt className="text-text-secondary">Tu nombre</dt><dd className="mt-1 font-semibold text-text-primary">{existingAccount.fullName}</dd></div>
+                <div className="border-t border-text-secondary/15 py-3"><dt className="text-text-secondary">Negocio</dt><dd className="mt-1 font-semibold text-text-primary">{organizationName ?? "Sin negocio vinculado"}</dd></div>
+              </dl>
+              <button type="button" onClick={() => setStep(3)} className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-text-inverse">Continuar</button>
+              <button type="button" onClick={() => setStep(1)} className="mt-3 w-full text-sm font-semibold text-brand-muted">Volver</button>
             </>
           )}
           {ownerSetup && step === 2 && (
@@ -182,7 +208,7 @@ export function DashboardWelcomeModal({
               <button type="button" onClick={() => setStep(1)} className="mt-3 w-full text-sm font-semibold text-brand-muted">Volver</button>
             </form>
           )}
-          {ownerSetup && step === 3 && (
+          {guidedWelcome && step === 3 && (
             <>
               <h2 id={titleId} tabIndex={-1} data-step-focus className="text-xl font-semibold text-text-primary outline-none">Términos y privacidad</h2>
               <p id={descriptionId} className="mt-2 text-sm leading-6 text-text-secondary">
@@ -198,15 +224,16 @@ export function DashboardWelcomeModal({
               </label>
               <p className="mt-2 text-xs leading-5 text-text-secondary">La aceptación se habilitará cuando estén disponibles los documentos. Por ahora no se registra ninguna firma.</p>
               <button type="button" onClick={() => setStep(4)} className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-text-inverse">Continuar sin firmar</button>
+              {existingAccount && <button type="button" onClick={() => setStep(2)} className="mt-3 w-full text-sm font-semibold text-brand-muted">Volver</button>}
             </>
           )}
-          {ownerSetup && step === 4 && (
+          {guidedWelcome && step === 4 && (
             <>
               <h2 id={titleId} tabIndex={-1} data-step-focus className="text-xl font-semibold text-text-primary outline-none">Conoce cómo usar Perks</h2>
               <p id={descriptionId} className="mt-2 text-sm leading-6 text-text-secondary">La guía explica cada sección y cómo dar tus primeros pasos. Puedes dejarla abierta mientras exploras el panel.</p>
               <Link href="/guia" target="_blank" rel="noopener noreferrer" className="mt-5 block text-center text-sm font-semibold text-brand-muted underline-offset-4 hover:underline">Abrir la guía en otra pestaña</Link>
               {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
-              <button type="button" onClick={finishOwnerSetup} disabled={busy} className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-text-inverse disabled:opacity-60">{busy ? "Entrando..." : "Ir a Inicio"}</button>
+              <button type="button" onClick={ownerSetup ? finishOwnerSetup : dismiss} disabled={busy} className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-text-inverse disabled:opacity-60">{busy ? "Entrando..." : "Ir a Inicio"}</button>
               <button type="button" onClick={() => setStep(3)} disabled={busy} className="mt-3 w-full text-sm font-semibold text-brand-muted disabled:opacity-60">Volver</button>
             </>
           )}
